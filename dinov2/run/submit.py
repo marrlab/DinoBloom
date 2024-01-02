@@ -27,7 +27,7 @@ def get_args_parser(
     add_help: bool = True,
 ) -> argparse.ArgumentParser:
     parents = parents or []
-    slurm_partition = get_slurm_partition()
+    slurm_partition = "gpu_p" # get_slurm_partition()
     parser = argparse.ArgumentParser(
         description=description,
         parents=parents,
@@ -42,6 +42,12 @@ def get_args_parser(
         help="Number of GPUs to request on each node",
     )
     parser.add_argument(
+        "--qos",
+        default="gpu_normal",
+        type=str,
+        help="QOS to request",
+    )
+    parser.add_argument(
         "--nodes",
         "--nnodes",
         default=1,
@@ -50,7 +56,7 @@ def get_args_parser(
     )
     parser.add_argument(
         "--timeout",
-        default=2800,
+        default=2800, # 46 hours
         type=int,
         help="Duration of the job",
     )
