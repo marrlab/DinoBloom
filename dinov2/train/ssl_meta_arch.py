@@ -6,6 +6,7 @@
 from functools import partial
 import logging
 
+import math
 import torch
 from torch import nn
 
@@ -28,6 +29,38 @@ except ImportError:
 logger = logging.getLogger("dinov2")
 
 
+def interpolate_pos_encoding(x, w, h):
+    N = x.shape[1] - 1
+    dim = x.shape[-1]
+    w0 = w / int(math.sqrt(N))
+    h0 = h / int(math.sqrt(N))
+
+    # Interpolate the position embeddings without changing the first row (class token)
+    patch_pos_embed = nn.functional.interpolate(
+        x[:, 1:].reshape(1, int(math.sqrt(N)), int(math.sqrt(N)), dim).permute(0, 3, 1, 2),
+        scale_factor=(w0, h0),
+        mode="bicubic",
+    )
+
+    #assert int(w0) == patch_pos_embed.shape[-2]
+    #assert int(h0) == patch_pos_embed.shape[-1]
+    patch_pos_embed = patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
+
+    # Concatenate the class token with the interpolated position embeddings
+    return torch.cat((x[:, :1], patch_pos_embed), dim=1)
+
+
+def get_downloaded_dino_vit_s_interpolated():
+    model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14')  # 
+    input_tensor = model.pos_embed
+    tensor_corr_shape = interpolate_pos_encoding(input_tensor, 16, 16)
+    pos_embed = nn.Parameter(torch.zeros(1, 257))
+    pos_embed.data = tensor_corr_shape
+    model.pos_embed = pos_embed
+
+    return model
+
+
 class SSLMetaArch(nn.Module):
     def __init__(self, cfg):
         super().__init__()
@@ -37,7 +70,10 @@ class SSLMetaArch(nn.Module):
         student_model_dict = dict()
         teacher_model_dict = dict()
 
-        student_backbone, teacher_backbone, embed_dim = build_model_from_cfg(cfg)
+        # student_backbone, teacher_backbone, embed_dim = build_model_from_cfg(cfg)
+        student_backbone = get_downloaded_dino_vit_s_interpolated()
+        teacher_backbone = get_downloaded_dino_vit_s_interpolated()
+        embed_dim = 384
         student_model_dict["backbone"] = student_backbone
         teacher_model_dict["backbone"] = teacher_backbone
         logger.info(f"OPTIONS -- architecture : embed_dim: {embed_dim}")
@@ -46,6 +82,15 @@ class SSLMetaArch(nn.Module):
             chkpt = torch.load(cfg.student.pretrained_weights)
             logger.info(f"OPTIONS -- pretrained weights: loading from {cfg.student.pretrained_weights}")
             student_backbone.load_state_dict(chkpt["model"], strict=False)
+
+        # load pretrained model weights
+        # pretrained_weights = torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14_reg')
+        # # interpolate the position embeddings from input size 518 to 224x224=256 tokens
+        # pretrained_weights.pos_embed.data = self.interpolate_pos_encoding(pretrained_weights.pos_embed, 16, 16)
+        # student_backbone.load_state_dict(pretrained_weights.state_dict(), strict=False)
+        # teacher_backbone.load_state_dict(pretrained_weights.state_dict(), strict=False)
+        # student_model_dict["backbone"] = student_backbone
+        # teacher_model_dict["backbone"] = teacher_backbone
 
         self.embed_dim = embed_dim
         self.dino_out_dim = cfg.dino.head_n_prototypes
@@ -398,3 +443,25 @@ class SSLMetaArch(nn.Module):
             self.student[k] = get_fsdp_wrapper(student_model_cfg, modules_to_wrap={BlockChunk})(self.student[k])
             teacher_model_cfg = self.cfg.compute_precision.teacher[k]
             self.teacher[k] = get_fsdp_wrapper(teacher_model_cfg, modules_to_wrap={BlockChunk})(self.teacher[k])
+
+    @staticmethod
+    def interpolate_pos_encoding(x, w, h):
+        # from Benedikt Roth, adapted from interpolate_pos_encoding in dinov2/dinov2/models/vision_transformer.py
+        N = x.shape[1] - 1
+        dim = x.shape[-1]
+        w0 = w / int(math.sqrt(N))
+        h0 = h / int(math.sqrt(N))
+
+        # Interpolate the position embeddings without changing the first row (class token)
+        patch_pos_embed = nn.functional.interpolate(
+            x[:, 1:].reshape(1, int(math.sqrt(N)), int(math.sqrt(N)), dim).permute(0, 3, 1, 2),
+            scale_factor=(w0, h0),
+            mode="bicubic",
+        )
+
+        #assert int(w0) == patch_pos_embed.shape[-2]
+        #assert int(h0) == patch_pos_embed.shape[-1]
+        patch_pos_embed = patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
+
+        # Concatenate the class token with the interpolated position embeddings
+        return torch.cat((x[:, :1], patch_pos_embed), dim=1)

@@ -43,19 +43,28 @@ class DataAugmentationDINO(object):
         # random resized crop and flip
         self.geometric_augmentation_global = transforms.Compose(
             [
+                # transforms.CenterCrop(global_crops_size),
                 transforms.RandomResizedCrop(
                     global_crops_size, scale=global_crops_scale, interpolation=transforms.InterpolationMode.BICUBIC
                 ),
                 transforms.RandomHorizontalFlip(p=0.5),
+                # additional histopathology-specific augmentations
+                transforms.RandomVerticalFlip(p=0.5),
+                transforms.RandomApply([transforms.RandomRotation((90, 90))], p=0.5),
+
             ]
         )
 
         self.geometric_augmentation_local = transforms.Compose(
             [
+                # transforms.CenterCrop(global_crops_size),
                 transforms.RandomResizedCrop(
                     local_crops_size, scale=local_crops_scale, interpolation=transforms.InterpolationMode.BICUBIC
                 ),
                 transforms.RandomHorizontalFlip(p=0.5),
+                # additional histopathology-specific augmentations
+                transforms.RandomVerticalFlip(p=0.5),
+                transforms.RandomApply([transforms.RandomRotation((90, 90))], p=0.5),
             ]
         )
 
@@ -66,7 +75,8 @@ class DataAugmentationDINO(object):
                     [transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1)],
                     p=0.8,
                 ),
-                transforms.RandomGrayscale(p=0.2),
+                # additional histopathology-specific augmentations (don't use grayscale)
+                # transforms.RandomGrayscale(p=0.2),
             ]
         )
 

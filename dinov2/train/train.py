@@ -9,8 +9,12 @@ import math
 import os
 from functools import partial
 
+import sys
+sys.path.append('.')
+
 from fvcore.common.checkpoint import PeriodicCheckpointer
 import torch
+import wandb
 
 from dinov2.data import SamplerType, make_data_loader, make_dataset
 from dinov2.data import collate_data_and_cast, DataAugmentationDINO, MaskingGenerator
@@ -54,6 +58,8 @@ For python-based LazyConfig, use "path.key=value".
         type=str,
         help="Output directory to save logs and checkpoints",
     )
+    parser.add_argument("--name", type=str, default="debug", help="Name of the run for logging")
+    parser.add_argument("--local-rank", type=int, help="Variable for distributed computing.")
 
     return parser
 
@@ -196,8 +202,8 @@ def do_train(cfg, model, resume=False):
         transform=data_transform,
         target_transform=lambda _: (),
     )
-    # sampler_type = SamplerType.INFINITE
-    sampler_type = SamplerType.SHARDED_INFINITE
+    sampler_type = SamplerType.INFINITE
+    # sampler_type = SamplerType.SHARDED_INFINITE
     data_loader = make_data_loader(
         dataset=dataset,
         batch_size=cfg.train.batch_size_per_gpu,
@@ -282,6 +288,16 @@ def do_train(cfg, model, resume=False):
         metric_logger.update(current_batch_size=current_batch_size)
         metric_logger.update(total_loss=losses_reduced, **loss_dict_reduced)
 
+        wandb.log({
+            'lr': lr,
+            'wd': wd,
+            'mom': mom,
+            'last_layer_lr': last_layer_lr,
+            'current_batch_size': current_batch_size,
+            'total_loss': losses_reduced,
+            **loss_dict_reduced
+        })
+
         # checkpointing and testing
 
         if cfg.evaluation.eval_period_iterations > 0 and (iteration + 1) % cfg.evaluation.eval_period_iterations == 0:
@@ -298,6 +314,13 @@ def main(args):
     cfg = setup(args)
 
     model = SSLMetaArch(cfg).to(torch.device("cuda"))
+    # load pretrained model weights
+    # model_weights = torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14_reg')
+    # interpolate the position embeddings from input size 518 to 224x224=256 tokens
+    # model_weights.pos_embed.data = model.interpolate_pos_encoding(model_weights.pos_embed, 16, 16)
+    # model.student.backbone.load_state_dict(model_weights.state_dict())
+    # model.teacher.backbone.load_state_dict(model_weights.state_dict())
+    # model = get_downloaded_dino_vit_s_interpolated()
     model.prepare_for_distributed_training()
 
     logger.info("Model:\n{}".format(model))
@@ -315,4 +338,10 @@ def main(args):
 
 if __name__ == "__main__":
     args = get_args_parser(add_help=True).parse_args()
+    args.output_dir = os.path.join(args.output_dir, args.name)
+    wandb.init(
+        project="dinov2",
+        name=args.name,
+        config=args
+    )
     main(args)

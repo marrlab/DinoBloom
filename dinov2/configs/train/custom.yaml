@@ -1,0 +1,49 @@
+# base config: dinov2/configs/train/vitl14.yaml
+dino:
+  # head_n_prototypes: 131072
+  head_bottleneck_dim: 384
+ibot:
+  separate_head: true
+  # head_n_prototypes: 131072
+train:
+  batch_size_per_gpu: 256
+  num_workers: 4
+  OFFICIAL_EPOCH_LENGTH: 500  # 1250
+  dataset_path: PatchDataset  # ImageNet22k
+  centering: sinkhorn_knopp
+student:
+  arch: vit_small
+  patch_size: 14
+  drop_path_rate: 0.4
+  ffn_layer: mlp  # swiglufused
+  block_chunks: 0  # for distributed training
+  num_register_tokens: 0 # 0 for no register tokens
+
+teacher:
+  momentum_teacher: 0.994
+optim:
+  epochs: 200  # 500
+  weight_decay_end: 0.2
+  base_lr: 2.0e-04  # learning rate for a batch size of 1024
+  warmup_epochs: 10  # 80
+  layerwise_decay: 1.0
+crops:
+  local_crops_size: 98
+
+
+# compute_precision:
+#   grad_scaler: true
+#   teacher:
+#     backbone:
+#       sharding_strategy: NO_SHARD
+#     dino_head:
+#       sharding_strategy: NO_SHARD
+#     ibot_head:
+#       sharding_strategy: NO_SHARD
+#   student:
+#     backbone:
+#       sharding_strategy: NO_SHARD
+#     dino_head:
+#       sharding_strategy: NO_SHARD
+#     ibot_head:
+#       sharding_strategy: NO_SHARD

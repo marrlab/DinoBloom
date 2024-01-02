@@ -80,7 +80,7 @@ student:
   qkv_bias: true
   proj_bias: true
   ffn_bias: true
-  num_register_tokens: 0
+  num_register_tokens: 0 # 0 for no register tokens
   interpolate_antialias: false
   interpolate_offset: 0.1
 teacher:
