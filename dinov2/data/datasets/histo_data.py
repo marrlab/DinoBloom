@@ -91,8 +91,8 @@ class PatchDataset(VisionDataset):
     def __init__(
         self,
         *,
-        # root: str = "/lustre/groups/shared/histology_data/TCGA/CRC/patches/512px_crc_wonorm_complete_diag_frozen.txt",
-        root: str = "/lustre/groups/shared/histology_data/TCGA",
+        root: str = "/lustre/groups/shared/histology_data/TCGA/CRC/patches/512px_crc_wonorm_complete_diag_frozen.txt",
+        # root: str = "/lustre/groups/shared/histology_data/TCGA",
         transforms: Optional[Callable] = None,
         transform: Optional[Callable] = None,
         target_transform: Optional[Callable] = None,
@@ -106,7 +106,7 @@ class PatchDataset(VisionDataset):
             self.patches = list(Path(root).glob("**/patch*/0512_px_20_mag*/*DX*.h5"))
             np.savetxt(f"{root}_h5patches.txt", self.patches, delimiter="\n", fmt='%s')
 
-        self.patches_files = [h5py.File(patch, 'r') for patch in self.patches]
+        # self.patches_files = [h5py.File(patch, 'r') for patch in self.patches]
     
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
         try:
@@ -124,12 +124,12 @@ class PatchDataset(VisionDataset):
 
         # load image from h5 file
         # file = h5py.File(self.patches[index], 'r')
-        file = self.patches_files[index]
-        patch_id = torch.randint(file['data'].shape[0], (1,)).item()
-        patch = Image.fromarray(file['data'][patch_id])
+        # file = self.patches_files[index]
+        # patch_id = torch.randint(file['data'].shape[0], (1,)).item()
+        # patch = Image.fromarray(file['data'][patch_id])
 
         # load image from jpeg file
-        # patch = Image.open(self.patches[index]).convert(mode="RGB")
+        patch = Image.open(self.patches[index]).convert(mode="RGB")
         
         # random crop to (256, 256)
         # h, w = patch.size
