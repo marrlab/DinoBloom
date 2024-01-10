@@ -20,7 +20,7 @@ class KoLeoLoss(nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.pdist = nn.PairwiseDistance(2, eps=1e-8)
+        self.pdist = nn.PairwiseDistance(2, eps=1e-8)  # original: eps=1e-8, changed due to inf loss sometimes otherwise
 
     def pairwise_NNs_inner(self, x):
         """

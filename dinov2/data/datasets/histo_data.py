@@ -4,26 +4,24 @@
 # found in the LICENSE file in the root directory of this source tree.
 
 import csv
-from enum import Enum
 import logging
 import os
+from enum import Enum
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple, Union, Any
-import openslide
-from tqdm import tqdm
-import pandas as pd
-from PIL import Image
+from typing import Any, Callable, List, Optional, Tuple, Union
+
 import h5py
-
-import torch
-from torchvision.datasets import VisionDataset
-from torchvision import transforms
-
 import numpy as np
+import openslide
+import pandas as pd
+import torch
+from PIL import Image
+from torchvision import transforms
+from torchvision.datasets import VisionDataset
+from tqdm import tqdm
 
 from .extended import ExtendedVisionDataset
 from .image_net import _Split
-
 
 logger = logging.getLogger("dinov2")
 
@@ -102,11 +100,9 @@ class PatchDataset(VisionDataset):
         if Path(root).is_file():
             self.patches = np.loadtxt(root, dtype=str)
         else:
-            # self.patches = list(Path(root).glob("**/*.jpeg"))
-            self.patches = list(Path(root).glob("**/patch*/0512_px_20_mag*/*DX*.h5"))
-            np.savetxt(f"{root}_h5patches.txt", self.patches, delimiter="\n", fmt='%s')
+            self.patches = list(Path(root).glob("**/*.jpeg"))
+            np.savetxt(f"{root}_jpeg_patches.txt", self.patches, delimiter="\n", fmt='%s')
 
-        # self.patches_files = [h5py.File(patch, 'r') for patch in self.patches]
     
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
         try:
@@ -122,20 +118,14 @@ class PatchDataset(VisionDataset):
     
     def get_image_data(self, index: int) -> Image:
 
-        # load image from h5 file
-        # file = h5py.File(self.patches[index], 'r')
-        # file = self.patches_files[index]
-        # patch_id = torch.randint(file['data'].shape[0], (1,)).item()
-        # patch = Image.fromarray(file['data'][patch_id])
-
         # load image from jpeg file
         patch = Image.open(self.patches[index]).convert(mode="RGB")
         
         # random crop to (256, 256)
-        # h, w = patch.size
-        # i = torch.randint(0, h - 256 + 1, size=(1,)).item()
-        # j = torch.randint(0, w - 256 + 1, size=(1,)).item()
-        # patch = transforms.functional.crop(patch, i, j, 256, 256)
+        h, w = patch.size
+        i = torch.randint(0, h - 256 + 1, size=(1,)).item()
+        j = torch.randint(0, w - 256 + 1, size=(1,)).item()
+        patch = transforms.functional.crop(patch, i, j, 256, 256)
 
         return patch
 

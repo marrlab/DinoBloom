@@ -7,9 +7,9 @@ ibot:
   # head_n_prototypes: 131072
 train:
   batch_size_per_gpu: 256
-  num_workers: 4
+  num_workers: 10
   OFFICIAL_EPOCH_LENGTH: 500  # 1250
-  dataset_path: PatchDataset  # ImageNet22k
+  dataset_path: PatchDataset:root=/home/haicu/sophia.wagner/datasets/TCGA_all_20X_1024px.txt  # original: ImageNet22k
   centering: sinkhorn_knopp
 student:
   arch: vit_small
