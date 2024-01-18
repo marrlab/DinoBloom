@@ -108,7 +108,8 @@ class PatchDataset(VisionDataset):
         try:
             image = self.get_image_data(index)
         except Exception as e:
-            raise RuntimeError(f"can not read image for sample {index, e, self.patches[index]}") from e
+            print(f"can not read image for sample {index, e, self.patches[index]}")
+            return self.__getitem__(index+1)
         target = self.get_target(index)
 
         if self.transforms is not None:
@@ -123,9 +124,9 @@ class PatchDataset(VisionDataset):
         
         # random crop to (256, 256)
         h, w = patch.size
-        i = torch.randint(0, h - 256 + 1, size=(1,)).item()
-        j = torch.randint(0, w - 256 + 1, size=(1,)).item()
-        patch = transforms.functional.crop(patch, i, j, 256, 256)
+        i = torch.randint(0, h - 224 + 1, size=(1,)).item()
+        j = torch.randint(0, w - 224 + 1, size=(1,)).item()
+        patch = transforms.functional.crop(patch, i, j, 224, 224)
 
         return patch
 
