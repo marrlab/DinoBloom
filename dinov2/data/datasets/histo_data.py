@@ -123,10 +123,18 @@ class PatchDataset(VisionDataset):
         patch = Image.open(self.patches[index]).convert(mode="RGB")
         
         # random crop to (256, 256)
+        # h, w = patch.size
+        # i = torch.randint(0, h - 224 + 1, size=(1,)).item()
+        # j = torch.randint(0, w - 224 + 1, size=(1,)).item()
+        # patch = transforms.functional.crop(patch, i, j, 224, 224)
+
+        # random crop to any size between original size and (224, 224) > resize to (224, 224)
         h, w = patch.size
-        i = torch.randint(0, h - 224 + 1, size=(1,)).item()
-        j = torch.randint(0, w - 224 + 1, size=(1,)).item()
-        patch = transforms.functional.crop(patch, i, j, 224, 224)
+        size = torch.randint(224, max(h, w) + 1, size=(1,)).item()
+        i = torch.randint(0, h - size + 1, size=(1,)).item()
+        j = torch.randint(0, w - size + 1, size=(1,)).item()
+        patch = transforms.functional.crop(patch, i, j, size, size)
+        patch = transforms.functional.resize(patch, (224, 224))
 
         return patch
 
