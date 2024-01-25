@@ -102,7 +102,7 @@ class PatchDataset(VisionDataset):
         else:
             self.patches = list(Path(root).glob("**/*.jpeg"))
             np.savetxt(f"{root}_jpeg_patches.txt", self.patches, delimiter="\n", fmt='%s')
-
+        np.random.shuffle(self.patches)
     
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
         try:
@@ -117,7 +117,7 @@ class PatchDataset(VisionDataset):
 
         return image, target
     
-    def get_image_data(self, index: int) -> Image:
+    def get_image_data(self, index: int,min_dimension=224) -> Image:
 
         # load image from jpeg file
         patch = Image.open(self.patches[index]).convert(mode="RGB")
@@ -129,6 +129,21 @@ class PatchDataset(VisionDataset):
         # patch = transforms.functional.crop(patch, i, j, 224, 224)
 
         # random crop to any size between original size and (224, 224) > resize to (224, 224)
+        h, w = patch.size
+
+        if h < min_dimension or w < min_dimension:
+
+            print("Image had to be resized due to smaller size than 224: ", self.patches[index])
+
+            if w < h:
+                new_width = min_dimension
+                new_height = int((min_dimension / w) * h)
+
+            else:
+                new_height = min_dimension
+                new_width = int((min_dimension / h) * w)
+
+            patch = patch.resize((new_width, new_height), Image.Resampling.NEAREST)
         h, w = patch.size
         size = torch.randint(224, max(h, w) + 1, size=(1,)).item()
         i = torch.randint(0, h - size + 1, size=(1,)).item()
