@@ -5,7 +5,6 @@ Changes for vision mamba:
   * changed local crop size from 98 to 96
 * uncommented the assertion for input size in timm's transformer projection layer for local crops
 * set `if_rope=False` from true as rope embeddings have different shapes for different sizes
-* set `fused_add_norm=False` from true
 * removed `self.fsdp_synchronize_streams()` from `ssl_meta_arch.py`
 
 todo

@@ -64,7 +64,7 @@ def get_vision_mamba_model(args):
     # load vision mamba model
     # model config for 'vim_tiny_patch16_224_bimambav2_final_pool_mean_abs_pos_embed_rope_also_residual_with_cls_token'
     model = DINOVisionMamba(
-        patch_size=16, embed_dim=192, depth=24, rms_norm=True, residual_in_fp32=True, fused_add_norm=False, final_pool_type='mean', if_abs_pos_embed=True, if_rope=True, if_rope_residual=True, bimamba_type="v2", if_cls_token=True, pretrained=True,
+        patch_size=16, embed_dim=192, depth=24, rms_norm=True, residual_in_fp32=True, fused_add_norm=True, final_pool_type='mean', if_abs_pos_embed=True, if_rope=True, if_rope_residual=True, bimamba_type="v2", if_cls_token=True, pretrained=True,
         num_classes=1000,  # args.nb_classes,
         drop_rate=0.,  # default from vim repo
         drop_path_rate=0.1,  # default from vim repo

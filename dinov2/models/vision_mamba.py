@@ -377,10 +377,10 @@ class DINOVisionMamba(nn.Module):
                 self.norm_f.weight,
                 self.norm_f.bias,
                 eps=self.norm_f.eps,
-                residual=residual,
+                residual=res,
                 prenorm=False,
                 residual_in_fp32=self.residual_in_fp32,
-            ) for hs in hidden_states]
+            ) for hs, res in zip(hidden_states, residual)]
 
         all_hidden_states = hidden_states
         output = []
