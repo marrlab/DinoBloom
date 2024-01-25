@@ -1,32 +1,27 @@
 # adapted from https://github.com/hustvl/Vim/blob/main/vim/models_mamba.py 
 # Copyright (c) 2015-present, Facebook, Inc.
 # All rights reserved.
-import torch
-import torch.nn as nn
+import math
+import random
+from collections import namedtuple
 from functools import partial
-from torch import Tensor
 from typing import Optional
 
-from timm.models.vision_transformer import VisionTransformer, _cfg
-from timm.models.registry import register_model
-from timm.models.layers import trunc_normal_
-
-from timm.models.layers import DropPath, PatchEmbed
-from timm.models.vision_transformer import _load_weights
-
-import math
-
-from collections import namedtuple
-
+import torch
+import torch.nn as nn
+from dinov2.models.vision_mamba_rope import *
 from mamba_ssm.modules.mamba_simple import Mamba
 from mamba_ssm.utils.generation import GenerationMixin
 from mamba_ssm.utils.hf import load_config_hf, load_state_dict_hf
-
-from dinov2.models.vision_mamba_rope import *
-import random
+from timm.models.layers import DropPath, PatchEmbed, trunc_normal_
+from timm.models.registry import register_model
+from timm.models.vision_transformer import (VisionTransformer, _cfg,
+                                            _load_weights)
+from torch import Tensor
 
 try:
-    from mamba_ssm.ops.triton.layernorm import RMSNorm, layer_norm_fn, rms_norm_fn
+    from mamba_ssm.ops.triton.layernorm import (RMSNorm, layer_norm_fn,
+                                                rms_norm_fn)
 except ImportError:
     RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
 
