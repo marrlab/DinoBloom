@@ -1,33 +1,26 @@
-from utils import CustomImageDataset, create_datasets
+import argparse
 import os
-import torch
 from pathlib import Path
-import argparse
-import yaml
+
+import h5py
 import numpy as np
-import h5py 
-import tqdm
-
-from sklearn.model_selection import StratifiedKFold, train_test_split
-from torch.utils.data import DataLoader
-import torch
-import wandb
 import pandas as pd
-from PIL import Image
-from torchvision import transforms
-
-from models.dinov2 import vit_small
+import torch
+import tqdm
+import wandb
+import yaml
 from model import MyModel
-from utils import CustomImageDataset, create_datasets
+from models.dinov2 import vit_small
 from models.return_model import get_models, get_transforms
-import argparse
+from PIL import Image
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.preprocessing import LabelEncoder
-#import tensorflow_hub as hub
-#import tensorflow as tf
+from torch.utils.data import DataLoader
+from torchvision import transforms
+from utils import CustomImageDataset, create_datasets
 
 
 parser = argparse.ArgumentParser(description="Feature extraction")
-
 
 parser.add_argument(
     "--model_name",
@@ -38,24 +31,35 @@ parser.add_argument(
 parser.add_argument(
     "--image_path_train",
     help="path to csv file",
-    default="/home/icb/valentin.koch/dinov2/evaluations/bild_pfade_with_label.csv",
+    default="./evaluations/bild_pfade_with_label.csv",
     type=str,
 )
 parser.add_argument(
     "--image_path_test",
     help="path to csv file",
-    default="/home/icb/valentin.koch/dinov2/evaluations/bild_pfade_with_label_test.csv",
+    default="./evaluations/bild_pfade_with_label_test.csv",
     type=str,
 )
 parser.add_argument(
-    "--save_dir",
+    "--checkpoint",
+    help="path to checkpoint",
+    default=None,
+    type=str,
+)
+parser.add_argument(
+    "--save_dir", "--save-dir", "-s",
     help="path save directory",
     default="/lustre/groups/shared/histology_data/features_NCT-CRC-100k-nonorm/dinov2_vit_s_224_baseline_12500",
     type=str,
 )
 
 def save_features_and_labels_individual(feature_extractor, dataloader, save_dir):
+    
     os.makedirs(save_dir, exist_ok=True)
+    if os.listdir(save_dir):
+        print(f"Directory {save_dir} is not empty. Aborting.")
+        return
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     with torch.no_grad():
@@ -127,7 +131,7 @@ def main(args):
         num_workers=5
     )
 
-    feature_extractor = get_models(model_name)
+    feature_extractor = get_models(model_name, checkpoint=args.checkpoint)
 
     save_features_and_labels_individual(feature_extractor, train_dataloader, os.path.join(args.save_dir, 'train_data'))
     save_features_and_labels_individual(feature_extractor, val_dataloader, os.path.join(args.save_dir, 'val_data'))
