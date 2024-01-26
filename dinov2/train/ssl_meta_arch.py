@@ -13,7 +13,7 @@ from dinov2.fsdp import (ShardedGradScaler, get_fsdp_modules, get_fsdp_wrapper,
 from dinov2.layers import DINOHead
 from dinov2.loss import DINOLoss, KoLeoLoss, iBOTPatchLoss
 from dinov2.models import build_model_from_cfg
-from dinov2.models.vision_mamba import DINOVisionMamba
+from dinov2.models.vision_mamba import get_vision_mamba_model
 from dinov2.models.vision_transformer import BlockChunk
 from dinov2.utils.param_groups import (fuse_params_groups,
                                        get_params_groups_with_decay)
@@ -60,61 +60,6 @@ def get_downloaded_dino_vit_s_interpolated():
 
     return model
 
-def get_vision_mamba_model(args):
-    # load vision mamba model
-    # model config for 'vim_tiny_patch16_224_bimambav2_final_pool_mean_abs_pos_embed_rope_also_residual_with_cls_token'
-    model = DINOVisionMamba(
-        patch_size=16, embed_dim=192, depth=24, rms_norm=True, residual_in_fp32=True, fused_add_norm=True, final_pool_type='mean', if_abs_pos_embed=True, if_rope=True, if_rope_residual=True, bimamba_type="v2", if_cls_token=True, pretrained=True,
-        num_classes=1000,  # args.nb_classes,
-        drop_rate=0.,  # default from vim repo
-        drop_path_rate=0.1,  # default from vim repo
-        drop_block_rate=None,
-        img_size=224,  # default from vim repo
-        interpolate_antialias=args.student.interpolate_antialias,
-        interpolate_offset=args.student.interpolate_offset,
-    )
-    
-    # model weights for 'vim_tiny_patch16_224_bimambav2_final_pool_mean_abs_pos_embed_rope_also_residual_with_cls_token'
-    checkpoint = torch.load('/home/haicu/sophia.wagner/projects/Vim/vim/vim_tiny_73p1.pth')
-
-    checkpoint_model = checkpoint['model']
-    state_dict = model.state_dict()
-    # remove classification head
-    for k in ['head.weight', 'head.bias', 'head_dist.weight', 'head_dist.bias']:
-        if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
-            print(f"Removing key {k} from pretrained checkpoint")
-            del checkpoint_model[k]
-
-    # interpolate position embedding
-    pos_embed_checkpoint = checkpoint_model['pos_embed']
-    embedding_size = pos_embed_checkpoint.shape[-1]
-    num_patches = model.patch_embed.num_patches
-    num_extra_tokens = model.pos_embed.shape[-2] - num_patches
-    # height (== width) for the checkpoint position embedding
-    orig_size = int((pos_embed_checkpoint.shape[-2] - num_extra_tokens) ** 0.5)
-    # height (== width) for the new position embedding
-    new_size = int(num_patches ** 0.5)
-    # class_token and dist_token are kept unchanged
-    extra_tokens = pos_embed_checkpoint[:, :num_extra_tokens]
-    # only the position tokens are interpolated
-    pos_tokens = pos_embed_checkpoint[:, num_extra_tokens:]
-    pos_tokens = pos_tokens.reshape(-1, orig_size, orig_size, embedding_size).permute(0, 3, 1, 2)
-    pos_tokens = torch.nn.functional.interpolate(
-        pos_tokens, size=(new_size, new_size), mode='bicubic', align_corners=False)
-    pos_tokens = pos_tokens.permute(0, 2, 3, 1).flatten(1, 2)
-    new_pos_embed = torch.cat((extra_tokens, pos_tokens), dim=1)
-    checkpoint_model['pos_embed'] = new_pos_embed
-
-    model.load_state_dict(checkpoint_model, strict=False)
-
-    # turn off rope to enable global/local crops during training
-    # model.if_abs_pos_embed = False
-    model.if_rope = False
-    model.if_rope_residual = False
-
-    return model
-
-
 
 class SSLMetaArch(nn.Module):
     def __init__(self, cfg):
@@ -129,8 +74,8 @@ class SSLMetaArch(nn.Module):
         # student_backbone = get_downloaded_dino_vit_s_interpolated()
         # teacher_backbone = get_downloaded_dino_vit_s_interpolated()
         # embed_dim = 384
-        student_backbone = get_vision_mamba_model(cfg)
-        teacher_backbone = get_vision_mamba_model(cfg)
+        student_backbone = get_vision_mamba_model(cfg.student.interpolate_antialias, cfg.student.interpolate_offset)
+        teacher_backbone = get_vision_mamba_model(cfg.student.interpolate_antialias, cfg.student.interpolate_offset)
         embed_dim = 192
         student_model_dict["backbone"] = student_backbone
         teacher_model_dict["backbone"] = teacher_backbone
