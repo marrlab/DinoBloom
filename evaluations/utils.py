@@ -23,7 +23,7 @@ class CustomImageDataset(Dataset):
 
         encoded_label = self.class_to_label[label]
 
-        return image, encoded_label,Path(image_path).name
+        return image, encoded_label, Path(image_path).stem
 
 from sklearn.model_selection import train_test_split
 

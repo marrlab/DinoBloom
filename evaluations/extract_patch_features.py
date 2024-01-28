@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import torch
 import tqdm
-import wandb
 import yaml
 from model import MyModel
 from models.dinov2 import vit_small
@@ -26,6 +25,12 @@ parser.add_argument(
     "--model_name",
     help="name of model",
     default="dinov2_finetuned",
+    type=str,
+)
+parser.add_argument(
+    "--dataset",
+    help="name of dataset",
+    default="NCT-CRC-100k-nonorm",
     type=str,
 )
 parser.add_argument(
@@ -132,6 +137,8 @@ def main(args):
     )
 
     feature_extractor = get_models(model_name, checkpoint=args.checkpoint)
+
+    args.save_dir = Path(args.save_dir) / args.dataset / f"{model_name}_{Path(args.checkpoint).parent.name}_{Path(args.checkpoint).stem}"
 
     save_features_and_labels_individual(feature_extractor, train_dataloader, os.path.join(args.save_dir, 'train_data'))
     save_features_and_labels_individual(feature_extractor, val_dataloader, os.path.join(args.save_dir, 'val_data'))

@@ -6,6 +6,7 @@ import random
 from collections import namedtuple
 from functools import partial
 from typing import Optional
+from pathlib import Path
 
 import torch
 import torch.nn as nn
@@ -483,17 +484,23 @@ def get_vision_mamba_model(interpolate_antialias: bool = False, interpolate_offs
         interpolate_offset=interpolate_offset,
     )
     
-    checkpoint = torch.load(checkpoint)
+    # if Path(checkpoint).name == 'vim_tiny_73p1.pth':
+    #     checkpoint = torch.load(checkpoint['model'])
+    
+    # else:
+    checkpoint_model = torch.load(checkpoint)
+    checkpoint_model = checkpoint_model['model']
+    # make correct state dict for loading
 
-    checkpoint_model = checkpoint['model']
-    state_dict = model.state_dict()
-    # remove classification head
-    for k in ['head.weight', 'head.bias', 'head_dist.weight', 'head_dist.bias']:
-        if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
-            print(f"Removing key {k} from pretrained checkpoint")
-            del checkpoint_model[k]
+    if Path(checkpoint).name != 'vim_tiny_73p1.pth':        
+        new_state_dict = {}
+        for key, value in checkpoint_model.items():
+            if 'teacher' in key:
+                new_key = key.replace('teacher.backbone.', '')
+                new_state_dict[new_key] = value
+        checkpoint_model = new_state_dict
 
-    # interpolate position embedding
+    # adapt pos_embed
     pos_embed_checkpoint = checkpoint_model['pos_embed']
     embedding_size = pos_embed_checkpoint.shape[-1]
     num_patches = model.patch_embed.num_patches
@@ -513,7 +520,9 @@ def get_vision_mamba_model(interpolate_antialias: bool = False, interpolate_offs
     new_pos_embed = torch.cat((extra_tokens, pos_tokens), dim=1)
     checkpoint_model['pos_embed'] = new_pos_embed
 
+    # load state dict
     model.load_state_dict(checkpoint_model, strict=False)
+    model.head = nn.Identity()
 
     # turn off rope to enable global/local crops during training
     # model.if_abs_pos_embed = False

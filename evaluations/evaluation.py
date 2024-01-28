@@ -1,36 +1,28 @@
-from model import MyModel
-from utils import CustomImageDataset, create_datasets
-import os
-import torch
-from pathlib import Path
-import yaml
-import numpy as np
-import h5py 
-
-from sklearn.model_selection import StratifiedKFold, train_test_split
-from torch.utils.data import DataLoader, TensorDataset
-import torch
-import wandb
-import pandas as pd
-from PIL import Image
-from torchvision import transforms
-
-from utils import CustomImageDataset, create_datasets
-from models.return_model import get_models, get_transforms
 import argparse
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score, classification_report
-
-import matplotlib.pyplot as plt
-import seaborn as sns
-import umap
+import os
 import time
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
+import h5py
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import torch
+import umap
+import wandb
+import yaml
+from PIL import Image
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import log_loss
-from sklearn.metrics import balanced_accuracy_score
-from sklearn.metrics import f1_score
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import (accuracy_score, balanced_accuracy_score,
+                             classification_report, f1_score, log_loss,
+                             roc_auc_score)
+from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from torch.utils.data import DataLoader, TensorDataset
+from torchvision import transforms
+from utils import CustomImageDataset, create_datasets
 
 parser = argparse.ArgumentParser(description="Feature extraction")
 os.environ["WANDB__SERVICE_WAIT"] = "300"
@@ -42,7 +34,7 @@ parser.add_argument(
     type=bool,
 )
 parser.add_argument(
-    "--logistic_regression",
+    "--logistic_regression", "--logistic-regression", "-log",
     help="perform logistic regression or not",
     default=True,
     type=bool,
@@ -54,23 +46,23 @@ parser.add_argument(
     type=bool,
 )
 parser.add_argument(
-    "--path_folder",
+    "--path_folder", "--path-folder", "-p",
     help="path to folder containing subfolders with training, val and test data",
     default="/lustre/groups/shared/histology_data/features_NCT-CRC-100k-nonorm/dinov2_vit_s_224_baseline_12500/",
     type=str,
 )
-
 parser.add_argument(
-    "--save_dir",
+    "--save_dir", "--save-dir", "-s",
     help="specify where to save the umap",
     default="/lustre/groups/shared/histology_data/eval/dinoeval",
     type=str,
 )
-from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
-import h5py
-import torch
-
+parser.add_argument(
+    "--dataset",
+    help="specify the dataset name",
+    default="NCT-CRC-100k-nonorm",
+    type=str,
+)
 
 
 def process_file(file_name):
@@ -158,7 +150,7 @@ def test_data_creation():
     return train_data, train_labels, test_data, test_labels
 
 
-def perform_knn(args, train_data, train_labels, test_data, test_labels,save_dir):
+def perform_knn(train_data, train_labels, test_data, test_labels, save_dir, run_name):
     # Define a range of values for n_neighbors to search
     n_neighbors_values = [1, 20]
     #n_neighbors_values = [1, 2, 5, 10, 20, 50, 100, 500]
@@ -182,10 +174,14 @@ def perform_knn(args, train_data, train_labels, test_data, test_labels,save_dir)
         print(f"n_neighbors = {n_neighbors}")
         print(f"Accuracy: {accuracy}")
 
-        run_name = f"KNN_Training_n_neighbors_{n_neighbors}_{args.path_folder.split('/')[-1]}"
+        run_name = f"{n_neighbors}NN_{run_name}"
 
         # If you want to log the results with Weights & Biases (wandb), you can initialize a wandb run:
-        wandb.init(project="knn", name=run_name)
+        wandb.init(
+            entity="histo-collab",
+            project="knn", 
+            name=run_name
+        )
 
         # Log the n_neighbors value, accuracy
         wandb.log({"n_neighbors": n_neighbors, "Accuracy": accuracy, "Balanced_Acc": balanced_acc, "Weighted_F1": weighted_f1})
@@ -210,7 +206,7 @@ def perform_knn(args, train_data, train_labels, test_data, test_labels,save_dir)
         # Speichern des DataFrames in der CSV-Datei
         df_labels_to_save.to_csv(file_path, index=False)
 
-def create_umap(args, data, labels,save_dir,filename_addon="train"):
+def create_umap(data, labels, save_dir, run_name, filename_addon="train"):
     # Create a UMAP model and fit it to your data
     #reducer = umap.UMAP(random_state=42)
     reducer = umap.UMAP()
@@ -232,16 +228,19 @@ def create_umap(args, data, labels,save_dir,filename_addon="train"):
         plt.title("UMAP")
 
         # Specify the filename with the size information
-        image_filename = f'umap_visualization_{args.path_folder.split("/")[-1]}_{size[0]}x{size[1]}_{filename_addon}.png'
+        image_filename = f'umap_visualization_{run_name}_{size[0]}x{size[1]}_{filename_addon}.png'
 
         # Save the UMAP visualization as an image in the specified directory
         plt.savefig(os.path.join(umap_dir, image_filename))
 
 
-def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, args, save_dir, max_iter=1000):
+def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, dataset, run_name, save_dir, max_iter=1000):
     # Initialize wandb
-    run_name = f"LogisticRegression_Training_{args.path_folder.split('/')[-1]}"
-    wandb.init(project="logistic_regression", name=run_name)
+    wandb.init(
+        entity="histo-collab",
+        project="logistic_regression", 
+        name=f"{dataset}_{run_name}",
+    )
 
     M = train_data.shape[1]  
     C = 9  
@@ -269,6 +268,7 @@ def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, 
 
     df_labels_to_save = pd.DataFrame({'True Labels': test_labels, 'Predicted Labels': test_predictions})    
     filename = f"{run_name}_labels_and_predictions.csv"
+    os.makedirs(save_dir, exist_ok=True)
     file_path = os.path.join(save_dir, filename)
     # Speichern des DataFrames in der CSV-Datei
     df_labels_to_save.to_csv(file_path, index=False)
@@ -303,19 +303,21 @@ def main(args):
     print("Shape of train_labels:", train_labels.shape)
     print("Shape of test_data:", test_data.shape)
     print("Shape of test_labels:", test_labels.shape)
-    save_directory = os.path.join(args.save_dir, args.path_folder.split("/")[-1])
+    
+    run_name = f"{Path(args.path_folder).name}"
+    save_directory = Path(args.save_dir) / args.dataset / run_name 
 
     if args.logistic_regression:
-        train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, args,save_directory, max_iter=1000)
+        train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, args.dataset, run_name, save_directory, max_iter=1000)
         print("logistic_regression done")
 
     if args.umap:
-        create_umap(args, train_data, train_labels,save_directory)
-        create_umap(args, test_data, test_labels,save_directory,"test")
+        create_umap(train_data, train_labels, save_directory, run_name)
+        create_umap(test_data, test_labels, save_directory, run_name, "test")
         print("umap done")
 
     if args.knn:
-        perform_knn(args, train_data, train_labels, test_data, test_labels,save_directory)
+        perform_knn(train_data, train_labels, test_data, test_labels, save_directory, run_name)
         print("knn done")
 
 if __name__ == "__main__":
