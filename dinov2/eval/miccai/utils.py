@@ -1,9 +1,8 @@
-from torch.utils.data import random_split
+
 from torch.utils.data import Dataset
 from PIL import Image
-from sklearn.preprocessing import LabelEncoder
-import pandas as pd  # Make sure to import pandas
 from pathlib import Path
+from sklearn.model_selection import train_test_split
 
 class CustomImageDataset(Dataset):
     def __init__(self, df, transform, class_to_label):
@@ -25,7 +24,7 @@ class CustomImageDataset(Dataset):
 
         return image, encoded_label,Path(image_path).name
 
-from sklearn.model_selection import train_test_split
+
 
 def create_datasets(data, transform, class_to_label):
     train_val_idxs, val_idxs = train_test_split(

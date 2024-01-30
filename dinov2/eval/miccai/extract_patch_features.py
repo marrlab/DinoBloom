@@ -1,27 +1,17 @@
 from utils import CustomImageDataset, create_datasets
 import os
 import torch
-from pathlib import Path
 import argparse
-import yaml
-import numpy as np
 import h5py 
 import tqdm
 
-from sklearn.model_selection import StratifiedKFold, train_test_split
 from torch.utils.data import DataLoader
 import torch
-import wandb
-import pandas as pd
-from PIL import Image
-from torchvision import transforms
 
-from models.dinov2 import vit_small
-from model import MyModel
 from utils import CustomImageDataset, create_datasets
 from models.return_model import get_models, get_transforms
 import argparse
-from sklearn.preprocessing import LabelEncoder
+
 #import tensorflow_hub as hub
 #import tensorflow as tf
 
