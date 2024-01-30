@@ -3,25 +3,21 @@
 # This source code is licensed under the Apache License, Version 2.0
 # found in the LICENSE file in the root directory of this source tree.
 
-import csv
 import logging
-import os
-from enum import Enum
+
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Tuple, Union
 
-import h5py
+from collections import defaultdict
+from pathlib import Path
+import itertools
 import numpy as np
 import openslide
-import pandas as pd
 import torch
 from PIL import Image
-from torchvision import transforms
 from torchvision.datasets import VisionDataset
 from tqdm import tqdm
 
-from .extended import ExtendedVisionDataset
-from .image_net import _Split
 
 logger = logging.getLogger("dinov2")
 
@@ -153,10 +149,100 @@ class PatchDataset(VisionDataset):
 
         return patch
 
+
+
+
+def arrange_files(file_paths):
+    # Group files by their parent folder
+    grouped_files = defaultdict(list)
+    for file_path in file_paths:
+        parent_folder = Path(file_path).parent.name
+        grouped_files[parent_folder].append(file_path)
+    
+    # Create a balanced ordering of files
+    balanced_ordering = []
+    # Use itertools.zip_longest for round-robin style iteration
+    for group in itertools.zip_longest(*grouped_files.values()):
+        # Filter out 'None' in case some groups are smaller than others
+        balanced_ordering.extend(filter(None, group))
+    
+    return balanced_ordering
+
+class BalancedPatchDataset(VisionDataset):
+
+    def __init__(
+        self,
+        *,
+        root: str = "",
+        transforms: Optional[Callable] = None,
+        transform: Optional[Callable] = None,
+        target_transform: Optional[Callable] = None,
+    ) -> None:
+        super().__init__(root, transforms, transform, target_transform)
+        self.patches=[]
+        self.dataset_sizes=[]
+        roots=root.split(",")
+
+        for root in roots:
+            
+            if Path(root).is_file():
+                file_list=arrange_files(np.loadtxt(root, dtype=str))
+                self.patches.append(file_list)
+                self.dataset_sizes.append(len(file_list))
+            
+        self.num_datasets=len(self.patches)
+
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
+
+        dataset_index=index%self.num_datasets
+
+        try:
+            image = self.get_image_data(dataset_index,int(index/self.num_datasets)%self.dataset_sizes[dataset_index])
+        except Exception as e:
+            print(f"can not read image for sample {index, e, self.patches[index]}")
+            return self.__getitem__(index+1)
+        
+        target = self.get_target(index)
+
+        if self.transforms is not None:
+            image, target = self.transforms(image, target)
+
+        return image, target
+    
+    def get_image_data(self, dataset_index:int,index_in_dataset: int,min_dimension=224) -> Image:
+
+        # load image from jpeg file
+        filepath=self.patches[dataset_index][index_in_dataset]
+        patch = Image.open(filepath).convert(mode="RGB")
+        
+        # random crop to (256, 256)
+        # h, w = patch.size
+        # i = torch.randint(0, h - 224 + 1, size=(1,)).item()
+        # j = torch.randint(0, w - 224 + 1, size=(1,)).item()
+        # patch = transforms.functional.crop(patch, i, j, 224, 224)
+
+        h, w = patch.size
+
+        if h < min_dimension or w < min_dimension:
+
+            print("Image had to be resized due to smaller size than 224: ", filepath)
+
+            if w < h:
+                new_width = min_dimension
+                new_height = int((min_dimension / w) * h)
+
+            else:
+                new_height = min_dimension
+                new_width = int((min_dimension / h) * w)
+
+            patch = patch.resize((new_width, new_height), Image.Resampling.NEAREST)
+
+        return patch
+
     def get_target(self, index: int) -> torch.Tensor:
         # labels are not used for training
         return torch.zeros((1,))
 
     def __len__(self) -> int:
         # assert len(entries) == self.split.length
-        return len(self.patches)
+        return np.sum(self.dataset_sizes)

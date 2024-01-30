@@ -9,7 +9,7 @@ train:
   batch_size_per_gpu: 64
   num_workers: 1
   OFFICIAL_EPOCH_LENGTH: 500  # 1250
-  dataset_path: PatchDataset:root=/mnt/ceph_vol/features/finetune/patches.txt  # original: ImageNet22k
+  dataset_path: BalancedPatchDataset:root=/mnt/ceph_vol/dinov2/output.txt,/mnt/ceph_vol/dinov2/output2.txt  # original: ImageNet22k
   centering: sinkhorn_knopp
 student:
   arch: vit_small
