@@ -1,29 +1,21 @@
 
-import os
-import torch
-from pathlib import Path
-import numpy as np
-import h5py 
-
-from sklearn.model_selection import  train_test_split
-
-import torch
-import wandb
-import pandas as pd
-
 import argparse
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score, classification_report
+import os
+from pathlib import Path
 
+import h5py
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import torch
 import umap
-import time
-
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import log_loss
-from sklearn.metrics import balanced_accuracy_score
-from sklearn.metrics import f1_score
+from sklearn.metrics import (accuracy_score, balanced_accuracy_score,
+                             classification_report, f1_score, log_loss)
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
 
+import wandb
 
 parser = argparse.ArgumentParser(description="Feature extraction")
 os.environ["WANDB__SERVICE_WAIT"] = "300"
@@ -61,9 +53,9 @@ parser.add_argument(
 )
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+
 import h5py
 import torch
-
 
 
 def process_file(file_name):

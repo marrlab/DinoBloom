@@ -1,27 +1,23 @@
 # all the code is copied from https://github.com/facebookresearch/ImageBind/tree/main/models
 # current issue here: the input is not only an image put should include text, vision and audio, which is why the existing code structure does not work
-import os
-from functools import partial
-from types import SimpleNamespace
-
-import torch.utils.checkpoint as checkpoint
-from timm.models.layers import DropPath, trunc_normal_
-
 import gzip
 import html
 import io
 import math
-from functools import lru_cache
+import os
+from functools import lru_cache, partial
+from types import SimpleNamespace
 from typing import Callable, List, Optional, Tuple
 
-import ftfy
-import regex as re
-from iopath.common.file_io import g_pathmgr
-
 import einops
+import ftfy
 import numpy as np
+import regex as re
 import torch
 import torch.nn as nn
+import torch.utils.checkpoint as checkpoint
+from iopath.common.file_io import g_pathmgr
+from timm.models.layers import DropPath, trunc_normal_
 
 
 class Normalize(nn.Module):

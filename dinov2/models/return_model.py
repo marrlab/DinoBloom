@@ -1,16 +1,15 @@
 import torch
 import torch.nn as nn
-from torchvision import transforms
-
-from torchvision.models import resnet
-from models.ctran import ctranspath
-from models.resnet_retccl import resnet50 as retccl_res50
-from models.sam import build_sam_vit_h,build_sam_vit_b,build_sam_vit_l
-from models.imagebind import imagebind_huge
-from transformers import  Data2VecVisionModel, BeitFeatureExtractor
-from models.dinov2 import vit_small, vit_base, vit_large, vit_giant2
-import math
 import torch.nn.functional as nnf
+from models.ctran import ctranspath
+from models.dinov2 import vit_base, vit_giant2, vit_large, vit_small
+from models.imagebind import imagebind_huge
+from models.resnet_retccl import resnet50 as retccl_res50
+from models.sam import build_sam_vit_b, build_sam_vit_h, build_sam_vit_l
+from torchvision import transforms
+from torchvision.models import resnet
+from transformers import BeitFeatureExtractor, Data2VecVisionModel
+
 #import tensorflow_hub as hub
 #import tensorflow as tf
 

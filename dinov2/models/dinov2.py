@@ -1,21 +1,20 @@
-from functools import partial
-import math
 import logging
-from typing import Sequence, Tuple, Union, Callable, Optional, List, Any, Dict
+import math
+from functools import partial
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import torch
-from torch import Tensor, nn
 import torch.utils.checkpoint
+from torch import Tensor, nn
 from torch.nn.init import trunc_normal_
-
-import logging
 
 logger = logging.getLogger("dinov2")
 
 
 try:
-    from xformers.ops import fmha, memory_efficient_attention, unbind
-    from xformers.ops import scaled_index_add, index_select_cat
+    from xformers.ops import (fmha, index_select_cat,
+                              memory_efficient_attention, scaled_index_add,
+                              unbind)
 
     XFORMERS_AVAILABLE = False #maybe change later
 except ImportError:
