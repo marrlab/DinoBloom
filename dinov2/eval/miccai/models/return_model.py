@@ -68,7 +68,7 @@ def get_models(modelname,saved_model_path=None):
         model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitg14_reg')
 
     elif modelname.lower() == 'dinov2_finetuned':
-        model=get_dino_finetuned(saved_model_path)
+        model=get_dino_finetuned_downloaded(saved_model_path)
 
     elif modelname.lower()=="imagebind":
         model=get_imagebind(saved_model_path)
