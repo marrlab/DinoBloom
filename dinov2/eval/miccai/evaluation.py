@@ -98,31 +98,25 @@ def get_data(args):
     test_labels=[]
 
     with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(process_file, file_name) for file_name in list(Path(train_dir).glob("*.h5"))[:50]]
+        futures_train = [executor.submit(process_file, file_name) for file_name in list(Path(train_dir).glob("*.h5"))]
 
-        for i, future in enumerate(futures):
-            if i % 100 == 0:
-                print(i)
-            features, label = future.result()
-            train_features.append(features)
-            train_labels.append(label)
+        for i, future_train in enumerate(futures_train):
+            feature_train, label_train = future_train.result()
+            train_features.append(feature_train)
+            train_labels.append(label_train)
 
     with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(process_file, file_name) for file_name in list(Path(validation_dir).glob("*.h5"))[:50]]
+        futures_val = [executor.submit(process_file, file_name) for file_name in list(Path(validation_dir).glob("*.h5"))]
 
-        for i, future in enumerate(futures):
-            if i % 100 == 0:
-                print(i)
-            features, label = future.result()
-            test_features.append(features)
-            test_labels.append(label)
+        for i, future_val in enumerate(futures_val):
+            feature_val, label_val = future_val.result()
+            train_features.append(feature_val)
+            train_labels.append(label_val)
 
     with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(process_file, file_name) for file_name in list(Path(test_dir).glob("*.h5"))[:50]]
+        futures_test = [executor.submit(process_file, file_name) for file_name in list(Path(test_dir).glob("*.h5"))]
 
         for i, future in enumerate(futures):
-            if i % 100 == 0:
-                print(i)
             features, label = future.result()
             test_features.append(features)
             test_labels.append(label)
@@ -185,7 +179,7 @@ def perform_knn(args, train_data, train_labels, test_data, test_labels,save_dir)
         run_name = f"KNN_Training_n_neighbors_{n_neighbors}_{args.path_folder.split('/')[-1]}"
 
         # If you want to log the results with Weights & Biases (wandb), you can initialize a wandb run:
-        wandb.init(project="knn", name=run_name)
+        wandb.init(entity="histo-collab",project="knn", name=run_name)
 
         # Log the n_neighbors value, accuracy
         wandb.log({"n_neighbors": n_neighbors, "Accuracy": accuracy, "Balanced_Acc": balanced_acc, "Weighted_F1": weighted_f1})
@@ -241,7 +235,7 @@ def create_umap(args, data, labels,save_dir,filename_addon="train"):
 def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, args, save_dir, max_iter=1000):
     # Initialize wandb
     run_name = f"LogisticRegression_Training_{args.path_folder.split('/')[-1]}"
-    wandb.init(project="logistic_regression", name=run_name)
+    wandb.init(entity="histo-collab",project="logistic_regression", name=run_name)
 
     M = train_data.shape[1]  
     C = 9  
@@ -304,7 +298,7 @@ def main(args):
     print("Shape of test_data:", test_data.shape)
     print("Shape of test_labels:", test_labels.shape)
     save_directory = os.path.join(args.save_dir, args.path_folder.split("/")[-1])
-
+    os.makedirs(save_directory, exist_ok=True)
     if args.logistic_regression:
         train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, args,save_directory, max_iter=1000)
         print("logistic_regression done")
