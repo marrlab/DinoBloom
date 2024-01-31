@@ -29,19 +29,25 @@ parser.add_argument(
 parser.add_argument(
     "--image_path_train",
     help="path to csv file",
-    default="/home/icb/valentin.koch/dinov2/evaluations/bild_pfade_with_label.csv",
+    default="/home/icb/valentin.koch/dinov2/dinov2/eval/miccai/bild_pfade_with_label.csv",
     type=str,
 )
 parser.add_argument(
     "--image_path_test",
     help="path to csv file",
-    default="/home/icb/valentin.koch/dinov2/evaluations/bild_pfade_with_label_test.csv",
+    default="/home/icb/valentin.koch/dinov2/dinov2/eval/miccai/bild_pfade_with_label_test.csv",
     type=str,
 )
 parser.add_argument(
     "--save_dir",
     help="path save directory",
-    default="/lustre/groups/shared/histology_data/features_NCT-CRC-100k-nonorm/dinov2_vit_s_224_baseline_12500",
+    default="/lustre/groups/shared/histology_data/features_NCT-CRC-100k-nonorm/benedikt_baseline_vits",
+    type=str,
+)
+parser.add_argument(
+    "--model_path",
+    help="path of model checkpoint",
+    default=" /lustre/groups/shared/histology_data/models/benedikt_nct_baseline_vits.pth",
     type=str,
 )
 
@@ -118,7 +124,7 @@ def main(args):
         num_workers=5
     )
 
-    feature_extractor = get_models(model_name)
+    feature_extractor = get_models(model_name,args.model_path)
 
     save_features_and_labels_individual(feature_extractor, train_dataloader, os.path.join(args.save_dir, 'train_data'))
     save_features_and_labels_individual(feature_extractor, val_dataloader, os.path.join(args.save_dir, 'val_data'))
