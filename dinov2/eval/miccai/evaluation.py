@@ -1,28 +1,21 @@
-from model import MyModel
-from utils import CustomImageDataset, create_datasets
+
 import os
 import torch
 from pathlib import Path
-import yaml
 import numpy as np
 import h5py 
 
-from sklearn.model_selection import StratifiedKFold, train_test_split
-from torch.utils.data import DataLoader, TensorDataset
+from sklearn.model_selection import  train_test_split
+
 import torch
 import wandb
 import pandas as pd
-from PIL import Image
-from torchvision import transforms
 
-from utils import CustomImageDataset, create_datasets
-from models.return_model import get_models, get_transforms
 import argparse
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, classification_report
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 import umap
 import time
 
@@ -30,7 +23,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.metrics import f1_score
-from sklearn.metrics import roc_auc_score
+
 
 parser = argparse.ArgumentParser(description="Feature extraction")
 os.environ["WANDB__SERVICE_WAIT"] = "300"
@@ -86,10 +79,6 @@ def get_data(args):
     validation_dir = os.path.join(args.path_folder, 'val_data')
     test_dir = os.path.join(args.path_folder, 'test_data')
 
-    # Initialize dictionaries to store data and labels
-    data_dict = {}
-    labels_dict = {}
-    time0=time.time()
     # Load training data into dictionaries
     train_features=[]
     train_labels=[]
@@ -116,7 +105,7 @@ def get_data(args):
     with ThreadPoolExecutor() as executor:
         futures_test = [executor.submit(process_file, file_name) for file_name in list(Path(test_dir).glob("*.h5"))]
 
-        for i, future in enumerate(futures):
+        for i, future in enumerate(futures_test):
             features, label = future.result()
             test_features.append(features)
             test_labels.append(label)
