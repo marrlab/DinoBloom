@@ -42,7 +42,7 @@ parser.add_argument(
 parser.add_argument(
     "--model_path",
     help="path of model checkpoint",
-    default=" /lustre/groups/shared/histology_data/models/benedikt_nct_baseline_vits.pth",
+    default="/lustre/groups/shared/histology_data/models/benedikt_nct_baseline_vits.pth",
     type=str,
 )
 
