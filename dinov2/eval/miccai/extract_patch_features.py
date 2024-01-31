@@ -8,10 +8,8 @@ import tqdm
 from torch.utils.data import DataLoader
 from utils import CustomImageDataset, create_datasets
 
-from ...models.return_model import get_models, get_transforms
+from models.return_model import get_models, get_transforms
 
-# import tensorflow_hub as hub
-# import tensorflow as tf
 
 
 parser = argparse.ArgumentParser(description="Feature extraction")

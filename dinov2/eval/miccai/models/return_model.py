@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as nnf
 from models.ctran import ctranspath
 from models.dinov2 import vit_base, vit_giant2, vit_large, vit_small
 from models.imagebind import imagebind_huge
@@ -9,9 +8,6 @@ from models.sam import build_sam_vit_b, build_sam_vit_h, build_sam_vit_l
 from torchvision import transforms
 from torchvision.models import resnet
 from transformers import BeitFeatureExtractor, Data2VecVisionModel
-
-#import tensorflow_hub as hub
-#import tensorflow as tf
 
 #RETCCL_PATH = '/lustre/groups/shared/users/peng_marr/pretrained_models/retccl.pth'
 #CTRANSPATH_PATH = '/lustre/groups/shared/users/peng_marr/pretrained_models/ctranspath.pth'
