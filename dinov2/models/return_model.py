@@ -14,131 +14,93 @@ import torch.nn.functional as nnf
 #import tensorflow_hub as hub
 #import tensorflow as tf
 
-RETCCL_PATH = '/lustre/groups/shared/users/peng_marr/pretrained_models/retccl.pth'
-CTRANSPATH_PATH = '/lustre/groups/shared/users/peng_marr/pretrained_models/ctranspath.pth'
-SAM_VIT_H_PATH='/lustre/groups/shared/users/peng_marr/pretrained_models/sam_vit_h.pth'
-SAM_VIT_L_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/sam_vit_l.pth"
-SAM_VIT_B_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/sam_vit_b_01ec64.pth"
-DINO_VIT_S_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/dinov2_vits14_pretrain.pth"
-DINO_VIT_B_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/dinov2_vitb14_pretrain.pth"
-DINO_VIT_L_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/dinov2_vitl14_pretrain.pth"
-DINO_VIT_G_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/dinov2_vitg14_pretrain.pth"
-DINO_VIT_S_PATH_FINETUNED="/home/icb/valentin.koch/dinov2/debug/eval/training_12499/teacher_checkpoint_mlp.pth"
-DINO_VIT_S_PATH_FINETUNED_DOWNLOADED="/lustre/scratch/users/benedikt.roth/dinov2_vits_interpolated_224_NCT-CRC_downloaded_model_finetuned_10000k_iterations/eval/training_2699/teacher_checkpoint.pth"
+#RETCCL_PATH = '/lustre/groups/shared/users/peng_marr/pretrained_models/retccl.pth'
+#CTRANSPATH_PATH = '/lustre/groups/shared/users/peng_marr/pretrained_models/ctranspath.pth'
+#SAM_VIT_H_PATH='/lustre/groups/shared/users/peng_marr/pretrained_models/sam_vit_h.pth'
+#SAM_VIT_L_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/sam_vit_l.pth"
+#SAM_VIT_B_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/sam_vit_b_01ec64.pth"
+#DINO_VIT_S_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/dinov2_vits14_pretrain.pth"
+#DINO_VIT_B_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/dinov2_vitb14_pretrain.pth"
+#DINO_VIT_L_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/dinov2_vitl14_pretrain.pth"
+#DINO_VIT_G_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/dinov2_vitg14_pretrain.pth"
+#DINO_VIT_S_PATH_FINETUNED="/home/icb/valentin.koch/dinov2/debug/eval/training_12499/teacher_checkpoint_mlp.pth"
+#DINO_VIT_S_PATH_FINETUNED_DOWNLOADED="/lustre/scratch/users/benedikt.roth/dinov2_vits_interpolated_224_NCT-CRC_downloaded_model_finetuned_10000k_iterations/eval/training_2699/teacher_checkpoint.pth"
 #DINO_VIT_S_PATH_FINETUNED_DOWNLOADED="/lustre/scratch/users/benedikt.roth/dinov2_vitg_interpolated_224_NCT-CRC_downloaded_model_finetuned/eval/training_119999/teacher_checkpoint.pth"
 
-def get_models(modelname):
-    models = []
+def get_models(modelname,saved_model_path=None):
+
     device = torch.device(
         'cuda') if torch.cuda.is_available() else torch.device('cpu')
     if modelname.lower() == 'ctranspath':
-        model = get_ctranspath()
+        model = get_ctranspath(saved_model_path)
     #elif modelname.lower() == 'remedis':
     #    model = hub.load('cxr-52x2-remedis-m')
     elif modelname.lower() == 'resnet50':
         model = get_res50()
     elif modelname.lower() == 'retccl':
-        model = get_retCCL()
+        model = get_retCCL(saved_model_path)
     elif modelname.lower() == 'resnet50_full':
         model = get_full_res50()
     elif modelname.lower()=="sam_vit_h":
-        model=get_sam_vit_h()
+        model=get_sam_vit_h(saved_model_path)
     elif modelname.lower()=="sam_vit_b":
-        model=get_sam_vit_b()
+        model=get_sam_vit_b(saved_model_path)
     elif modelname.lower()=="sam_vit_l":
-        model=get_sam_vit_l()
-    elif modelname.lower() == 'dinov2_vits14':
-        model=get_dino_vit_s()
+        model=get_sam_vit_l(saved_model_path)
+
     elif modelname.lower() == 'dinov2_vits14_downloaded':
         model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14')
+
     elif modelname.lower() == 'dinov2_vits14_reg_downloaded':
         model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14_reg')
+
     elif modelname.lower() == 'dinov2_vitb14':
         model=get_dino_vit_b()
     elif modelname.lower() == 'dinov2_vitb14_downloaded':
         model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
+
     elif modelname.lower() == 'dinov2_vitl14':
-        model=get_dino_vit_l()
+        model=get_dino_vit_l(saved_model_path)
     elif modelname.lower() == 'dinov2_vitl14_downloaded':
         model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitl14')
+
+
     elif modelname.lower() == 'dinov2_vitg14':
-        model=get_dino_vit_g()
+        model=get_dino_vit_g(saved_model_path)
     elif modelname.lower() == 'dinov2_vitg14_downloaded':
         model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitg14')
     elif modelname.lower() == 'dinov2_vitg14_reg_downloaded':
         model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitg14_reg')
+
     elif modelname.lower() == 'dinov2_finetuned':
-        model=get_dino_finetuned()
-    elif modelname.lower() == 'dinov2_finetuned_downloaded':
-        model=get_dino_finetuned_downloaded()
-    elif modelname.lower() == 'dinov2_vits14_interpolated':
-            model = get_dino_vit_s_interpolated()
+        model=get_dino_finetuned(saved_model_path)
+
     elif modelname.lower()=="imagebind":
-        model=get_imagebind()
+        model=get_imagebind(saved_model_path)
+
     elif modelname.lower()=='beit_fb':
         model = BeitModel(device)
     model = model.to(device)
     model.eval()
+
     return model
 
-def interpolate_pos_encoding(x, w, h):
-    N = x.shape[1] - 1
-    dim = x.shape[-1]
-    w0 = w / int(math.sqrt(N))
-    h0 = h / int(math.sqrt(N))
-
-    patch_pos_embed = nnf.interpolate(
-        x[:, 1:].reshape(1, int(math.sqrt(N)), int(math.sqrt(N)), dim).permute(0, 3, 1, 2),
-        scale_factor=(w0, h0),
-        mode="bicubic",
-    )
-
-    patch_pos_embed = patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
-
-    # Concatenate the class token with the interpolated position embeddings
-    return torch.cat((x[:, :1], patch_pos_embed), dim=1)
-
-'''
-# for 518
-def get_dino_finetuned():
-    vit_kwargs = dict(
-        img_size=518,
-        patch_size=14,
-        #init_values=1.0,
-        #ffn_layer="mlp",
-        #block_chunks=0,
-    )
-    model = vit_small(**vit_kwargs)
-    pretrained = torch.load(DINO_VIT_S_PATH_FINETUNED)
-    new_state_dict = {}
-
-    for key, value in pretrained['teacher'].items():
-        new_key = key.replace('backbone.', '')
-        new_state_dict[new_key] = value
-    
-    model.load_state_dict(new_state_dict, strict=False)
-    return model
-'''
-
-def get_retCCL():
+def get_retCCL(model_path):
     model = retccl_res50(num_classes=128, mlp=False,
                          two_branch=False, normlinear=True)
-    pretext_model = torch.load(RETCCL_PATH, map_location=torch.device('cpu'))
+    pretext_model = torch.load(model_path, map_location=torch.device('cpu'))
     model.fc = nn.Identity()
     model.load_state_dict(pretext_model, strict=True)
     return model
 
 #for 224
-def get_dino_finetuned():
+def get_dino_finetuned(model_path):
     vit_kwargs = dict(
         img_size=224,
         patch_size=14,
-        #init_values=1.0,
-        #ffn_layer="mlp",
-        #block_chunks=0,
     )
     model = vit_small(**vit_kwargs)
-    pretrained = torch.load(DINO_VIT_S_PATH_FINETUNED)
+    pretrained = torch.load(model_path)
     new_state_dict = {}
 
     for key, value in pretrained['teacher'].items():
@@ -149,12 +111,12 @@ def get_dino_finetuned():
     return model
 
 #for 224
-def get_dino_finetuned_downloaded():
+def get_dino_finetuned_downloaded(model_path):
     # pos_embed has wrong shape
     model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14')
     #model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitg14')
     # load finetuned weights
-    pretrained = torch.load(DINO_VIT_S_PATH_FINETUNED_DOWNLOADED, map_location=torch.device('cpu'))
+    pretrained = torch.load(model_path, map_location=torch.device('cpu'))
     # make correct state dict for loading
     new_state_dict = {}
     for key, value in pretrained['teacher'].items():
@@ -172,112 +134,17 @@ def get_dino_finetuned_downloaded():
     return model
 
 
-def get_sam_vit_h():
-    return build_sam_vit_h(SAM_VIT_H_PATH)
+def get_sam_vit_h(model_path):
+    return build_sam_vit_h(model_path)
 
-def get_sam_vit_l():
-    return build_sam_vit_l(SAM_VIT_L_PATH)
+def get_sam_vit_l(model_path):
+    return build_sam_vit_l(model_path)
 
-def get_sam_vit_b():
-    return build_sam_vit_b(SAM_VIT_B_PATH)
+def get_sam_vit_b(model_path):
+    return build_sam_vit_b(model_path)
 
-#def get_dino_vit_s():
-#    vit_kwargs = dict(
-#        img_size=518,
-#        patch_size=14,
-#        #init_values=1.0,
-#        #ffn_layer="mlp",
-#        #block_chunks=0,
-#    )
-#    model = vit_small(**vit_kwargs)
-#    chkpt = torch.load(DINO_VIT_S_PATH)
-#    chkpt_2 = interpolate_pos_encoding(chkpt['pos_embed'], 16, 16)
-#    chkpt['pos_embed'] = chkpt_2
-#    model.load_state_dict(chkpt, strict=False)
-#    return model
 
-def get_dino_vit_s_interpolated():
-    model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14')
-    input_tensor = model.pos_embed
-    tensor_corr_shape = interpolate_pos_encoding(input_tensor, 16, 16)
-    pos_embed = nn.Parameter(torch.zeros(1, 257))
-    pos_embed.data = tensor_corr_shape
-    model.pos_embed = pos_embed
 
-    #test old interpolation
-    
-    #vit_kwargs = dict(
-    #    img_size=224,
-    #    patch_size=14,
-    #    #init_values=1.0,
-    #    #ffn_layer="mlp",
-    #    #block_chunks=0,
-    #)
-    #model_test = vit_small(**vit_kwargs)
-    #chkpt = torch.load(DINO_VIT_S_PATH)
-    #chkpt_2 = interpolate_pos_encoding(chkpt['pos_embed'], 16, 16)
-    #chkpt['pos_embed'] = chkpt_2
-    #model_test.load_state_dict(chkpt, strict=False)
-    
-    return model
-
-def get_dino_vit_s():
-    #model_test = torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14')
-    #chkpt = torch.load(DINO_VIT_S_PATH)
-    #model_test.load_state_dict(chkpt, strict=False)
-    model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14')
-    input_tensor = model.pos_embed
-    class_token = input_tensor[:, 0:1, :]
-    rest = input_tensor[:, 1:, :]
-
-    reshaped_tensor = rest.view(1, 37, 37, 384)
-
-    middle = 18
-    middle_start = middle - 8
-    middle_end = middle + 8
-    middle_part = reshaped_tensor[:, middle_start:middle_end, middle_start:middle_end, :]
-    flattened_tensor = middle_part.reshape(1, 256, 384)
-
-    tensor_corr_shape = torch.cat((class_token, flattened_tensor), dim=1)
-
-    pos_embed = nn.Parameter(torch.zeros(1, 257))
-    pos_embed.data = tensor_corr_shape
-
-    model.pos_embed = pos_embed
-    
-    return model
-
-#def get_dino_vit_b():
-#    vit_kwargs = dict(
-#        img_size=224,
-#        patch_size=14,
-#        #init_values=1.0,
-#        #ffn_layer="mlp",
-#        #block_chunks=0,
-#    )
-#    model = vit_base(**vit_kwargs)
-#    chkpt = torch.load(DINO_VIT_B_PATH)
-#    #chkpt_2 = interpolate_pos_encoding(chkpt['pos_embed'], 16, 16)
-#    #chkpt['pos_embed'] = chkpt_2
-#
-#    input_tensor = chkpt['pos_embed']
-#    class_token = input_tensor[:, 0:1, :]
-#    rest = input_tensor[:, 1:, :]
-#
-#    reshaped_tensor = rest.view(1, 37, 37, 768)
-#
-#    middle = 19
-#    middle_start = middle - 8
-#    middle_end = middle + 8
-#    middle_part = reshaped_tensor[:, middle_start:middle_end, middle_start:middle_end, :]
-#
-#    flattened_tensor = middle_part.reshape(1, 256, 768)
-#
-#    tensor_corr_shape = torch.cat((class_token, flattened_tensor), dim=1)
-#    chkpt['pos_embed'] = tensor_corr_shape
-#
-#    model.load_state_dict(chkpt, strict=False)
-#    return model
 
 def get_dino_vit_b():
     model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
@@ -301,38 +168,6 @@ def get_dino_vit_b():
     model.pos_embed = pos_embed
     
     return model
-
-#def get_dino_vit_l():
-#    vit_kwargs = dict(
-#        img_size=224,
-#        patch_size=14,
-#        #init_values=1.0,
-#        #ffn_layer="mlp",
-#        #block_chunks=0,
-#    )
-#    model = vit_large(**vit_kwargs)
-#    chkpt = torch.load(DINO_VIT_L_PATH)
-#    #chkpt_2 = interpolate_pos_encoding(chkpt['pos_embed'], 16, 16)
-#    #chkpt['pos_embed'] = chkpt_2
-#
-#    input_tensor = chkpt['pos_embed']
-#    class_token = input_tensor[:, 0:1, :]
-#    rest = input_tensor[:, 1:, :]
-#
-#    reshaped_tensor = rest.view(1, 37, 37, 1024)
-#
-#    middle = 19
-#    middle_start = middle - 8
-#    middle_end = middle + 8
-#    middle_part = reshaped_tensor[:, middle_start:middle_end, middle_start:middle_end, :]
-#
-#    flattened_tensor = middle_part.reshape(1, 256, 1024)
-#
-#    tensor_corr_shape = torch.cat((class_token, flattened_tensor), dim=1)
-#    chkpt['pos_embed'] = tensor_corr_shape
-#
-#    model.load_state_dict(chkpt, strict=False)
-#    return model
 
 
 def get_dino_vit_l():
@@ -381,40 +216,11 @@ def get_dino_vit_g():
     
     return model
 
-#def get_dino_vit_g():
-#    vit_kwargs = dict(
-#        img_size=518,
-#        patch_size=14,
-#        init_values=1.0,
-#        ffn_layer="mlp",
-#        block_chunks=0,
-#    )
-#    model = vit_giant2(**vit_kwargs)
-#    pretrained = torch.load(DINO_VIT_G_PATH)
-#    '''
-#    input_tensor = pretrained['pos_embed']
-#    class_token = input_tensor[:, 0:1, :]
-#    rest = input_tensor[:, 1:, :]
-#
-#    reshaped_tensor = rest.view(1, 37, 37, 1536)
-#
-#    middle = 18
-#    middle_start = middle - 8
-#    middle_end = middle + 8
-#    middle_part = reshaped_tensor[:, middle_start:middle_end, middle_start:middle_end, :]
-#    flattened_tensor = middle_part.reshape(1, 256, 1536)
-#
-#    tensor_corr_shape = torch.cat((class_token, flattened_tensor), dim=1)
-#    pretrained['pos_embed'] = tensor_corr_shape
-#    '''
-#    model.load_state_dict(pretrained, strict=False)
-#    return model
 
-
-def get_ctranspath():
+def get_ctranspath(model_path):
     model = ctranspath()
     model.head = nn.Identity()
-    pretrained = torch.load(CTRANSPATH_PATH)
+    pretrained = torch.load(model_path)
     model.load_state_dict(pretrained['model'], strict=True)
     return model
 

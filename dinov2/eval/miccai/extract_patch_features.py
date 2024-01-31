@@ -7,6 +7,7 @@ import tqdm
 
 from torch.utils.data import DataLoader
 import torch
+import pandas as pd
 
 from utils import CustomImageDataset, create_datasets
 from models.return_model import get_models, get_transforms
