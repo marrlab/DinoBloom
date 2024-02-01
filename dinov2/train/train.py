@@ -34,7 +34,6 @@ def get_args_parser(add_help: bool = True):
     parser.add_argument(
         "--no-resume",
         action="store_true",
-        default=True,
         help="Whether to not attempt to resume from the checkpoint directory. ",
     )
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
