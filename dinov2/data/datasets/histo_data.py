@@ -183,9 +183,9 @@ class BalancedPatchDataset(VisionDataset):
         self.dataset_sizes=[]
 
         all_dataset_files=Path(root).glob("*.txt")
+
         for dataset_file in all_dataset_files:
             
-
             file_list=arrange_files(np.loadtxt(dataset_file, dtype=str))
             self.patches.append(file_list)
             self.dataset_sizes.append(len(file_list))
@@ -245,4 +245,4 @@ class BalancedPatchDataset(VisionDataset):
 
     def __len__(self) -> int:
         # assert len(entries) == self.split.length
-        return np.sum(self.dataset_sizes)
+        return int(np.sum(self.dataset_sizes))
