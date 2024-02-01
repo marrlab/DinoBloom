@@ -181,14 +181,14 @@ class BalancedPatchDataset(VisionDataset):
         super().__init__(root, transforms, transform, target_transform)
         self.patches=[]
         self.dataset_sizes=[]
-        roots=root.split(",")
 
-        for root in roots:
+        all_dataset_files=Path(root).glob("*.txt")
+        for dataset_file in all_dataset_files:
             
-            if Path(root).is_file():
-                file_list=arrange_files(np.loadtxt(root, dtype=str))
-                self.patches.append(file_list)
-                self.dataset_sizes.append(len(file_list))
+
+            file_list=arrange_files(np.loadtxt(dataset_file, dtype=str))
+            self.patches.append(file_list)
+            self.dataset_sizes.append(len(file_list))
             
         self.num_datasets=len(self.patches)
 
