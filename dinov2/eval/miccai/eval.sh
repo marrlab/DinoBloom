@@ -13,4 +13,4 @@
 source $HOME/.bashrc
 conda activate histo_env
 export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH
-python "/lustre/groups/shared/histology_data/eval/evaluation.py"
+python "/home/icb/valentin.koch/dinov2/dinov2/eval/miccai/evaluation.py" --path_folder "/lustre/groups/shared/histology_data/features_NCT-CRC-100k-nonorm/benedikt_baseline_vits"

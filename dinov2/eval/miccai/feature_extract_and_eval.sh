@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH -o /lustre/groups/shared/histology_data/eval/slurm_outputs/feature_run.txt
-#SBATCH -e /lustre/groups/shared/histology_data/eval/slurm_outputs/feature_error.txt
+#SBATCH -o /lustre/groups/shared/histology_data/eval/slurm_outputs/feature_run2.txt
+#SBATCH -e /lustre/groups/shared/histology_data/eval/slurm_outputs/feature_error2.txt
 #SBATCH -J feature_ex
 #SBATCH -p gpu_p
 #SBATCH -c 18
@@ -13,7 +13,7 @@
 # Environment setup
 source $HOME/.bashrc
 conda activate feature_ex
-cd /lustre/groups/shared/histology_data/eval/
+cd /home/icb/valentin.koch/dinov2/
 export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH
 python "/home/icb/valentin.koch/dinov2/dinov2/eval/miccai/extract_patch_features.py"
 conda activate histo_env

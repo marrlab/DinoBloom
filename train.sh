@@ -17,4 +17,4 @@ conda activate /home/icb/valentin.koch/anaconda3/envs/dino/envs/dinov2
 cd /home/icb/valentin.koch/dinov2
 export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH
 
-python /home/icb/valentin.koch/dinov2/dinov2/train/train.py --no-resume
+python /home/icb/valentin.koch/dinov2/dinov2/train/train.py --no-resume --config-file /home/icb/valentin.koch/dinov2/dinov2/configs/train/custom.yaml
