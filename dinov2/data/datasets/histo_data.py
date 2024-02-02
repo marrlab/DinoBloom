@@ -150,8 +150,6 @@ class PatchDataset(VisionDataset):
         return patch
 
 
-
-
 def arrange_files(file_paths):
     # Group files by their parent folder
     grouped_files = defaultdict(list)
@@ -188,18 +186,21 @@ class BalancedPatchDataset(VisionDataset):
             
             file_list=arrange_files(np.loadtxt(dataset_file, dtype=str))
             self.patches.append(file_list)
-            self.dataset_sizes.append(len(file_list))
+            self.dataset_sizes.append(int(len(file_list)))
             
         self.num_datasets=len(self.patches)
 
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
 
         dataset_index=index%self.num_datasets
-
+        index_in_dataset= int(index/self.num_datasets)%self.dataset_sizes[dataset_index]
+        
         try:
-            image = self.get_image_data(dataset_index,int(index/self.num_datasets)%self.dataset_sizes[dataset_index])
+            
+            image = self.get_image_data(dataset_index,index_in_dataset)
+            
         except Exception as e:
-            print(f"can not read image for sample {index, e, self.patches[index]}")
+            print(f"can not read image for sample {index, e,self.patches[dataset_index][index_in_dataset]}")
             return self.__getitem__(index+1)
         
         target = self.get_target(index)
