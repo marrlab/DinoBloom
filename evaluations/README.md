@@ -5,9 +5,11 @@ use the following folder to store features
 ```
 /lustre/groups/shared/users/peng_marr/HistoDINO/features /<dataset-name>/<model_name + run_name + checkpoint>
 ```
+
 and evaluations
+
 ```
-/lustre/groups/shared/users/peng_marr/HistoDINO/features /<dataset-name>/<model_name + run_name + checkpoint>
+/lustre/groups/shared/users/peng_marr/HistoDINO/eval /<dataset-name>/<model_name + run_name + checkpoint>
 ```
 
 1. Extract features of trained model
@@ -23,7 +25,8 @@ python evaluations/extract_patch_features.py \
 ```
 
 2. Run evaluation pipeline
-change conda env to fitting environment
+   change conda env to fitting environment
+
 ```
 conda activate eval
 
@@ -34,6 +37,7 @@ python evaluations/evaluation.py \
 ```
 
 3. Run HistoBistro evaluation pipeline
+
 ```
 conda activate eval
 

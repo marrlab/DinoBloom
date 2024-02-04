@@ -137,8 +137,9 @@ def main(args):
     )
 
     feature_extractor = get_models(model_name, checkpoint=args.checkpoint)
-
-    args.save_dir = Path(args.save_dir) / args.dataset / f"{model_name}_{Path(args.checkpoint).parent.name}_{Path(args.checkpoint).stem}"
+    if args.checkpoint is not None:
+        model_name = f"{model_name}_{Path(args.checkpoint).parent.name}_{Path(args.checkpoint).stem}"
+    args.save_dir = Path(args.save_dir) / args.dataset / model_name
 
     save_features_and_labels_individual(feature_extractor, train_dataloader, os.path.join(args.save_dir, 'train_data'))
     save_features_and_labels_individual(feature_extractor, val_dataloader, os.path.join(args.save_dir, 'val_data'))

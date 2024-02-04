@@ -63,6 +63,19 @@ parser.add_argument(
     default="NCT-CRC-100k-nonorm",
     type=str,
 )
+parser.add_argument(
+    "--model_name",
+    help="specify the model name",
+    default="dinov2_finetuned",
+    type=str,
+)
+# only need the checkpoint name to determine the correct feature location / saving directory
+parser.add_argument(
+    "--checkpoint",
+    help="path to checkpoint",
+    default=None,
+    type=str,
+)
 
 
 def process_file(file_name):
@@ -150,7 +163,7 @@ def test_data_creation():
     return train_data, train_labels, test_data, test_labels
 
 
-def perform_knn(train_data, train_labels, test_data, test_labels, save_dir, run_name):
+def perform_knn(train_data, train_labels, test_data, test_labels, save_dir):
     # Define a range of values for n_neighbors to search
     n_neighbors_values = [1, 20]
     #n_neighbors_values = [1, 2, 5, 10, 20, 50, 100, 500]
@@ -174,13 +187,13 @@ def perform_knn(train_data, train_labels, test_data, test_labels, save_dir, run_
         print(f"n_neighbors = {n_neighbors}")
         print(f"Accuracy: {accuracy}")
 
-        run_name = f"{n_neighbors}NN_{run_name}"
+        run_name = f"{n_neighbors}NN_{Path(save_dir).name}"
 
         # If you want to log the results with Weights & Biases (wandb), you can initialize a wandb run:
         wandb.init(
             entity="histo-collab",
             project="knn", 
-            name=run_name
+            name=run_name,
         )
 
         # Log the n_neighbors value, accuracy
@@ -201,12 +214,12 @@ def perform_knn(train_data, train_labels, test_data, test_labels, save_dir, run_
         wandb.finish()
 
         df_labels_to_save = pd.DataFrame({'True Labels': test_labels, 'Predicted Labels': test_predictions})
-        filename = f"{run_name}_labels_and_predictions.csv"
+        filename = f"{Path(save_dir).name}_labels_and_predictions.csv"
         file_path = os.path.join(save_dir, filename)
         # Speichern des DataFrames in der CSV-Datei
         df_labels_to_save.to_csv(file_path, index=False)
 
-def create_umap(data, labels, save_dir, run_name, filename_addon="train"):
+def create_umap(data, labels, save_dir, filename_addon="train"):
     # Create a UMAP model and fit it to your data
     #reducer = umap.UMAP(random_state=42)
     reducer = umap.UMAP()
@@ -228,18 +241,18 @@ def create_umap(data, labels, save_dir, run_name, filename_addon="train"):
         plt.title("UMAP")
 
         # Specify the filename with the size information
-        image_filename = f'umap_visualization_{run_name}_{size[0]}x{size[1]}_{filename_addon}.png'
+        image_filename = f'umap_visualization_{Path(save_dir).name}_{size[0]}x{size[1]}_{filename_addon}.png'
 
         # Save the UMAP visualization as an image in the specified directory
         plt.savefig(os.path.join(umap_dir, image_filename))
 
 
-def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, dataset, run_name, save_dir, max_iter=1000):
+def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, dataset, save_dir, max_iter=1000):
     # Initialize wandb
     wandb.init(
         entity="histo-collab",
         project="logistic_regression", 
-        name=f"{dataset}_{run_name}",
+        name=f"{dataset}_{Path(save_dir).name}",
     )
 
     M = train_data.shape[1]  
@@ -267,14 +280,14 @@ def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, 
     report = classification_report(test_labels, test_predictions, output_dict=True)
 
     df_labels_to_save = pd.DataFrame({'True Labels': test_labels, 'Predicted Labels': test_predictions})    
-    filename = f"{run_name}_labels_and_predictions.csv"
+    filename = f"{Path(save_dir).name}_labels_and_predictions.csv"
     os.makedirs(save_dir, exist_ok=True)
     file_path = os.path.join(save_dir, filename)
     # Speichern des DataFrames in der CSV-Datei
     df_labels_to_save.to_csv(file_path, index=False)
 
     predicted_probabilities_df = pd.DataFrame(predicted_probabilities, columns=[f'Probability Class {i}' for i in range(predicted_probabilities.shape[1])])
-    predicted_probabilities_filename = f"{run_name}_predicted_probabilities_test.csv"
+    predicted_probabilities_filename = f"{Path(save_dir).name}_predicted_probabilities_test.csv"
     predicted_probabilities_file_path = os.path.join(save_dir, predicted_probabilities_filename)
     predicted_probabilities_df.to_csv(predicted_probabilities_file_path, index=False)
 
@@ -304,20 +317,24 @@ def main(args):
     print("Shape of test_data:", test_data.shape)
     print("Shape of test_labels:", test_labels.shape)
     
-    run_name = f"{Path(args.path_folder).name}"
-    save_directory = Path(args.save_dir) / args.dataset / run_name 
+    # run_name = f"{Path(args.path_folder).name}"
+    # save_directory = Path(args.save_dir) / args.dataset / run_name 
+
+    if args.checkpoint is not None:        
+        args.model_name = f"{args.model_name}_{Path(args.checkpoint).parent.name}_{Path(args.checkpoint).stem}"
+    args.save_dir = Path(args.save_dir) / args.dataset / args.model_name
 
     if args.logistic_regression:
-        train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, args.dataset, run_name, save_directory, max_iter=1000)
+        train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, args.dataset, args.save_dir, max_iter=1000)
         print("logistic_regression done")
 
     if args.umap:
-        create_umap(train_data, train_labels, save_directory, run_name)
-        create_umap(test_data, test_labels, save_directory, run_name, "test")
+        create_umap(train_data, train_labels, args.save_dir)
+        create_umap(test_data, test_labels, args.save_dir, "test")
         print("umap done")
 
     if args.knn:
-        perform_knn(train_data, train_labels, test_data, test_labels, save_directory, run_name)
+        perform_knn(train_data, train_labels, test_data, test_labels, args.save_dir)
         print("knn done")
 
 if __name__ == "__main__":
