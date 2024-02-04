@@ -3,13 +3,13 @@ import torch.nn as nn
 from torchvision import transforms
 
 from torchvision.models import resnet
-from models.ctran import ctranspath
+# from models.ctran import ctranspath
 from models.resnet_retccl import resnet50 as retccl_res50
 from models.sam import build_sam_vit_h,build_sam_vit_b,build_sam_vit_l
 from models.imagebind import imagebind_huge
 from transformers import  Data2VecVisionModel, BeitFeatureExtractor
 from models.dinov2 import vit_small, vit_base, vit_large, vit_giant2
-from models.vim import get_vision_mamba_model
+# from models.vim import get_vision_mamba_model
 import math
 import torch.nn.functional as nnf
 #import tensorflow_hub as hub
@@ -28,61 +28,64 @@ DINO_VIT_S_PATH_FINETUNED="/home/icb/valentin.koch/dinov2/debug/eval/training_12
 DINO_VIT_S_PATH_FINETUNED_DOWNLOADED="/lustre/scratch/users/benedikt.roth/dinov2_vits_interpolated_224_NCT-CRC_downloaded_model_finetuned_10000k_iterations/eval/training_2699/teacher_checkpoint.pth"
 #DINO_VIT_S_PATH_FINETUNED_DOWNLOADED="/lustre/scratch/users/benedikt.roth/dinov2_vitg_interpolated_224_NCT-CRC_downloaded_model_finetuned/eval/training_119999/teacher_checkpoint.pth"
 
-def get_models(modelname, checkpoint=None):
+def get_models(modelnames, checkpoints=None):
     models = []
     device = torch.device(
         'cuda') if torch.cuda.is_available() else torch.device('cpu')
-    if modelname.lower() == 'ctranspath':
-        model = get_ctranspath()
-    #elif modelname.lower() == 'remedis':
-    #    model = hub.load('cxr-52x2-remedis-m')
-    elif modelname.lower() == 'resnet50':
-        model = get_res50()
-    elif modelname.lower() == 'retccl':
-        model = get_retCCL()
-    elif modelname.lower() == 'resnet50_full':
-        model = get_full_res50()
-    elif modelname.lower()=="sam_vit_h":
-        model=get_sam_vit_h()
-    elif modelname.lower()=="sam_vit_b":
-        model=get_sam_vit_b()
-    elif modelname.lower()=="sam_vit_l":
-        model=get_sam_vit_l()
-    elif modelname.lower() == 'dinov2_vits14':
-        model=get_dino_vit_s()
-    elif modelname.lower() == 'dinov2_vits14_downloaded':
-        model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14')
-    elif modelname.lower() == 'dinov2_vits14_reg_downloaded':
-        model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14_reg')
-    elif modelname.lower() == 'dinov2_vitb14':
-        model=get_dino_vit_b()
-    elif modelname.lower() == 'dinov2_vitb14_downloaded':
-        model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
-    elif modelname.lower() == 'dinov2_vitl14':
-        model=get_dino_vit_l()
-    elif modelname.lower() == 'dinov2_vitl14_downloaded':
-        model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitl14')
-    elif modelname.lower() == 'dinov2_vitg14':
-        model=get_dino_vit_g()
-    elif modelname.lower() == 'dinov2_vitg14_downloaded':
-        model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitg14')
-    elif modelname.lower() == 'dinov2_vitg14_reg_downloaded':
-        model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitg14_reg')
-    elif modelname.lower() == 'dinov2_finetuned':
-        model=get_dino_finetuned()
-    elif modelname.lower() == 'vim_finetuned':
-        model=get_vim_finetuned(checkpoint=checkpoint)
-    elif modelname.lower() == 'dinov2_finetuned_downloaded':
-        model=get_dino_finetuned_downloaded()
-    elif modelname.lower() == 'dinov2_vits14_interpolated':
-            model = get_dino_vit_s_interpolated()
-    elif modelname.lower()=="imagebind":
-        model=get_imagebind()
-    elif modelname.lower()=='beit_fb':
-        model = BeitModel(device)
-    model = model.to(device)
-    model.eval()
-    return model
+    for modelname, checkpoint in zip(modelnames, checkpoints):
+
+        # if modelname.lower() == 'ctranspath':
+        #     model = get_ctranspath()
+        #elif modelname.lower() == 'remedis':
+        #    model = hub.load('cxr-52x2-remedis-m')
+        if modelname.lower() == 'resnet50':
+            model = get_res50()
+        elif modelname.lower() == 'retccl':
+            model = get_retCCL()
+        elif modelname.lower() == 'resnet50_full':
+            model = get_full_res50()
+        elif modelname.lower()=="sam_vit_h":
+            model=get_sam_vit_h()
+        elif modelname.lower()=="sam_vit_b":
+            model=get_sam_vit_b()
+        elif modelname.lower()=="sam_vit_l":
+            model=get_sam_vit_l()
+        elif modelname.lower() == 'dinov2_vits14':
+            model=get_dino_vit_s()
+        elif modelname.lower() == 'dinov2_vits14_downloaded':
+            model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14')
+        elif modelname.lower() == 'dinov2_vits14_reg_downloaded':
+            model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14_reg')
+        elif modelname.lower() == 'dinov2_vitb14':
+            model=get_dino_vit_b()
+        elif modelname.lower() == 'dinov2_vitb14_downloaded':
+            model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
+        elif modelname.lower() == 'dinov2_vitl14':
+            model=get_dino_vit_l()
+        elif modelname.lower() == 'dinov2_vitl14_downloaded':
+            model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitl14')
+        elif modelname.lower() == 'dinov2_vitg14':
+            model=get_dino_vit_g()
+        elif modelname.lower() == 'dinov2_vitg14_downloaded':
+            model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitg14')
+        elif modelname.lower() == 'dinov2_vitg14_reg_downloaded':
+            model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitg14_reg')
+        elif modelname.lower() == 'dinov2_finetuned':
+            model=get_dino_finetuned(checkpoint=checkpoint)
+        # elif modelname.lower() == 'vim_finetuned':
+        #     model=get_vim_finetuned(checkpoint=checkpoint)
+        elif modelname.lower() == 'dinov2_finetuned_downloaded':
+            model=get_dino_finetuned_downloaded()
+        elif modelname.lower() == 'dinov2_vits14_interpolated':
+                model = get_dino_vit_s_interpolated()
+        elif modelname.lower()=="imagebind":
+            model=get_imagebind()
+        elif modelname.lower()=='beit_fb':
+            model = BeitModel(device)
+        model.eval()
+        transforms = get_transforms(modelname)
+        models.append({'name': modelname, 'model': model.to(device), 'transforms': transforms})
+    return models
 
 def interpolate_pos_encoding(x, w, h):
     N = x.shape[1] - 1
@@ -132,7 +135,7 @@ def get_retCCL():
     return model
 
 #for 224
-def get_dino_finetuned():
+def get_dino_finetuned(checkpoint=None):
     vit_kwargs = dict(
         img_size=224,
         patch_size=14,
@@ -141,7 +144,8 @@ def get_dino_finetuned():
         #block_chunks=0,
     )
     model = vit_small(**vit_kwargs)
-    pretrained = torch.load(DINO_VIT_S_PATH_FINETUNED)
+    checkpoint = DINO_VIT_S_PATH_FINETUNED if checkpoint is None else checkpoint
+    pretrained = torch.load(checkpoint)
     new_state_dict = {}
 
     for key, value in pretrained['teacher'].items():
