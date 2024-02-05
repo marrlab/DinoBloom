@@ -13,6 +13,7 @@ import numpy as np
 import openslide
 import torch
 from PIL import Image
+from torchvision import transforms
 from torchvision.datasets import VisionDataset
 from tqdm import tqdm
 
@@ -112,16 +113,17 @@ class PatchDataset(VisionDataset):
     
     def get_image_data(self, index: int,min_dimension=224) -> Image:
 
-        # load image from jpeg file
+        # load image from file
         patch = Image.open(self.patches[index]).convert(mode="RGB")
-        
-        # random crop to (256, 256)
-        # h, w = patch.size
-        # i = torch.randint(0, h - 224 + 1, size=(1,)).item()
-        # j = torch.randint(0, w - 224 + 1, size=(1,)).item()
-        # patch = transforms.functional.crop(patch, i, j, 224, 224)
 
         h, w = patch.size
+
+        # random crop to (300, 300)
+        crop_size = 300
+        if h > crop_size and w > crop_size:
+            i = torch.randint(0, h - crop_size + 1, size=(1,)).item()
+            j = torch.randint(0, w - crop_size + 1, size=(1,)).item()
+            patch = transforms.functional.crop(patch, i, j, crop_size, crop_size)
 
         if h < min_dimension or w < min_dimension:
 
@@ -145,6 +147,13 @@ class PatchDataset(VisionDataset):
         # patch = transforms.functional.resize(patch, (224, 224))
 
         return patch
+    
+    def __len__(self) -> int:
+        return len(self.patches)
+
+    def get_target(self, index: int) -> torch.Tensor:
+        # labels are not used for training
+        return torch.zeros((1,))
 
 
 def arrange_files(file_paths):
@@ -213,13 +222,14 @@ class BalancedPatchDataset(VisionDataset):
         filepath=self.patches[dataset_index][index_in_dataset]
         patch = Image.open(filepath).convert(mode="RGB")
         
-        # random crop to (256, 256)
-        # h, w = patch.size
-        # i = torch.randint(0, h - 224 + 1, size=(1,)).item()
-        # j = torch.randint(0, w - 224 + 1, size=(1,)).item()
-        # patch = transforms.functional.crop(patch, i, j, 224, 224)
-
         h, w = patch.size
+
+        # random crop to (300, 300)
+        crop_size = 300
+        if h > crop_size and w > crop_size:
+            i = torch.randint(0, h - crop_size + 1, size=(1,)).item()
+            j = torch.randint(0, w - crop_size + 1, size=(1,)).item()
+            patch = transforms.functional.crop(patch, i, j, crop_size, crop_size)
 
         if h < min_dimension or w < min_dimension:
 
