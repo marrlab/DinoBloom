@@ -115,7 +115,7 @@ def get_dino_finetuned_downloaded(model_path):
     # make correct state dict for loading
     new_state_dict = {}
     for key, value in pretrained['teacher'].items():
-        if 'dino_head' in key:
+        if 'dino_head' in key or "ibot_head" in key:
             print('not used')
         else:
             new_key = key.replace('backbone.', '')
