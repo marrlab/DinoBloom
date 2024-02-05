@@ -105,6 +105,10 @@ def get_dino_finetuned(model_path):
     model.load_state_dict(new_state_dict, strict=False)
     return model
 
+def get_vim_finetuned(checkpoint=None):
+    model = get_vision_mamba_model(checkpoint=checkpoint)
+    return model
+
 #for 224
 def get_dino_finetuned_downloaded(model_path):
     # pos_embed has wrong shape
@@ -262,7 +266,7 @@ def get_transforms(model_name):
         mean=(0.48145466, 0.4578275, 0.40821073)
         std=(0.26862954, 0.26130258, 0.27577711)
     # change later to correct value
-    elif model_name.lower() in ['dinov2_vits14','dinov2_vitb14','dinov2_vitl14','dinov2_vitg14','dinov2_finetuned','dinov2_vits14_interpolated','dinov2_finetuned_downloaded','remedis']:
+    elif model_name.lower() in ['dinov2_vits14','dinov2_vitb14','dinov2_vitl14','dinov2_vitg14','dinov2_finetuned','dinov2_vits14_interpolated','dinov2_finetuned_downloaded','remedis', 'vim_finetuned']:
         resolution = 224
     elif "sam" in model_name.lower():
         resolution = 1024

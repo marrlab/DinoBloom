@@ -341,6 +341,7 @@ if __name__ == "__main__":
         entity="histo-collab",
         project="dinov2",
         name=args.name,
+        mode="online",
         config=args
     )
     main(args)

@@ -1,19 +1,64 @@
 # base config: dinov2/configs/train/vitl14.yaml
+compute_precision:
+  grad_scaler: true
+  teacher:
+    backbone:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    dino_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    ibot_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+  student:
+    backbone:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    dino_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp32
+        buffer_dtype: fp32
+    ibot_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp32
+        buffer_dtype: fp32
+
 dino:
   # head_n_prototypes: 131072
-  head_bottleneck_dim: 384
+  head_bottleneck_dim: 256  # changed for vision mamba (384)
 ibot:
   separate_head: true
   # head_n_prototypes: 131072
 train:
-  batch_size_per_gpu: 320
+  batch_size_per_gpu: 192
   num_workers: 26
   OFFICIAL_EPOCH_LENGTH: 500  # 1250
+<<<<<<< HEAD
   dataset_path: BalancedPatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/train_lists  # original: ImageNet22k
+=======
+  dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/train_new.txt  # original: ImageNet22k
+>>>>>>> vim
   centering: sinkhorn_knopp
 student:
   arch: vit_small
-  patch_size: 14
+  patch_size: 16  # changed for vision mamba (14)
   drop_path_rate: 0.4
   ffn_layer: swiglufused
   block_chunks: 0  # for distributed training
@@ -28,25 +73,8 @@ optim:
   warmup_epochs: 10  # 80
   layerwise_decay: 1.0
 crops:
-  local_crops_size: 98
+  local_crops_size: 98  # change for vision mamba to 96, original: 98
 
 evaluation:
   eval_period_iterations: 5000
 
-
-# compute_precision:
-#   grad_scaler: true
-#   teacher:
-#     backbone:
-#       sharding_strategy: NO_SHARD
-#     dino_head:
-#       sharding_strategy: NO_SHARD
-#     ibot_head:
-#       sharding_strategy: NO_SHARD
-#   student:
-#     backbone:
-#       sharding_strategy: NO_SHARD
-#     dino_head:
-#       sharding_strategy: NO_SHARD
-#     ibot_head:
-#       sharding_strategy: NO_SHARD
