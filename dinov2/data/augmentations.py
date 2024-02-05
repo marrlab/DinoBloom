@@ -123,7 +123,7 @@ class DataAugmentationDINO(object):
                     p=0.8,  # original p=0.8
                 ),
                 # additional histopathology-specific augmentations (don't use grayscale)
-                # transforms.RandomGrayscale(p=0.2),
+                transforms.RandomGrayscale(p=0.05),
             ]
         )
 
