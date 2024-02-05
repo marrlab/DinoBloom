@@ -48,8 +48,7 @@ train:
   batch_size_per_gpu: 256
   num_workers: 26
   OFFICIAL_EPOCH_LENGTH: 500  # 1250
-  # dataset_path: BalancedPatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/train_lists
-  dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/train_lists/tcga_patches_uvm.txt  
+  dataset_path: BalancedPatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/train_lists
   centering: sinkhorn_knopp
 
   drop_path_rate: 0.4
