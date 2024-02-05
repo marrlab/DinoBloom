@@ -70,13 +70,17 @@ class SSLMetaArch(nn.Module):
         student_model_dict = dict()
         teacher_model_dict = dict()
 
-        # student_backbone, teacher_backbone, embed_dim = build_model_from_cfg(cfg)
-        # student_backbone = get_downloaded_dino_vit_s_interpolated()
-        # teacher_backbone = get_downloaded_dino_vit_s_interpolated()
-        # embed_dim = 384
-        student_backbone = get_vision_mamba_model(cfg.student.interpolate_antialias, cfg.student.interpolate_offset)
-        teacher_backbone = get_vision_mamba_model(cfg.student.interpolate_antialias, cfg.student.interpolate_offset)
-        embed_dim = 192
+        if cfg.student.arch == "vit_small":
+            student_backbone = get_downloaded_dino_vit_s_interpolated()
+            teacher_backbone = get_downloaded_dino_vit_s_interpolated()
+            embed_dim = 384
+        elif cfg.student.arch == "vim_tiny":
+            student_backbone = get_vision_mamba_model(cfg.student.interpolate_antialias, cfg.student.interpolate_offset)
+            teacher_backbone = get_vision_mamba_model(cfg.student.interpolate_antialias, cfg.student.interpolate_offset)
+            embed_dim = 192
+        else: 
+            student_backbone, teacher_backbone, embed_dim = build_model_from_cfg(cfg)
+
         student_model_dict["backbone"] = student_backbone
         teacher_model_dict["backbone"] = teacher_backbone
         logger.info(f"OPTIONS -- architecture : embed_dim: {embed_dim}")
