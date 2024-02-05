@@ -1,8 +1,10 @@
 
-from torch.utils.data import Dataset
-from PIL import Image
 from pathlib import Path
+
+from PIL import Image
 from sklearn.model_selection import train_test_split
+from torch.utils.data import Dataset
+
 
 class CustomImageDataset(Dataset):
     def __init__(self, df, transform, class_to_label):
@@ -58,8 +60,8 @@ from pathlib import Path
 import cv2
 import h5py
 import numpy as np
-from PIL import Image
 import pandas as pd
+from PIL import Image
 
 
 def bgr_format(xml_string: str):

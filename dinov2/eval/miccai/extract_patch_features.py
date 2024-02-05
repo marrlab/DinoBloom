@@ -6,12 +6,9 @@ import h5py
 import pandas as pd
 import torch
 import tqdm
+from models.return_model import get_models, get_transforms
 from torch.utils.data import DataLoader
 from utils import CustomImageDataset, create_datasets
-
-from models.return_model import get_models, get_transforms
-
-
 
 parser = argparse.ArgumentParser(description="Feature extraction")
 

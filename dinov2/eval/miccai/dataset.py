@@ -1,9 +1,9 @@
 """
 taken from feature_extraction branch from HistoBistro
 """
-from torch.utils.data import Dataset
-from PIL import Image
 import pandas as pd
+from PIL import Image
+from torch.utils.data import Dataset
 
 
 class SlideDataset(Dataset):

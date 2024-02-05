@@ -15,11 +15,10 @@ from typing import Callable, Sequence, Tuple, Union
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint
-from torch.nn.init import trunc_normal_
-
 from dinov2.layers import MemEffAttention, Mlp
 from dinov2.layers import NestedTensorBlock as Block
 from dinov2.layers import PatchEmbed, SwiGLUFFNFused
+from torch.nn.init import trunc_normal_
 
 logger = logging.getLogger("dinov2")
 

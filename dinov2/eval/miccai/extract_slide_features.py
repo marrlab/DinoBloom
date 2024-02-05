@@ -3,6 +3,7 @@ taken from feature_extraction branch from HistoBistro
 """
 import argparse
 import concurrent.futures
+import math
 import re
 import time
 from pathlib import Path
@@ -11,17 +12,14 @@ import numpy as np
 import pandas as pd
 import slideio
 import torch
+from dataset import SlideDataset
+from models.return_model import get_models
 from PIL import Image
 # import cv2
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-import math
-
-
-from dataset import SlideDataset
-from models.return_model import get_models
 from utils import (bgr_format, get_driver, get_scaling, save_hdf5,
-                         save_qupath_annotation, save_tile_preview, threshold)
+                   save_qupath_annotation, save_tile_preview, threshold)
 
 parser = argparse.ArgumentParser(description="Feature extraction")
 

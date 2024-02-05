@@ -1,9 +1,8 @@
 
 import argparse
-from concurrent.futures import ThreadPoolExecutor
 import os
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from tqdm import tqdm
 
 import h5py
 import matplotlib.pyplot as plt
@@ -11,14 +10,13 @@ import numpy as np
 import pandas as pd
 import torch
 import umap
+import wandb
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (accuracy_score, balanced_accuracy_score,
                              classification_report, f1_score, log_loss)
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
-
-import wandb
-
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser(description="Feature extraction")
 os.environ["WANDB__SERVICE_WAIT"] = "300"
