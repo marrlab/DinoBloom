@@ -1,5 +1,6 @@
 import argparse
 import os
+from pathlib import Path
 
 import h5py
 import pandas as pd
@@ -29,13 +30,13 @@ parser.add_argument(
 parser.add_argument(
     "--image_path_train",
     help="path to csv file",
-    default="./eval/miccai/bild_pfade_with_label.csv",
+    default="./dinov2/eval/miccai/bild_pfade_with_label.csv",
     type=str,
 )
 parser.add_argument(
     "--image_path_test",
     help="path to csv file",
-    default="./eval/miccai/bild_pfade_with_label_test.csv",
+    default="./dinov2/eval/miccai/bild_pfade_with_label_test.csv",
     type=str,
 )
 parser.add_argument(
@@ -47,7 +48,7 @@ parser.add_argument(
 parser.add_argument(
     "--save_dir", "--save-dir", "-s",
     help="path save directory",
-    default="/lustre/groups/shared/histology_data/features_NCT-CRC-100k-nonorm/benedikt_baseline_vits",
+    default="/lustre/groups/shared/users/peng_marr/HistoDINO/features",
     type=str,
 )
 parser.add_argument(
@@ -106,7 +107,7 @@ def main(args):
 
     test_dataloader = DataLoader(test_dataset, batch_size=256, shuffle=False, num_workers=5)
 
-    feature_extractor = get_models(model_name, checkpoint=args.checkpoint)
+    feature_extractor = get_models(model_name, saved_model_path=args.checkpoint)
     if args.checkpoint is not None:
         model_name = f"{model_name}_{Path(args.checkpoint).parent.name}_{Path(args.checkpoint).stem}"
     args.save_dir = Path(args.save_dir) / args.dataset / model_name

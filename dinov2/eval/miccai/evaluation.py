@@ -3,6 +3,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 import os
 from pathlib import Path
+from tqdm import tqdm
 
 import h5py
 import matplotlib.pyplot as plt
@@ -43,13 +44,13 @@ parser.add_argument(
 parser.add_argument(
     "--path_folder", "--path-folder", "-p",
     help="path to folder containing subfolders with training, val and test data",
-    default="/lustre/groups/shared/histology_data/features_NCT-CRC-100k-nonorm/dinov2_vit_s_224_baseline_12500/",
+    default="/lustre/groups/shared/users/peng_marr/HistoDINO/features",
     type=str,
 )
 parser.add_argument(
     "--save_dir", "--save-dir", "-s",
     help="specify where to save the umap",
-    default="/lustre/groups/shared/histology_data/eval/dinoeval",
+    default="/lustre/groups/shared/users/peng_marr/HistoDINO/eval",
     type=str,
 )
 parser.add_argument(
@@ -81,21 +82,21 @@ def process_file(file_name):
 
 def get_data(args):
     # Define the directories for train, validation, and test data and labels
+    if args.checkpoint is not None:
+        args.path_folder = Path(args.path_folder) / args.dataset / f"{args.model_name}_{Path(args.checkpoint).parent.name}_{Path(args.checkpoint).stem}"
+    
     train_dir = os.path.join(args.path_folder, 'train_data')
     validation_dir = os.path.join(args.path_folder, 'val_data')
     test_dir = os.path.join(args.path_folder, 'test_data')
 
     # Load training data into dictionaries
-    train_features=[]
-    train_labels=[]
-
-    test_features=[]
-    test_labels=[]
+    train_features, train_labels = [], []
+    test_features, test_labels = [], []
 
     with ThreadPoolExecutor() as executor:
         futures_train = [executor.submit(process_file, file_name) for file_name in list(Path(train_dir).glob("*.h5"))]
 
-        for i, future_train in enumerate(futures_train):
+        for i, future_train in tqdm(enumerate(futures_train), desc="Loading training data"):
             feature_train, label_train = future_train.result()
             train_features.append(feature_train)
             train_labels.append(label_train)
@@ -103,7 +104,7 @@ def get_data(args):
     with ThreadPoolExecutor() as executor:
         futures_val = [executor.submit(process_file, file_name) for file_name in list(Path(validation_dir).glob("*.h5"))]
 
-        for i, future_val in enumerate(futures_val):
+        for i, future_val in tqdm(enumerate(futures_val), desc="Loading validation data"):
             feature_val, label_val = future_val.result()
             train_features.append(feature_val)
             train_labels.append(label_val)
@@ -111,7 +112,7 @@ def get_data(args):
     with ThreadPoolExecutor() as executor:
         futures_test = [executor.submit(process_file, file_name) for file_name in list(Path(test_dir).glob("*.h5"))]
 
-        for i, future in enumerate(futures_test):
+        for i, future in tqdm(enumerate(futures_test), desc="Loading test data"):
             features, label = future.result()
             test_features.append(features)
             test_labels.append(label)

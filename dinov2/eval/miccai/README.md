@@ -17,9 +17,8 @@ and evaluations
 ```bash
 conda activate vim
 
-python evaluations/extract_patch_features.py \
-    --model_name vim_finetuned \
-    --save_dir /lustre/groups/shared/users/peng_marr/HistoDINO/features \ 
+python evaluations/extract_patch_features.py \ 
+    --model_name vim_finetuned \ 
     --dataset NCT-CRC-100k-nonorm \ 
     --checkpoint /home/haicu/sophia.wagner/projects/Vim/vim/vim_tiny_73p1.pth 
 ```
@@ -27,13 +26,13 @@ python evaluations/extract_patch_features.py \
 2. Run evaluation pipeline
    change conda env to fitting environment
 
-```
+```bash
 conda activate eval
 
-python evaluations/evaluation.py \
-    --path-folder /lustre/groups/shared/users/peng_marr/HistoDINO/features/NCT-CRC-100k-nonorm/vim_tiny_224_pretrained
-    --save-dir /lustre/groups/shared/users/peng_marr/HistoDINO/eval \
-    --dataset NCT-CRC-100k-nonorm
+python evaluations/evaluation.py \ 
+    --dataset NCT-CRC-100k-nonorm \ 
+    --checkpoint /home/haicu/sophia.wagner/projects/Vim/vim/vim_tiny_73p1.pth \ 
+    --model_name vim_finetuned
 ```
 
 3. Run HistoBistro evaluation pipeline

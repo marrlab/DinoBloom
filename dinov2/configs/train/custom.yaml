@@ -50,11 +50,7 @@ train:
   batch_size_per_gpu: 192
   num_workers: 26
   OFFICIAL_EPOCH_LENGTH: 500  # 1250
-<<<<<<< HEAD
   dataset_path: BalancedPatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/train_lists  # original: ImageNet22k
-=======
-  dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/train_new.txt  # original: ImageNet22k
->>>>>>> vim
   centering: sinkhorn_knopp
 student:
   arch: vit_small

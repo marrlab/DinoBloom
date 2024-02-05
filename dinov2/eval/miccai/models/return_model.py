@@ -1,3 +1,4 @@
+
 import torch
 import torch.nn as nn
 from models.ctran import ctranspath
@@ -5,6 +6,7 @@ from models.dinov2 import vit_base, vit_giant2, vit_large, vit_small
 from models.imagebind import imagebind_huge
 from models.resnet_retccl import resnet50 as retccl_res50
 from models.sam import build_sam_vit_b, build_sam_vit_h, build_sam_vit_l
+from models.vim import get_vision_mamba_model
 from torchvision import transforms
 from torchvision.models import resnet
 from transformers import BeitFeatureExtractor, Data2VecVisionModel
@@ -22,7 +24,7 @@ from transformers import BeitFeatureExtractor, Data2VecVisionModel
 #DINO_VIT_S_PATH_FINETUNED_DOWNLOADED="/lustre/scratch/users/benedikt.roth/dinov2_vits_interpolated_224_NCT-CRC_downloaded_model_finetuned_10000k_iterations/eval/training_2699/teacher_checkpoint.pth"
 #DINO_VIT_S_PATH_FINETUNED_DOWNLOADED="/lustre/scratch/users/benedikt.roth/dinov2_vitg_interpolated_224_NCT-CRC_downloaded_model_finetuned/eval/training_119999/teacher_checkpoint.pth"
 
-def get_models(modelname,saved_model_path=None):
+def get_models(modelname, saved_model_path=None):
 
     device = torch.device(
         'cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -75,6 +77,9 @@ def get_models(modelname,saved_model_path=None):
 
     elif modelname.lower()=='beit_fb':
         model = BeitModel(device)
+
+    elif modelname.lower() == 'vim_finetuned':
+        model = get_vim_finetuned(saved_model_path)
     model = model.to(device)
     model.eval()
 
