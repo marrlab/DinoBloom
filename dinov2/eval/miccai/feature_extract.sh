@@ -15,5 +15,5 @@ source $HOME/.bashrc
 conda activate feature_ex
 cd /lustre/groups/shared/histology_data/eval/
 export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH
-python "/lustre/groups/shared/histology_data/eval/extract_patch_features.py" 
+python "/home/icb/valentin.koch/dinov2/dinov2/eval/miccai/extract_patch_features.py" 
 

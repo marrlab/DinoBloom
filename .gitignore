@@ -14,3 +14,4 @@ slurm_outputs/
 *.out
 **/wandb/**
 dinov2/configs/train/custom.yaml
+dinov2/eval/miccai/test_checkpoints.sh

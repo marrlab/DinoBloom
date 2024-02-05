@@ -3,21 +3,18 @@
 # This source code is licensed under the Apache License, Version 2.0
 # found in the LICENSE file in the root directory of this source tree.
 
+import itertools
 import logging
-
+from collections import defaultdict
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Tuple, Union
 
-from collections import defaultdict
-from pathlib import Path
-import itertools
 import numpy as np
 import openslide
 import torch
 from PIL import Image
 from torchvision.datasets import VisionDataset
 from tqdm import tqdm
-
 
 logger = logging.getLogger("dinov2")
 

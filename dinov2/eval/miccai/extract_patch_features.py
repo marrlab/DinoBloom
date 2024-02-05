@@ -1,19 +1,16 @@
 import argparse
 import os
+from pathlib import Path
 
 import h5py
 import pandas as pd
 import torch
 import tqdm
+from models.return_model import get_models, get_transforms
 from torch.utils.data import DataLoader
 from utils import CustomImageDataset, create_datasets
 
-from models.return_model import get_models, get_transforms
-
-
-
 parser = argparse.ArgumentParser(description="Feature extraction")
-
 
 parser.add_argument(
     "--model_name",
@@ -22,21 +19,33 @@ parser.add_argument(
     type=str,
 )
 parser.add_argument(
+    "--dataset",
+    help="name of dataset",
+    default="NCT-CRC-100k-nonorm",
+    type=str,
+)
+parser.add_argument(
     "--image_path_train",
     help="path to csv file",
-    default="/home/icb/valentin.koch/dinov2/dinov2/eval/miccai/bild_pfade_with_label.csv",
+    default="./dinov2/eval/miccai/bild_pfade_with_label.csv",
     type=str,
 )
 parser.add_argument(
     "--image_path_test",
     help="path to csv file",
-    default="/home/icb/valentin.koch/dinov2/dinov2/eval/miccai/bild_pfade_with_label_test.csv",
+    default="./dinov2/eval/miccai/bild_pfade_with_label_test.csv",
     type=str,
 )
 parser.add_argument(
-    "--save_dir",
+    "--checkpoint",
+    help="path to checkpoint",
+    default=None,
+    type=str,
+)
+parser.add_argument(
+    "--save_dir", "--save-dir", "-s",
     help="path save directory",
-    default="/lustre/groups/shared/histology_data/features_NCT-CRC-100k-nonorm/benedikt_baseline_vits",
+    default="/lustre/groups/shared/users/peng_marr/HistoDINO/features",
     type=str,
 )
 parser.add_argument(
@@ -48,7 +57,12 @@ parser.add_argument(
 
 
 def save_features_and_labels_individual(feature_extractor, dataloader, save_dir):
+    
     os.makedirs(save_dir, exist_ok=True)
+    if os.listdir(save_dir):
+        print(f"Directory {save_dir} is not empty. Aborting.")
+        return
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     with torch.no_grad():
@@ -90,7 +104,10 @@ def main(args):
 
     test_dataloader = DataLoader(test_dataset, batch_size=256, shuffle=False, num_workers=5)
 
-    feature_extractor = get_models(model_name, args.model_path)
+    feature_extractor = get_models(model_name, saved_model_path=args.checkpoint)
+    if args.checkpoint is not None:
+        model_name = f"{model_name}_{Path(args.checkpoint).parent.name}_{Path(args.checkpoint).stem}"
+    args.save_dir = Path(args.save_dir) / args.dataset / model_name
 
     save_features_and_labels_individual(feature_extractor, train_dataloader, os.path.join(args.save_dir, "train_data"))
     save_features_and_labels_individual(feature_extractor, val_dataloader, os.path.join(args.save_dir, "val_data"))

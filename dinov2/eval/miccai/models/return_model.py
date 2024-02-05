@@ -1,3 +1,4 @@
+
 import torch
 import torch.nn as nn
 from models.ctran import ctranspath
@@ -5,6 +6,7 @@ from models.dinov2 import vit_base, vit_giant2, vit_large, vit_small
 from models.imagebind import imagebind_huge
 from models.resnet_retccl import resnet50 as retccl_res50
 from models.sam import build_sam_vit_b, build_sam_vit_h, build_sam_vit_l
+from models.vim import get_vision_mamba_model
 from torchvision import transforms
 from torchvision.models import resnet
 from transformers import BeitFeatureExtractor, Data2VecVisionModel
@@ -22,7 +24,7 @@ from transformers import BeitFeatureExtractor, Data2VecVisionModel
 #DINO_VIT_S_PATH_FINETUNED_DOWNLOADED="/lustre/scratch/users/benedikt.roth/dinov2_vits_interpolated_224_NCT-CRC_downloaded_model_finetuned_10000k_iterations/eval/training_2699/teacher_checkpoint.pth"
 #DINO_VIT_S_PATH_FINETUNED_DOWNLOADED="/lustre/scratch/users/benedikt.roth/dinov2_vitg_interpolated_224_NCT-CRC_downloaded_model_finetuned/eval/training_119999/teacher_checkpoint.pth"
 
-def get_models(modelname,saved_model_path=None):
+def get_models(modelname, saved_model_path=None):
 
     device = torch.device(
         'cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -75,6 +77,9 @@ def get_models(modelname,saved_model_path=None):
 
     elif modelname.lower()=='beit_fb':
         model = BeitModel(device)
+
+    elif modelname.lower() == 'vim_finetuned':
+        model = get_vim_finetuned(saved_model_path)
     model = model.to(device)
     model.eval()
 
@@ -103,6 +108,10 @@ def get_dino_finetuned(model_path):
         new_state_dict[new_key] = value
     
     model.load_state_dict(new_state_dict, strict=False)
+    return model
+
+def get_vim_finetuned(checkpoint=None):
+    model = get_vision_mamba_model(checkpoint=checkpoint)
     return model
 
 #for 224
@@ -262,7 +271,7 @@ def get_transforms(model_name):
         mean=(0.48145466, 0.4578275, 0.40821073)
         std=(0.26862954, 0.26130258, 0.27577711)
     # change later to correct value
-    elif model_name.lower() in ['dinov2_vits14','dinov2_vitb14','dinov2_vitl14','dinov2_vitg14','dinov2_finetuned','dinov2_vits14_interpolated','dinov2_finetuned_downloaded','remedis']:
+    elif model_name.lower() in ['dinov2_vits14','dinov2_vitb14','dinov2_vitl14','dinov2_vitg14','dinov2_finetuned','dinov2_vits14_interpolated','dinov2_finetuned_downloaded','remedis', 'vim_finetuned']:
         resolution = 224
     elif "sam" in model_name.lower():
         resolution = 1024
