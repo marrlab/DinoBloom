@@ -11,13 +11,10 @@ import sys
 from functools import partial
 from typing import List, Optional
 
+import dinov2.distributed as distributed
 import numpy as np
 import torch
 import torch.nn as nn
-from fvcore.common.checkpoint import Checkpointer, PeriodicCheckpointer
-from torch.nn.parallel import DistributedDataParallel
-
-import dinov2.distributed as distributed
 from dinov2.data import SamplerType, make_data_loader, make_dataset
 from dinov2.data.transforms import (make_classification_eval_transform,
                                     make_classification_train_transform)
@@ -26,6 +23,8 @@ from dinov2.eval.setup import get_args_parser as get_setup_args_parser
 from dinov2.eval.setup import setup_and_build_model
 from dinov2.eval.utils import ModelWithIntermediateLayers, evaluate
 from dinov2.logging import MetricLogger
+from fvcore.common.checkpoint import Checkpointer, PeriodicCheckpointer
+from torch.nn.parallel import DistributedDataParallel
 
 logger = logging.getLogger("dinov2")
 
