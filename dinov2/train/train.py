@@ -21,7 +21,7 @@ from dinov2.fsdp import FSDPCheckpointer
 from dinov2.logging import MetricLogger
 from dinov2.train.ssl_meta_arch import SSLMetaArch
 from dinov2.utils.config import setup
-from dinov2.utils.utils import CosineScheduler
+from dinov2.utils.utils import CosineScheduler, smooth_rank_measure
 from fvcore.common.checkpoint import PeriodicCheckpointer
 
 torch.backends.cuda.matmul.allow_tf32 = True  # PyTorch 1.12 sets this to False by default
@@ -30,7 +30,7 @@ logger = logging.getLogger("dinov2")
 
 def get_args_parser(add_help: bool = True):
     parser = argparse.ArgumentParser("DINOv2 training", add_help=add_help)
-    parser.add_argument("--config-file", default="/mnt/ceph_vol/dinov2/dinov2/configs/train/custom.yaml", metavar="FILE", help="path to config file")
+    parser.add_argument("--config-file", default="./dinov2/configs/train/custom.yaml", metavar="FILE", help="path to config file")
     parser.add_argument(
         "--no-resume",
         action="store_true",
@@ -223,6 +223,7 @@ def do_train(cfg, model, resume=False):
     metric_logger = MetricLogger(delimiter="  ", output_file=metrics_file)
     header = "Training"
 
+    batch_collection = []
     for data in metric_logger.log_every(
         data_loader,
         10,
@@ -296,7 +297,16 @@ def do_train(cfg, model, resume=False):
             **loss_dict_reduced
         })
 
-        # checkpointing and testing
+        # compute smooth rank measure
+
+        if iteration % 1000 < 10:
+            embedding_matrix = model.teacher.backbone.forward_features(data["collated_global_crops"].cuda().float())["x_norm_clstoken"].detach()
+            batch_collection.append(embedding_matrix)
+        if iteration % 1000 == 10:
+            embedding_matrix = torch.cat(batch_collection, dim=0)
+            smooth_rank = smooth_rank_measure(embedding_matrix)
+            wandb.log({'smooth_rank': smooth_rank})
+            batch_collection = []
 
         if cfg.evaluation.eval_period_iterations > 0 and (iteration + 1) % cfg.evaluation.eval_period_iterations == 0:
             do_test(cfg, model, f"training_{iteration}")

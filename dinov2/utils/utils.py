@@ -17,6 +17,29 @@ from torch import nn
 logger = logging.getLogger("dinov2")
 
 
+def smooth_rank_measure(embedding_matrix, eps=1e-7):
+    """
+    Compute the smooth rank measure of a matrix of embeddings. (from Anurag and Guillaume, out of RankMe paper)
+    
+    Args:
+        embedding_matrix (torch.Tensor): Matrix of embeddings (n x m). n: number of patch embeddings, m: embedding dimension
+        alpha (float): Smoothing parameter to avoid division by zero.
+
+    Returns:
+        float: Smooth rank measure.
+    """
+    
+    # Perform SVD on the embedding matrix
+    _, S, _ = torch.svd(embedding_matrix)
+    
+    # Compute the smooth rank measure
+    p = S / torch.norm(S, p=1) + eps
+    p = p[:embedding_matrix.shape[1]]
+    smooth_rank = torch.exp(-torch.sum(p * torch.log(p)))
+    smooth_rank = round(smooth_rank.item(), 2)
+    
+    return smooth_rank
+
 def load_pretrained_weights(model, pretrained_weights, checkpoint_key):
     if urlparse(pretrained_weights).scheme:  # If it looks like an URL
         state_dict = torch.hub.load_state_dict_from_url(pretrained_weights, map_location="cpu")
