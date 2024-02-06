@@ -130,7 +130,7 @@ def main(args):
     wandb.init(
         entity="histo-collab",
         project="dino_eval", 
-        name=Path(args.run_path.name),
+        name=Path(args.run_path).name,
     )
 
     # Log the n_neighbors value, accuracy
