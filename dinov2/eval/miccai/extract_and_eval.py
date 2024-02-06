@@ -60,7 +60,7 @@ parser.add_argument(
     default=True,
     type=bool,
 )
-
+#python extract_and_eval.py --run_path /home/icb/valentin.koch/dinov2/debug/eval
 parser.add_argument(
     "--logistic_regression", "--logistic-regression", "-log",
     help="perform logistic regression or not",
@@ -172,7 +172,7 @@ def main(args):
         if args.knn:
             knn_metrics=perform_knn(train_data, train_labels, test_data, test_labels, args.save_dir)
             print("knn done")
-        step=int(checkpoint.parent.name)
+        step=int(checkpoint.parent.name.split("_")[1])
 
         wandb.log(knn_metrics, step= step)
         wandb.log({"log_reg": log_reg, "umap_test":wandb.Image(umap_test),"umap_train":wandb.Image(umap_train)},step=step)
