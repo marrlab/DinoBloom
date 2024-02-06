@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
-import tqdm
 import umap
 from models.return_model import get_models, get_transforms
 from sklearn.linear_model import LogisticRegression
@@ -50,7 +49,7 @@ parser.add_argument(
 parser.add_argument(
     "--run_path",
     help="path to run directory with models inside",
-    default=None,
+    default="/dinov2/eval/miccai/b",
     type=str,
 )
 
@@ -89,7 +88,7 @@ def save_features_and_labels_individual(feature_extractor, dataloader, save_dir)
     with torch.no_grad():
         feature_extractor.eval()
 
-        for images, labels, names in tqdm.tqdm(dataloader):
+        for images, labels, names in tqdm(dataloader):
             images = images.to(device)
             batch_features = feature_extractor(images)
 
