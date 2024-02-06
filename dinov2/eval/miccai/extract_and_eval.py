@@ -333,11 +333,6 @@ def create_umap(data, labels, save_dir, filename_addon="train"):
 
 def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, dataset, save_dir, max_iter=1000):
     # Initialize wandb
-    wandb.init(
-        entity="histo-collab",
-        project="logistic_regression", 
-        name=f"{dataset}_{Path(save_dir).name}",
-    )
 
     M = train_data.shape[1]  
     C = 9  

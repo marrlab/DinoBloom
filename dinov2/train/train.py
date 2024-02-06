@@ -9,6 +9,7 @@ import math
 import os
 import sys
 from functools import partial
+import time
 
 sys.path.append('.')
 
@@ -350,7 +351,7 @@ if __name__ == "__main__":
     wandb.init(
         entity="histo-collab",
         project="dinov2",
-        name=args.name,
+        name=args.name+str(time.time()),
         mode="online",
         config=args
     )
