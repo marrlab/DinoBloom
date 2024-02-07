@@ -347,11 +347,12 @@ def main(args):
 
 if __name__ == "__main__":
     args = get_args_parser(add_help=True).parse_args()
-    args.output_dir = os.path.join(args.output_dir, args.name)
+    name=args.name+str(time.time())
+    args.output_dir = os.path.join(args.output_dir,name )
     wandb.init(
         entity="histo-collab",
         project="dinov2",
-        name=args.name+str(time.time()),
+        name=name,
         mode="online",
         config=args
     )
