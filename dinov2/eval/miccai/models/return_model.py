@@ -6,7 +6,7 @@ from models.dinov2 import vit_base, vit_giant2, vit_large, vit_small
 from models.imagebind import imagebind_huge
 from models.resnet_retccl import resnet50 as retccl_res50
 from models.sam import build_sam_vit_b, build_sam_vit_h, build_sam_vit_l
-from models.vim import get_vision_mamba_model
+
 from torchvision import transforms
 from torchvision.models import resnet
 from transformers import BeitFeatureExtractor, Data2VecVisionModel
@@ -111,6 +111,7 @@ def get_dino_finetuned(model_path):
     return model
 
 def get_vim_finetuned(checkpoint=None):
+    from models.vim import get_vision_mamba_model
     model = get_vision_mamba_model(checkpoint=checkpoint)
     return model
 

@@ -13,7 +13,7 @@ from dinov2.fsdp import (ShardedGradScaler, get_fsdp_modules, get_fsdp_wrapper,
 from dinov2.layers import DINOHead
 from dinov2.loss import DINOLoss, KoLeoLoss, iBOTPatchLoss
 from dinov2.models import build_model_from_cfg
-from dinov2.models.vision_mamba import get_vision_mamba_model
+
 from dinov2.models.vision_transformer import BlockChunk
 from dinov2.utils.param_groups import (fuse_params_groups,
                                        get_params_groups_with_decay)
@@ -75,6 +75,7 @@ class SSLMetaArch(nn.Module):
             teacher_backbone = get_downloaded_dino_vit_s_interpolated()
             embed_dim = 384
         elif cfg.student.arch == "vim_tiny":
+            from dinov2.models.vision_mamba import get_vision_mamba_model
             student_backbone = get_vision_mamba_model(cfg.student.interpolate_antialias, cfg.student.interpolate_offset)
             teacher_backbone = get_vision_mamba_model(cfg.student.interpolate_antialias, cfg.student.interpolate_offset)
             embed_dim = 192
