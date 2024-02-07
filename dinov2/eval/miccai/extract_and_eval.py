@@ -2,7 +2,7 @@ import argparse
 import os
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-
+import random
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,6 +18,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from utils import CustomImageDataset, create_datasets
+from PIL import Image
 
 import wandb
 
@@ -30,6 +31,13 @@ parser.add_argument(
     help="name of model",
     default="dinov2_finetuned",
     type=str,
+)
+
+parser.add_argument(
+    "--num_workers",
+    help="num workers to load data",
+    default=4,
+    type=int,
 )
 
 parser.add_argument(
@@ -49,7 +57,7 @@ parser.add_argument(
 parser.add_argument(
     "--run_path",
     help="path to run directory with models inside",
-    default="/dinov2/eval/miccai/b",
+    default="/home/icb/valentin.koch/dinov2/debug/eval",
     type=str,
 )
 
@@ -59,7 +67,7 @@ parser.add_argument(
     default=True,
     type=bool,
 )
-#python extract_and_eval.py --run_path /home/icb/valentin.koch/dinov2/debug/eval
+
 parser.add_argument(
     "--logistic_regression", "--logistic-regression", "-log",
     help="perform logistic regression or not",
@@ -79,9 +87,6 @@ def save_features_and_labels_individual(feature_extractor, dataloader, save_dir)
     
     os.makedirs(save_dir, exist_ok=True)
     
-    if os.listdir(save_dir):
-        print(f"Directory {save_dir} is not empty. Aborting.")
-        return
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -118,11 +123,11 @@ def main(args):
     test_dataset = CustomImageDataset(df_test, transform=transform, class_to_label=class_to_label)
 
     # Create data loaders for the three datasets
-    train_dataloader = DataLoader(train_dataset, batch_size=256, shuffle=False, num_workers=5)
+    train_dataloader = DataLoader(train_dataset, batch_size=256, shuffle=False, num_workers=args.num_workers)
 
-    val_dataloader = DataLoader(val_dataset, batch_size=256, shuffle=False, num_workers=5)
+    val_dataloader = DataLoader(val_dataset, batch_size=256, shuffle=False, num_workers=args.num_workers)
 
-    test_dataloader = DataLoader(test_dataset, batch_size=256, shuffle=False, num_workers=5)
+    test_dataloader = DataLoader(test_dataset, batch_size=256, shuffle=False, num_workers=args.num_workers)
 
 
         # If you want to log the results with Weights & Biases (wandb), you can initialize a wandb run:
@@ -138,38 +143,39 @@ def main(args):
     for checkpoint in Path(args.run_path).rglob("*teacher_checkpoint.pth"):
         
         feature_extractor = get_models(model_name, saved_model_path=checkpoint)
-        save_dir = checkpoint.parent / "features"
+        feature_dir = checkpoint.parent / "features"
 
-        train_dir= os.path.join(save_dir, "train_data")
-        val_dir = os.path.join(save_dir, "val_data")
-        test_dir = os.path.join(save_dir, "test_data")
+        train_dir= os.path.join(feature_dir, "train_data")
+        val_dir = os.path.join(feature_dir, "val_data")
+        test_dir = os.path.join(feature_dir, "test_data")
 
         save_features_and_labels_individual(feature_extractor, train_dataloader, train_dir)
         save_features_and_labels_individual(feature_extractor, val_dataloader,val_dir )
         save_features_and_labels_individual(feature_extractor, test_dataloader, test_dir)
 
         train_data, train_labels, test_data, test_labels = get_data(train_dir,val_dir, test_dir)
-        #train_data, train_labels, test_data, test_labels = test_data_creation()
+
         print("data fully loaded")
         print("Shape of train_data:", train_data.shape)
         print("Shape of train_labels:", train_labels.shape)
         print("Shape of test_data:", test_data.shape)
         print("Shape of test_labels:", test_labels.shape)
         
-        # run_name = f"{Path(args.path_folder).name}"
-        # save_directory = Path(args.save_dir) / args.dataset / run_name 
 
         if args.logistic_regression:
-            log_reg= train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, save_dir, max_iter=1000)
+            logreg_dir = checkpoint.parent / "log_reg_eval"
+            log_reg= train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, logreg_dir, max_iter=1000)
             print("logistic_regression done")
 
         if args.umap:
-            umap_train=create_umap(train_data, train_labels, args.save_dir)
-            umap_test= create_umap(test_data, test_labels, args.save_dir, "test")
+            umap_dir = checkpoint.parent / "umaps"
+            umap_train=create_umap(train_data, train_labels, umap_dir)
+            umap_test= create_umap(test_data, test_labels, umap_dir, "test")
             print("umap done")
 
         if args.knn:
-            knn_metrics=perform_knn(train_data, train_labels, test_data, test_labels, args.save_dir)
+            knn_dir = checkpoint.parent / "knn_eval"
+            knn_metrics=perform_knn(train_data, train_labels, test_data, test_labels, knn_dir)
             print("knn done")
         step=int(checkpoint.parent.name.split("_")[1])
 
@@ -178,6 +184,7 @@ def main(args):
 
 def process_file(file_name):
     with h5py.File(file_name, 'r') as hf:
+       #hf.visititems(print)
         features = torch.tensor(hf['features'][:]).tolist()
         label = int(hf['labels'][()])
     return features, label
@@ -191,9 +198,12 @@ def get_data(train_dir,val_dir,test_dir):
     # Load training data into dictionaries
     train_features, train_labels = [], []
     test_features, test_labels = [], []
+    train_files= list(Path(train_dir).glob("*.h5"))
+    val_files= list(Path(train_dir).glob("*.h5"))
+    test_files= list(Path(train_dir).glob("*.h5"))
 
     with ThreadPoolExecutor() as executor:
-        futures_train = [executor.submit(process_file, file_name) for file_name in list(Path(train_dir).glob("*.h5"))]
+        futures_train = [executor.submit(process_file, file_name) for file_name in train_files]
 
         for i, future_train in tqdm(enumerate(futures_train), desc="Loading training data"):
             feature_train, label_train = future_train.result()
@@ -201,7 +211,7 @@ def get_data(train_dir,val_dir,test_dir):
             train_labels.append(label_train)
 
     with ThreadPoolExecutor() as executor:
-        futures_val = [executor.submit(process_file, file_name) for file_name in list(Path(val_dir).glob("*.h5"))]
+        futures_val = [executor.submit(process_file, file_name) for file_name in val_files]
 
         for i, future_val in tqdm(enumerate(futures_val), desc="Loading validation data"):
             feature_val, label_val = future_val.result()
@@ -209,7 +219,7 @@ def get_data(train_dir,val_dir,test_dir):
             train_labels.append(label_val)
 
     with ThreadPoolExecutor() as executor:
-        futures_test = [executor.submit(process_file, file_name) for file_name in list(Path(test_dir).glob("*.h5"))]
+        futures_test = [executor.submit(process_file, file_name) for file_name in test_files]
 
         for i, future in tqdm(enumerate(futures_test), desc="Loading test data"):
             features, label = future.result()
@@ -253,7 +263,7 @@ def perform_knn(train_data, train_labels, test_data, test_labels, save_dir):
     #n_neighbors_values = [1, 2, 5, 10, 20, 50, 100, 500]
     #n_neighbors_values = [1, 2, 3, 4, 5] # -> for testing
     metrics_dict = {}
-
+    os.makedirs(save_dir, exist_ok=True)
 
     for n_neighbors in n_neighbors_values:
         # Initialize a KNeighborsClassifier with the current n_neighbors
@@ -292,8 +302,6 @@ def perform_knn(train_data, train_labels, test_data, test_labels, save_dir):
         # Log the final loss, accuracy, and classification report using wandb.log
         #wandb.log({"Classification Report": wandb.Table(dataframe=report_df)})
 
-        # Finish the wandb run
-        #wandb.finish()
 
         df_labels_to_save = pd.DataFrame({'True Labels': test_labels, 'Predicted Labels': test_predictions})
         filename = f"{Path(save_dir).name}_labels_and_predictions.csv"
@@ -315,23 +323,23 @@ def create_umap(data, labels, save_dir, filename_addon="train"):
     os.makedirs(umap_dir, exist_ok=True)
 
     # Loop through different figure sizes
-    figure_sizes = [(48, 32), (36, 24), (24, 16), (12, 8), (6, 4)]  # Add more sizes as needed
+    size = (12, 8)  # Add more sizes as needed
 
-    for size in figure_sizes:
-        # Create a scatter plot with the specified size
-        plt.figure(figsize=size, dpi=300)
-        plt.scatter(umap_data[:, 0], umap_data[:, 1], c=labels, s=0.1, cmap='Spectral')
-        plt.colorbar()
-        plt.title("UMAP")
+    # Create a scatter plot with the specified size
+    plt.figure(figsize=size, dpi=300)
+    plt.scatter(umap_data[:, 0], umap_data[:, 1], c=labels, s=0.1, cmap='Spectral')
+    plt.colorbar()
+    plt.title("UMAP")
 
-        # Specify the filename with the size information
-        image_filename = f'umap_visualization_{Path(save_dir).name}_{size[0]}x{size[1]}_{filename_addon}.png'
+    # Specify the filename with the size information
+    image_filename = f'umap_visualization_{Path(save_dir).name}_{size[0]}x{size[1]}_{filename_addon}.png'
 
-        # Save the UMAP visualization as an image in the specified directory
-        plt.savefig(os.path.join(umap_dir, image_filename))
+    # Save the UMAP visualization as an image in the specified directory
+    plt.savefig(os.path.join(umap_dir, image_filename))
+    im=Image.open(os.path.join(umap_dir, image_filename))
+    return im
 
-
-def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, dataset, save_dir, max_iter=1000):
+def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, save_dir, max_iter=1000):
     # Initialize wandb
 
     M = train_data.shape[1]  
