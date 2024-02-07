@@ -122,7 +122,7 @@ def main(args):
     train_dataset, val_dataset = create_datasets(df, transform, class_to_label=class_to_label)
     test_dataset = CustomImageDataset(df_test, transform=transform, class_to_label=class_to_label)
 
-    # Create data loaders for the three datasets
+    # Create data loaders for the three datasets    
     train_dataloader = DataLoader(train_dataset, batch_size=256, shuffle=False, num_workers=args.num_workers)
 
     val_dataloader = DataLoader(val_dataset, batch_size=256, shuffle=False, num_workers=args.num_workers)
@@ -199,8 +199,8 @@ def get_data(train_dir,val_dir,test_dir):
     train_features, train_labels = [], []
     test_features, test_labels = [], []
     train_files= list(Path(train_dir).glob("*.h5"))
-    val_files= list(Path(train_dir).glob("*.h5"))
-    test_files= list(Path(train_dir).glob("*.h5"))
+    val_files= list(Path(val_dir).glob("*.h5"))
+    test_files= list(Path(test_dir).glob("*.h5"))
 
     with ThreadPoolExecutor() as executor:
         futures_train = [executor.submit(process_file, file_name) for file_name in train_files]
@@ -237,22 +237,6 @@ def get_data(train_dir,val_dir,test_dir):
     train_labels = np.array(train_labels).flatten()
     # Flatten test_data
     train_data = train_data.reshape(train_data.shape[0], -1)
-
-    return train_data, train_labels, test_data, test_labels
-
-def test_data_creation():
-    # Create synthetic data
-    num_samples = 100  # Number of samples in the synthetic dataset
-    num_features = 100  # Number of features per sample
-
-    # Generate random synthetic data
-    synthetic_data = np.random.rand(num_samples, num_features)
-
-    # Generate random synthetic labels
-    synthetic_labels = np.random.randint(0, 2, size=num_samples)  # Binary classification example
-
-    # Split the synthetic data into a smaller train and test set
-    train_data, test_data, train_labels, test_labels = train_test_split(synthetic_data, synthetic_labels, test_size=0.2)
 
     return train_data, train_labels, test_data, test_labels
 
