@@ -13,7 +13,10 @@ from dinov2.fsdp import (ShardedGradScaler, get_fsdp_modules, get_fsdp_wrapper,
 from dinov2.layers import DINOHead
 from dinov2.loss import DINOLoss, KoLeoLoss, iBOTPatchLoss
 from dinov2.models import build_model_from_cfg
-
+try: 
+    from dinov2.models.vision_mamba import get_vision_mamba_model
+except ModuleNotFoundError:
+    pass
 from dinov2.models.vision_transformer import BlockChunk
 from dinov2.utils.param_groups import (fuse_params_groups,
                                        get_params_groups_with_decay)
@@ -396,7 +399,7 @@ class SSLMetaArch(nn.Module):
 
         # self.fsdp_synchronize_streams()  # changed for vision mamba
 
-        return loss_dict
+        return loss_dict, student_cls_tokens
 
     def fsdp_synchronize_streams(self):
         if self.need_to_synchronize_fsdp_streams:
