@@ -152,7 +152,7 @@ def main(args):
     for checkpoint in sorted_paths:
         
         feature_extractor = get_models(model_name, saved_model_path=checkpoint)
-        feature_dir = checkpoint.parent / "features"
+        feature_dir = checkpoint.parent / "features_crc"
 
         train_dir= os.path.join(feature_dir, "train_data")
         val_dir = os.path.join(feature_dir, "val_data")

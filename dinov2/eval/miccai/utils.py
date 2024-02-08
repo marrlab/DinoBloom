@@ -305,7 +305,7 @@ def save_qupath_annotation(args: argparse.Namespace, slide_name:str, scn:int, co
         json.dump(features, annotation_file)
 
 
-def save_hdf5(args: argparse.Namespace, slide_name:str , coords: pd.DataFrame, feats:dict, slide_sizes:list[tuple]):
+def save_hdf5(args: argparse.Namespace, slide_name:str , coords: pd.DataFrame, feats:dict, slide_sizes:list[tuple],downscaling_factors:list,model_dicts:list[dict]):
     """
     Save the extracted features and coordinates to an HDF5 file.
     Args:
@@ -316,10 +316,11 @@ def save_hdf5(args: argparse.Namespace, slide_name:str , coords: pd.DataFrame, f
     Returns:
         None
     """
-    for model_name, features in feats.items():
+    for (model_name, features),model_dict in zip(feats.items(),model_dicts):
+
         if len(features) > 0:
             with h5py.File(
-                Path(args.save_path)
+                Path(model_dict["save_path"])
                 / "h5_files"
                 / f"{args.patch_size}px_{model_name}_{args.resolution_in_mpp}mpp_{args.downscaling_factor}xdown_normal"
                 / f"{slide_name}.h5",
@@ -330,6 +331,7 @@ def save_hdf5(args: argparse.Namespace, slide_name:str , coords: pd.DataFrame, f
                 f["args"] = json.dumps(vars(args))
                 f["model_name"] = model_name
                 f["slide_sizes"] = slide_sizes
+                f["donwscaling_factor"] = downscaling_factors
 
             if len(np.unique(coords.scn)) != len(slide_sizes):
                 print(

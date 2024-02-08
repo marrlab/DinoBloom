@@ -13,7 +13,7 @@ import pandas as pd
 import slideio
 import torch
 from dataset import SlideDataset
-from models.return_model import get_models
+from models.return_model import get_models, get_transforms
 from PIL import Image
 # import cv2
 from torch.utils.data import DataLoader
@@ -46,17 +46,17 @@ parser.add_argument(
     type=str,
 )
 parser.add_argument(
-    "--models",
+    "--model",
     help="select model ctranspath, retccl, all",
     nargs="+",
-    default=[],
+    default="dinov2_finetuned",
     type=str,
 )
 parser.add_argument(
     "--checkpoints",
     help="path to checkpoint",
     nargs="+",
-    default=[],
+    default=["/mnt/ceph_vol/dinov2/dinov2/debug/logs/teacher_checkpoint.pth"],
     type=str,
 )
 parser.add_argument(
@@ -95,7 +95,7 @@ parser.add_argument(
 parser.add_argument(
     "--resolution_in_mpp",
     help="resolution in mpp, usually 10x= 1mpp, 20x=0.5mpp, 40x=0.25, ",
-    default=0,
+    default=1,
     type=float,
 )
 parser.add_argument(
@@ -191,22 +191,23 @@ def main(args):
     start=args.split[0]*chunk_len
     end=min(start+chunk_len,len(slide_files))
     slide_files=slide_files[start:end]
-
+    model_dicts=[]
     # Get model dictionaries
-    model_dicts = get_models(args.models, args.checkpoints)
-
+    for c in args.checkpoints:
+        save_path=Path(c).parent/Path(args.slide_path).name
+        model_dicts.append({"model":get_models(args.model, c), "name": args.model, "transforms": get_transforms(args.model),"save_path": save_path})
+        output_path = Path(save_path) / "h5_files"
+        output_path.mkdir(parents=True, exist_ok=True)
     # Get the driver for the slide file extension
+        
     driver = get_driver(args.file_extension)
-
-    # Create output directory
-    output_path = Path(args.save_path) / "h5_files"
-    output_path.mkdir(parents=True, exist_ok=True)
 
     # Process models
     for model in model_dicts:
         model_name = model["name"]
+        save_path = model["save_path"]
         save_dir = (
-            Path(args.save_path)
+            Path(save_path)
             / "h5_files"
             / f"{args.patch_size}px_{model_name}_{args.resolution_in_mpp}mpp_{args.downscaling_factor}xdown_normal"
         )
@@ -225,7 +226,7 @@ def main(args):
     # Create directories
     if args.save_tile_preview:
         tile_path = (
-            Path(args.save_path)
+            Path(save_path)
             / f"tiling_previews_{args.patch_size}px_{args.resolution_in_mpp}mpp_{args.downscaling_factor}xdown_normal"
         )
         tile_path.mkdir(parents=True, exist_ok=True)
@@ -234,7 +235,7 @@ def main(args):
 
     if args.save_qupath_annotation:
         annotation_path = (
-            Path(args.save_path)
+            Path(save_path)
             / f"qupath_annotation_{args.patch_size}px_{args.resolution_in_mpp}mpp_{args.downscaling_factor}xdown_normal"
         )
         annotation_path.mkdir(parents=True, exist_ok=True)
@@ -306,7 +307,7 @@ def patches_to_feature(
     wsi: np.array, coords: pd.DataFrame, model_dicts: list[dict], device: torch.device
 ):
     feats = {model_dict["name"]: [] for model_dict in model_dicts}
-
+    
     with torch.no_grad():
         for model_dict in model_dicts:
             model = model_dict["model"]
@@ -362,18 +363,23 @@ def extract_features(
         )
 
     orig_sizes = []
+    scalings=[]
     # iterate over scenes of the slides
     for scn in range(slide.num_scenes):
         scene_coords = pd.DataFrame({"scn": [], "x": [], "y": []}, dtype=int)
         scene = slide.get_scene(scn)
         orig_sizes.append(scene.size)
+        
         try:
             scaling = get_scaling(args, scene.resolution[0])
+            scalings.append(scaling)
         except Exception as e:
             print(e)
             print(f"Error determining resolution at slide ", slide_name, scn)
+            scalings.append(-1)
             break
         # read the scene in the desired resolution
+
         wsi = scene.read_block(
             size=(int(scene.size[0] // scaling), int(scene.size[1] // scaling))
         )
@@ -425,7 +431,7 @@ def extract_features(
 
     # Write data to HDF5
     if len(model_dicts)>0:
-        save_hdf5(args, slide_name, coords, feats, orig_sizes)
+        save_hdf5(args, slide_name, coords, feats, orig_sizes,scalings,model_dicts)
 
 
 if __name__ == "__main__":
