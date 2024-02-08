@@ -106,6 +106,13 @@ def save_features_and_labels_individual(feature_extractor, dataloader, save_dir)
                     hf.create_dataset("features", data=img_features.cpu().numpy())
                     hf.create_dataset("labels", data=img_label)
 
+def sort_key(path):
+    # Extract the numeric part from the directory name
+    # Assuming the format is always like '.../train_xxxx/...'
+    number_part = int(path.parts[-2].split('_')[1])
+    return number_part
+
+
 
 def main(args):
     image_paths = args.image_path_train
@@ -138,9 +145,11 @@ def main(args):
     )
 
     # Log the n_neighbors value, accuracy
-
-
-    for checkpoint in Path(args.run_path).rglob("*teacher_checkpoint.pth"):
+    checkpoint_paths=Path(args.run_path).rglob("*teacher_checkpoint.pth")
+    # Sort the paths
+    sorted_paths = sorted(checkpoint_paths, key=sort_key)
+    print(sorted_paths)
+    for checkpoint in sorted_paths:
         
         feature_extractor = get_models(model_name, saved_model_path=checkpoint)
         feature_dir = checkpoint.parent / "features"
