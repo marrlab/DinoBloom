@@ -248,7 +248,7 @@ def do_train(cfg, model, resume=False):
         # compute losses
 
         optimizer.zero_grad(set_to_none=True)
-        loss_dict = model.forward_backward(data, teacher_temp=teacher_temp)
+        loss_dict, class_tokens = model.forward_backward(data, teacher_temp=teacher_temp)
 
         # clip gradients
 
@@ -301,8 +301,7 @@ def do_train(cfg, model, resume=False):
         # compute smooth rank measure
 
         if iteration % 1000 < 10:
-            embedding_matrix = model.teacher.backbone.forward_features(data["collated_global_crops"].cuda().float())["x_norm_clstoken"].detach()
-            batch_collection.append(embedding_matrix)
+            batch_collection.append(class_tokens)
         if iteration % 1000 == 10:
             embedding_matrix = torch.cat(batch_collection, dim=0)
             smooth_rank = smooth_rank_measure(embedding_matrix)
