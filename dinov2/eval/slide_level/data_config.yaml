@@ -30,5 +30,5 @@ TCGA-NSCLC:
   slide_csv: /lustre/groups/shared/histology_data/TCGA/annotations/tcga_lung_slide.csv
   feature_dir:
     raw:
-      custom: /lustre/groups/peng/workspace/sophia.wagner/logs/dinov2/vim_w-layernorm_w-ckpt_w-abs-pos-emb_wo-rope/model_0037499.rank_0.pth
+      custom: /lustre/groups/shared/histology_data/TCGA/NSCLC/features/0512_px_20_mag_otsu
   folds: /lustre/groups/shared/histology_data/TCGA/NSCLC/folds
