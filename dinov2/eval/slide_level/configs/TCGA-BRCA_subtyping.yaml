@@ -1,0 +1,43 @@
+# logging options
+save_dir: .logs/MSI_transformer
+project: dinov2_eval
+name: debug
+
+# task definition
+data_config: dinov2/eval/slide_level/data_config.yaml
+task: binary
+target: subtype
+num_classes: 1
+cohorts: ['TCGA-BRCA']
+ext_cohorts: []
+clini_info: {}
+seed: null
+label_dict:
+  0: 0
+  1: 1
+
+# model options
+model: Transformer
+model_config:
+  heads: 8
+  dim_head: 64
+  dim: 512
+  mlp_dim: 512
+norm: raw
+feats: custom
+input_dim: 1024
+num_tiles: -1
+pad_tiles: false
+
+# training options
+folds: 5
+num_epochs: 8
+criterion: BCEWithLogitsLoss 
+optimizer: AdamW
+lr_scheduler: null
+lr: 2.0e-05
+wd: 2.0e-05
+bs: 1
+stop_criterion: loss
+val_check_interval: 1000
+num_samples: null
