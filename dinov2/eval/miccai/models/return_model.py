@@ -149,8 +149,6 @@ def get_sam_vit_b(model_path):
     return build_sam_vit_b(model_path)
 
 
-
-
 def get_dino_vit_b():
     model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
     input_tensor = model.pos_embed
@@ -328,6 +326,3 @@ class BeitModel(torch.nn.Module):
 
         return features.squeeze(dim=2)
     
-
-if __name__ == '__main__':
-    get_models(['resnet50'])

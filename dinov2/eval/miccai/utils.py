@@ -305,7 +305,7 @@ def save_qupath_annotation(args: argparse.Namespace, slide_name:str, scn:int, co
         json.dump(features, annotation_file)
 
 
-def save_hdf5(args: argparse.Namespace, slide_name:str , coords: pd.DataFrame, feats:dict, slide_sizes:list[tuple],downscaling_factors:list,model_dicts:list[dict]):
+def save_hdf5(save_dir: str, args: argparse.Namespace, slide_name: str , coords: pd.DataFrame, feats:dict, slide_sizes:list[tuple],downscaling_factors:list,model_dicts:list[dict]):
     """
     Save the extracted features and coordinates to an HDF5 file.
     Args:
@@ -319,11 +319,7 @@ def save_hdf5(args: argparse.Namespace, slide_name:str , coords: pd.DataFrame, f
     for (model_name, features),model_dict in zip(feats.items(),model_dicts):
 
         if len(features) > 0:
-            with h5py.File(
-                Path(model_dict["save_path"])
-                / "h5_files"
-                / f"{args.patch_size}px_{model_name}_{args.resolution_in_mpp}mpp_{args.downscaling_factor}xdown_normal"
-                / f"{slide_name}.h5",
+            with h5py.File(Path(save_dir) / f"{slide_name}.h5",
                 "w",
             ) as f:
                 f["coords"] = coords.astype("float64")

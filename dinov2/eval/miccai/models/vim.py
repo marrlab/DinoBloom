@@ -489,15 +489,19 @@ def get_vision_mamba_model(interpolate_antialias: bool = False, interpolate_offs
     
     # else:
     checkpoint_model = torch.load(checkpoint)
-    checkpoint_model = checkpoint_model['model']
+    # checkpoint_model = checkpoint_model['model']
+    checkpoint_model = checkpoint_model['teacher'] if 'teacher' in checkpoint_model else checkpoint_model['model']
     # make correct state dict for loading
 
     if Path(checkpoint).name != 'vim_tiny_73p1.pth':        
         new_state_dict = {}
+        # for key, value in checkpoint_model.items():
+        #     if 'teacher' in key:
+        #         new_key = key.replace('teacher.backbone.', '')
+        #         new_state_dict[new_key] = value
         for key, value in checkpoint_model.items():
-            if 'teacher' in key:
-                new_key = key.replace('teacher.backbone.', '')
-                new_state_dict[new_key] = value
+            new_key = key.replace('backbone.', '')
+            new_state_dict[new_key] = value
         checkpoint_model = new_state_dict
 
     # adapt pos_embed
