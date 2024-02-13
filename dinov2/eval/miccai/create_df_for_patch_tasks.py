@@ -63,6 +63,6 @@ def create_train_val_split(folder_path,dataset_name):
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    create_train_val_split(args.dataset_path)
+    create_train_val_split(args.dataset_path,args.dataset_name)
 
 
