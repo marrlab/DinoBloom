@@ -163,7 +163,7 @@ def transform_clini_info(df: pd.DataFrame, clini_info: dict) -> pd.DataFrame:
 
 
 def get_multi_cohort_df(
-    data_config: Path,
+    data_config: dict,
     cohorts: Iterable[str],
     target_labels: Iterable[str],
     label_dict: dict,
@@ -192,19 +192,16 @@ def get_multi_cohort_df(
     df_list = []
     np_list = []
 
-    with open(data_config, 'r') as f:
-        data_config = yaml.safe_load(f)
+    for cohort in cohorts:
+        clini_table = Path(data_config[cohort]['clini_table'])
+        slide_csv = Path(data_config[cohort]['slide_csv'])
+        feature_dir = Path(data_config[cohort]['feature_dir'][norm][feats])
 
-        for cohort in cohorts:
-            clini_table = Path(data_config[cohort]['clini_table'])
-            slide_csv = Path(data_config[cohort]['slide_csv'])
-            feature_dir = Path(data_config[cohort]['feature_dir'][norm][feats])
-
-            current_df = get_cohort_df(
-                clini_table, slide_csv, feature_dir, target_labels, label_dict, cohort, clini_info
-            )
-            df_list.append(current_df)
-            np_list.append(len(current_df.PATIENT))
+        current_df = get_cohort_df(
+            clini_table, slide_csv, feature_dir, target_labels, label_dict, cohort, clini_info
+        )
+        df_list.append(current_df)
+        np_list.append(len(current_df.PATIENT))
 
     data = pd.concat(df_list, ignore_index=True)
 

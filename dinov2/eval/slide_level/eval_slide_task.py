@@ -19,6 +19,9 @@ from utils.options import Options
 from utils.utils import save_results
 
 """
+evaluate slide-level classification task for
+ - given feature_dir
+ - given dataset
 train, validate, and test a model with nested k-fold cross validation with in-domain test set and external test set.
 
 k-fold cross validation (k=5)
@@ -37,7 +40,7 @@ where
 # filter out UserWarnings from the torchmetrics package
 warnings.filterwarnings("ignore", category=UserWarning)
 
-def main(cfg):
+def eval_slide_level(cfg):
     cfg.seed = torch.randint(0, 1000, (1, )).item() if cfg.seed is None else cfg.seed
     pl.seed_everything(cfg.seed, workers=True)
     
@@ -98,10 +101,8 @@ def main(cfg):
     # --------------------------------------------------------
     
     # load fold directory from data_config
-    with open(cfg.data_config, 'r') as f:
-        data_config = yaml.safe_load(f)
-        fold_path = Path(data_config[train_cohorts]['folds']) / f"{cfg.target}_{cfg.folds}folds"
-        fold_path.mkdir(parents=True, exist_ok=True)
+    fold_path = Path(args.data_config[train_cohorts]['folds']) / f"{cfg.target}_{cfg.folds}folds"
+    fold_path.mkdir(parents=True, exist_ok=True)
         
     # split data stratified by the labels
     skf = StratifiedKFold(n_splits=cfg.folds, shuffle=True, random_state=cfg.seed)
@@ -174,8 +175,11 @@ def main(cfg):
         # logging
         # --------------------------------------------------------
         logger = WandbLogger(
-            project=cfg.project,
+            project='dino_eval_slide-level',
+            entity='histo-collab',
             name=f'{cfg.logging_name}_fold{k}',
+            group=f'{cfg.logging_name}',
+            tags=[f'{cfg.cohorts}',],
             save_dir=cfg.save_dir,
             reinit=True,
             settings=wandb.Settings(start_method='fork'),
@@ -249,22 +253,48 @@ def main(cfg):
     # save results to csv file
     save_results(cfg, results, base_path, train_cohorts, test_cohorts)
 
+
+
 if __name__ == '__main__':
     parser = Options()
     args = parser.parse()
     
-    # Load the configuration from the YAML file
-    with open(args.config_file, 'r') as f:
-        config = yaml.load(f, Loader=yaml.FullLoader)
-
-    # Update the configuration with the values from the argument parser
-    for arg_name, arg_value in vars(args).items():
-        if arg_value is not None and arg_name != 'config_file':
-            config[arg_name] = getattr(args, arg_name)
-
-    print('\n--- load options ---')
-    for name, value in sorted(config.items()):
-        print(f'{name}: {str(value)}')
+    # uses all subdirectories of the given feature directory if it contain
+    if (Path(args.feature_dir) / 'features').is_dir():
+        feature_dirs = [ f.path for f in os.scandir(folder + '/features') if f.is_dir() ]
+    else: 
+        feature_dirs = [args.feature_dir]
     
-    config = argparse.Namespace(**config)
-    main(config)
+    # retrieve task/dataset from feature directory
+    configs = [Path(f).name.split('_')[0] for f in feature_dirs]
+
+    for fd, c in zip(feature_dirs, configs):    
+        args.save_dir = Path(args.results_dir) / Path(fd).name
+        if Path(args.save_dir).is_dir():
+            print(f'Path {args.save_dir} already exists. Please choose a different path.')
+            continue
+        Path(args.save_dir).mkdir(parents=True)
+
+        with open(args.data_config, 'r') as f:
+            args.data_config = yaml.safe_load(f)
+
+        args.data_config[c]['feature_dir']['raw']['custom'] = fd
+
+        # Load the configuration from the YAML file
+        args.config_file = f'dinov2/eval/slide_level/configs/{c}.yaml'
+        with open(args.config_file, 'r') as f:
+            config = yaml.load(f, Loader=yaml.FullLoader)
+
+        # Update the configuration with the values from the argument parser
+        for arg_name, arg_value in vars(args).items():
+            if arg_value is not None and arg_name != 'config_file':
+                config[arg_name] = getattr(args, arg_name)
+
+        print('\n--- load options ---')
+        for name, value in sorted(config.items()):
+            print(f'{name}: {str(value)}')
+        
+        config = argparse.Namespace(**config)
+        eval_slide_level(config)
+
+

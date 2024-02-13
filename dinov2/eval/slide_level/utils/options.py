@@ -6,9 +6,13 @@ class Options:
     def __init__(self):
         self.parser = argparse.ArgumentParser()
 
+        # feature extraction options
+        self.parser.add_argument('--feature_dir', type=str, help='path to extracted features')
+        self.parser.add_argument('--results_dir', type=str, help='path where to save results')
+
         # logging options
         self.parser.add_argument('--config_file', default='config.yaml', type=str, help='path to config file')
-        self.parser.add_argument('--data_config', type=str, help='path to config file for data paths')
+        self.parser.add_argument('--data_config', type=str, default='dinov2/eval/slide_level/configs/data_config.yaml', help='path to config file for data paths')
         self.parser.add_argument('--save_dir', type=str, help='path to save models, outputs, and folds')
         self.parser.add_argument('--project', type=str, help='wandb project name')
         self.parser.add_argument('--name', type=str, help='costum prefix for logging')
