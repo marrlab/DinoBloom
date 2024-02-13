@@ -1,6 +1,5 @@
 # logging options
-save_dir: .logs/MSI_transformer
-project: dinov2_eval
+project: dino_eval
 name: debug
 
 # task definition
@@ -8,8 +7,8 @@ data_config: dinov2/eval/slide_level/data_config.yaml
 task: binary
 target: subtype
 num_classes: 1
-cohorts: ['TCGA-NSCLC']
-ext_cohorts: []  # add CPTAC cohort here
+cohorts: ['TCGA-BRCA']
+ext_cohorts: []
 clini_info: {}
 seed: null
 label_dict:
@@ -25,7 +24,7 @@ model_config:
   mlp_dim: 512
 norm: raw
 feats: custom
-input_dim: 1024
+input_dim: 192
 num_tiles: -1
 pad_tiles: false
 

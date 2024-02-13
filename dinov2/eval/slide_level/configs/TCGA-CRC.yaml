@@ -1,20 +1,19 @@
 # logging options
-save_dir: .logs/MSI_transformer
 project: dinov2_eval
 name: debug
 
 # task definition
 data_config: dinov2/eval/slide_level/data_config.yaml
 task: binary
-target: subtype
+target: isMSIH
 num_classes: 1
-cohorts: ['TCGA-BRCA']
-ext_cohorts: []
+cohorts: ['TCGA-CRC']
+ext_cohorts: ['CPTAC']
 clini_info: {}
 seed: null
 label_dict:
-  0: 0
-  1: 1
+  nonMSIH: 0
+  MSIH: 1
 
 # model options
 model: Transformer
@@ -24,15 +23,15 @@ model_config:
   dim: 512
   mlp_dim: 512
 norm: raw
-feats: custom
-input_dim: 1024
+feats: ctranspath
+input_dim: 192
 num_tiles: -1
 pad_tiles: false
 
 # training options
 folds: 5
 num_epochs: 8
-criterion: BCEWithLogitsLoss 
+criterion:  BCEWithLogitsLoss 
 optimizer: AdamW
 lr_scheduler: null
 lr: 2.0e-05
