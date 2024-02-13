@@ -15,7 +15,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--dataset_path",
+    "--dataset_name",
     help="dataset_name",
     default="",
     type=str,
