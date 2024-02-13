@@ -6,6 +6,7 @@ import concurrent.futures
 import math
 import re
 import time
+from glob import glob
 from pathlib import Path
 
 import numpy as np
@@ -17,7 +18,6 @@ from dataset import SlideDataset
 from models.return_model import get_models, get_transforms
 from options import Options
 from PIL import Image
-
 # import cv2
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -37,16 +37,15 @@ def main(args):
         slide_path = data_config[args.dataset]["slide_dir"]
 
     # Get slide files based on the provided path and file extension
-    slides = sorted(Path(slide_path).glob(f"**/*{args.file_extension}"))
+    slides = sorted(glob(f"{slide_path}/**/*{args.file_extension}", recursive=True))
 
     if bool(args.exctraction_list) is not False:
         to_extract = pd.read_csv(args.exctraction_list).iloc[:, 0].tolist()
         slides = [file for file in slides if file.name in to_extract]
 
     # filter out slide files using RegEx
-    # slide_files = sorted([
-    #    file for file in slide_files if re.search("-DX", str(file))
-    # ])
+    slides = sorted([file for file in slides if re.search("-DX", str(file))])
+
     chunk_len = math.ceil(len(slides) / args.split[1])
     start = args.split[0] * chunk_len
     end = min(start + chunk_len, len(slides))
@@ -57,16 +56,21 @@ def main(args):
 
     # Load models for checkpoints
     model_dicts = []
-    checkpoints = Path(args.run).rglob("**/*teacher_checkpoint.pth") if Path(args.run).is_dir() else [Path(args.run)]
-    args.run = args.run if Path(args.run).is_dir() else str(Path(args.run).parent.parent.parent)
+    if args.model == ['owkin']:
+        checkpoints = [Path(args.run)]
+    elif Path(args.run).is_dir():
+        checkpoints = Path(args.run).rglob("**/*teacher_checkpoint.pth")
+    else:
+        checkpoints = [Path(args.run)]
+        args.run = str(Path(args.run).parent.parent.parent)
 
     for i, c in enumerate(checkpoints):
         output_dir = (
             Path(args.run)
             / "features"
-            / f"{args.dataset}_{c.stem}_{args.patch_size}px_{args.model[i]}_{args.resolution_in_mpp}mpp_{args.downscaling_factor}xdown_normal"
+            / f"{args.dataset}_{c.parent.name}_{args.patch_size}px_{args.model[i]}_{args.resolution_in_mpp}mpp_{args.downscaling_factor}xdown_normal"
         )
-        output_dir.mkdir(parents=True, exist_ok=True)
+        output_dir.mkdir(parents=True)
         model_dicts.append(
             {
                 "model": get_models(args.model[i], c),
@@ -89,7 +93,7 @@ def main(args):
     start = time.perf_counter()
     for slide_file in tqdm(slides, position=0, leave=False, desc="slides"):
         slide = slideio.Slide(str(slide_file), driver)
-        slide_name = slide_file.stem
+        slide_name = Path(slide_file).stem
         extract_features(output_dir, slide, slide_name, model_dicts, DEVICE, args)
 
     end = time.perf_counter()
