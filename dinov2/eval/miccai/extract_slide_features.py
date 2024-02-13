@@ -17,6 +17,7 @@ from dataset import SlideDataset
 from models.return_model import get_models, get_transforms
 from options import Options
 from PIL import Image
+
 # import cv2
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -31,9 +32,9 @@ extracts features from slides of specified dataset with given checkpoints
 
 def main(args):
     # adapt the feature directory in data_config
-    with open(args.data_config, 'r') as f:
+    with open(args.data_config, "r") as f:
         data_config = yaml.safe_load(f)
-        slide_path = data_config[args.dataset]['slide_dir']
+        slide_path = data_config[args.dataset]["slide_dir"]
 
     # Get slide files based on the provided path and file extension
     slides = sorted(Path(slide_path).glob(f"**/*{args.file_extension}"))
@@ -43,13 +44,13 @@ def main(args):
         slides = [file for file in slides if file.name in to_extract]
 
     # filter out slide files using RegEx
-    #slide_files = sorted([
+    # slide_files = sorted([
     #    file for file in slide_files if re.search("-DX", str(file))
-    #])
-    chunk_len=math.ceil(len(slides)/args.split[1])
-    start=args.split[0]*chunk_len
-    end=min(start+chunk_len,len(slides))
-    slides=slides[start:end]
+    # ])
+    chunk_len = math.ceil(len(slides) / args.split[1])
+    start = args.split[0] * chunk_len
+    end = min(start + chunk_len, len(slides))
+    slides = slides[start:end]
 
     # Get the driver for the slide file extension
     driver = get_driver(args.file_extension)
@@ -58,16 +59,22 @@ def main(args):
     model_dicts = []
     checkpoints = Path(args.run).rglob("**/*teacher_checkpoint.pth") if Path(args.run).is_dir() else [Path(args.run)]
     args.run = args.run if Path(args.run).is_dir() else str(Path(args.run).parent.parent.parent)
-    
+
     for i, c in enumerate(checkpoints):
-        output_dir = Path(args.run) / "features" / f"{args.dataset}_{c.stem}_{args.patch_size}px_{args.model[i]}_{args.resolution_in_mpp}mpp_{args.downscaling_factor}xdown_normal"
+        output_dir = (
+            Path(args.run)
+            / "features"
+            / f"{args.dataset}_{c.stem}_{args.patch_size}px_{args.model[i]}_{args.resolution_in_mpp}mpp_{args.downscaling_factor}xdown_normal"
+        )
         output_dir.mkdir(parents=True, exist_ok=True)
-        model_dicts.append({
-            "model": get_models(args.model[i], c), 
-            "name": args.model[i], 
-            "transforms": get_transforms(args.model[i]),
-            "save_path": output_dir
-        })
+        model_dicts.append(
+            {
+                "model": get_models(args.model[i], c),
+                "name": args.model[i],
+                "transforms": get_transforms(args.model[i]),
+                "save_path": output_dir,
+            }
+        )
 
         # save config
         arg_dict = vars(args)
@@ -75,7 +82,7 @@ def main(args):
             for arg_name, arg_value in arg_dict.items():
                 if isinstance(arg_value, list):
                     f.write(f"{arg_name}: {arg_value[i]}\n")
-                else: 
+                else:
                     f.write(f"{arg_name}: {arg_value}\n")
 
     # Process slide files
@@ -83,9 +90,7 @@ def main(args):
     for slide_file in tqdm(slides, position=0, leave=False, desc="slides"):
         slide = slideio.Slide(str(slide_file), driver)
         slide_name = slide_file.stem
-        extract_features(
-            output_dir, slide, slide_name, model_dicts, DEVICE, args
-        )
+        extract_features(output_dir, slide, slide_name, model_dicts, DEVICE, args)
 
     end = time.perf_counter()
     elapsed_time = end - start
@@ -93,9 +98,7 @@ def main(args):
     print("Time taken: ", elapsed_time, "seconds")
 
 
-def process_row(
-    wsi: np.array, scn: int, x: int, args: argparse.Namespace, slide_name: str
-):
+def process_row(wsi: np.array, scn: int, x: int, args: argparse.Namespace, slide_name: str):
     """
     Process a row of a whole slide image (WSI) and extract patches that meet the threshold criteria.
 
@@ -127,7 +130,7 @@ def process_row(
                 im.save(
                     Path(args.save_path)
                     / "patches"
-                    /str(args.downscaling_factor)
+                    / str(args.downscaling_factor)
                     / slide_name
                     / f"{slide_name}_patch_{scn}_{x}_{y}.png"
                 )
@@ -140,11 +143,9 @@ def process_row(
     return patches_coords
 
 
-def patches_to_feature(
-    wsi: np.array, coords: pd.DataFrame, model_dicts: list[dict], device: torch.device
-):
+def patches_to_feature(wsi: np.array, coords: pd.DataFrame, model_dicts: list[dict], device: torch.device):
     feats = {model_dict["name"]: [] for model_dict in model_dicts}
-    
+
     with torch.no_grad():
         for model_dict in model_dicts:
             model = model_dict["model"]
@@ -152,15 +153,11 @@ def patches_to_feature(
             model_name = model_dict["name"]
 
             dataset = SlideDataset(wsi, coords, args.patch_size, transform)
-            dataloader = DataLoader(
-                dataset, batch_size=args.batch_size, num_workers=1, shuffle=False
-            )
+            dataloader = DataLoader(dataset, batch_size=args.batch_size, num_workers=1, shuffle=False)
 
             for batch in dataloader:
                 features = model(batch.to(device))
-                feats[model_name] = feats[model_name] + (
-                    features.cpu().numpy().tolist()
-                )
+                feats[model_name] = feats[model_name] + (features.cpu().numpy().tolist())
 
     return feats
 
@@ -192,18 +189,18 @@ def extract_features(
     coords = pd.DataFrame({"scn": [], "x": [], "y": []}, dtype=int)
 
     if args.save_patch_images:
-        (Path(args.save_path) / "patches" / str(args.downscaling_factor)/slide_name).mkdir(
+        (Path(args.save_path) / "patches" / str(args.downscaling_factor) / slide_name).mkdir(
             parents=True, exist_ok=True
         )
 
     orig_sizes = []
-    scalings=[]
+    scalings = []
     # iterate over scenes of the slides
     for scn in range(slide.num_scenes):
         scene_coords = pd.DataFrame({"scn": [], "x": [], "y": []}, dtype=int)
         scene = slide.get_scene(scn)
         orig_sizes.append(scene.size)
-        
+
         try:
             scaling = get_scaling(args, scene.resolution[0])
             scalings.append(scaling)
@@ -214,17 +211,15 @@ def extract_features(
             break
         # read the scene in the desired resolution
 
-        wsi = scene.read_block(
-            size=(int(scene.size[0] // scaling), int(scene.size[1] // scaling))
-        )
+        wsi = scene.read_block(size=(int(scene.size[0] // scaling), int(scene.size[1] // scaling)))
 
         # revert the flipping
         # wsi=np.transpose(wsi, (1, 0, 2))
 
         # check if RGB or BGR is used and adapt
-        #if bgr_format(slide.raw_metadata):
+        # if bgr_format(slide.raw_metadata):
         #    wsi = wsi[..., ::-1]
-            # print("Changed BGR to RGB!")
+        # print("Changed BGR to RGB!")
 
         # Define the main loop that processes all patches
         with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -246,19 +241,17 @@ def extract_features(
             for future in concurrent.futures.as_completed(futures):
                 patches_coords = future.result()
                 if len(patches_coords) > 0:
-                    scene_coords = pd.concat(
-                        [scene_coords, patches_coords], ignore_index=True
-                    )
+                    scene_coords = pd.concat([scene_coords, patches_coords], ignore_index=True)
         coords = pd.concat([coords, scene_coords], ignore_index=True)
 
-        if len(model_dicts)>0:
+        if len(model_dicts) > 0:
             patch_feats = patches_to_feature(wsi, scene_coords, model_dicts, device)
             for key in patch_feats.keys():
                 feats[key].extend(patch_feats[key])
 
     # Write data to HDF5
-    if len(model_dicts)>0:
-        save_hdf5(save_dir, args, slide_name, coords, feats, orig_sizes,scalings, model_dicts)
+    if len(model_dicts) > 0:
+        save_hdf5(save_dir, args, slide_name, coords, feats, orig_sizes, scalings, model_dicts)
 
 
 if __name__ == "__main__":

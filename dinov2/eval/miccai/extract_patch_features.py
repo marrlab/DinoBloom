@@ -43,7 +43,9 @@ parser.add_argument(
     type=str,
 )
 parser.add_argument(
-    "--save_dir", "--save-dir", "-s",
+    "--save_dir",
+    "--save-dir",
+    "-s",
     help="path save directory",
     default="/lustre/groups/shared/users/peng_marr/HistoDINO/features",
     type=str,
@@ -57,7 +59,7 @@ parser.add_argument(
 
 
 def save_features_and_labels_individual(feature_extractor, dataloader, save_dir):
-    
+
     os.makedirs(save_dir, exist_ok=True)
     if os.listdir(save_dir):
         print(f"Directory {save_dir} is not empty. Aborting.")

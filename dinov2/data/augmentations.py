@@ -7,8 +7,10 @@ import logging
 from typing import Callable
 
 from torchvision import transforms
+
 # from skimage.util import dtype, dtype_limits
 from PIL import Image
+
 # from skimage.exposure import rescale_intensity
 import numpy as np
 
@@ -17,11 +19,11 @@ from .transforms import GaussianBlur, make_normalize_transform
 logger = logging.getLogger("dinov2")
 
 # class HEDJitter(Callable):
-#     # HED color augmentations 
+#     # HED color augmentations
 #     # adapted from  https://github.com/DIAGNijmegen/pathology-he-auto-augment/blob/main/he-randaugment/custom_hed_transform.py
 #     def __init__(self, factor=0.07):
 #         self.factor = factor
-    
+
 #         self.rgb_from_hed = np.array([[0.65, 0.70, 0.29],
 #                             [0.07, 0.99, 0.11],
 #                             [0.27, 0.57, 0.78]]).astype('float32')
@@ -45,19 +47,19 @@ logger = logging.getLogger("dinov2")
 #         __cutoff_range = (0.15, 0.85)
 #         __biases = [np.random.uniform(-self.factor, self.factor) for _ in range(3)]
 #         __sigmas = [np.random.uniform(-self.factor, self.factor) for _ in range(3)]
-        
+
 #         patch_hed = self.rgb2hed(np.array(patch))
 
 #         patch_hed *= (1.0 + np.array(__sigmas))
 #         patch_hed += np.array(__biases)
-        
+
 #         patch_rgb = self.hed2rgb(hed=patch_hed)
 #         patch_rgb = np.clip(a=patch_rgb, a_min=0.0, a_max=1.0)
 #         patch_rgb *= 255.0
 #         patch_rgb = patch_rgb.astype(dtype=np.uint8)
-        
+
 #         return Image.fromarray(patch_rgb)
-            
+
 
 class DataAugmentationDINO(object):
     def __init__(
@@ -94,7 +96,6 @@ class DataAugmentationDINO(object):
                 # additional histopathology-specific augmentations
                 transforms.RandomVerticalFlip(p=0.5),
                 transforms.RandomApply([transforms.RandomRotation((90, 90))], p=0.5),
-
             ]
         )
 
@@ -114,10 +115,10 @@ class DataAugmentationDINO(object):
         # color distorsions / blurring
         color_jittering = transforms.Compose(
             [
-        #        transforms.RandomApply(
-        #            [HEDJitter(factor=0.07)],
-        #            p=0.5,
-        #        ),
+                #        transforms.RandomApply(
+                #            [HEDJitter(factor=0.07)],
+                #            p=0.5,
+                #        ),
                 transforms.RandomApply(
                     [transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1)],
                     p=0.8,  # original p=0.8

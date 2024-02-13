@@ -40,7 +40,7 @@ class LayerNorm2d(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         u = x.mean(1, keepdim=True)
         s = (x - u).pow(2).mean(1, keepdim=True)
-        x = (x - u) / torch.sqrt(s + self.eps) 
+        x = (x - u) / torch.sqrt(s + self.eps)
         x = self.weight[:, None, None] * x + self.bias[:, None, None]
         return x
 
@@ -65,7 +65,7 @@ class ImageEncoderViT(nn.Module):
         rel_pos_zero_init: bool = True,
         window_size: int = 0,
         global_attn_indexes: Tuple[int, ...] = (),
-        pooling="avg"
+        pooling="avg",
     ) -> None:
         """
         Args:
@@ -98,9 +98,7 @@ class ImageEncoderViT(nn.Module):
         self.pos_embed: Optional[nn.Parameter] = None
         if use_abs_pos:
             # Initialize absolute positional embedding with pretrain image size.
-            self.pos_embed = nn.Parameter(
-                torch.zeros(1, img_size // patch_size, img_size // patch_size, embed_dim)
-            )
+            self.pos_embed = nn.Parameter(torch.zeros(1, img_size // patch_size, img_size // patch_size, embed_dim))
 
         self.blocks = nn.ModuleList()
         for i in range(depth):
@@ -136,11 +134,11 @@ class ImageEncoderViT(nn.Module):
             LayerNorm2d(out_chans),
         )
 
-        if pooling=="avg":
-             self.pooling= nn.AdaptiveAvgPool2d((1, 1))
+        if pooling == "avg":
+            self.pooling = nn.AdaptiveAvgPool2d((1, 1))
 
-        elif pooling=="max":
-            self.pooling= nn.AdaptiveMaxPool2d((1, 1))
+        elif pooling == "max":
+            self.pooling = nn.AdaptiveMaxPool2d((1, 1))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.patch_embed(x)
@@ -151,7 +149,7 @@ class ImageEncoderViT(nn.Module):
             x = blk(x)
 
         x = self.neck(x.permute(0, 3, 1, 2))
-        x= self.pooling(x)
+        x = self.pooling(x)
 
         return x.squeeze(dim=2).squeeze(dim=2)
 
@@ -254,9 +252,7 @@ class Attention(nn.Module):
 
         self.use_rel_pos = use_rel_pos
         if self.use_rel_pos:
-            assert (
-                input_size is not None
-            ), "Input size must be provided if using relative positional encoding."
+            assert input_size is not None, "Input size must be provided if using relative positional encoding."
             # initialize relative positional embeddings
             self.rel_pos_h = nn.Parameter(torch.zeros(2 * input_size[0] - 1, head_dim))
             self.rel_pos_w = nn.Parameter(torch.zeros(2 * input_size[1] - 1, head_dim))
@@ -394,9 +390,9 @@ def add_decomposed_rel_pos(
     rel_h = torch.einsum("bhwc,hkc->bhwk", r_q, Rh)
     rel_w = torch.einsum("bhwc,wkc->bhwk", r_q, Rw)
 
-    attn = (
-        attn.view(B, q_h, q_w, k_h, k_w) + rel_h[:, :, :, :, None] + rel_w[:, :, :, None, :]
-    ).view(B, q_h * q_w, k_h * k_w)
+    attn = (attn.view(B, q_h, q_w, k_h, k_w) + rel_h[:, :, :, :, None] + rel_w[:, :, :, None, :]).view(
+        B, q_h * q_w, k_h * k_w
+    )
 
     return attn
 
@@ -424,15 +420,14 @@ class PatchEmbed(nn.Module):
         """
         super().__init__()
 
-        self.proj = nn.Conv2d(
-            in_chans, embed_dim, kernel_size=kernel_size, stride=stride, padding=padding
-        )
+        self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=kernel_size, stride=stride, padding=padding)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.proj(x)
         # B C H W -> B H W C
         x = x.permute(0, 2, 3, 1)
         return x
+
 
 def build_sam_vit_h(checkpoint=None):
     return _build_sam(
@@ -474,6 +469,7 @@ sam_model_registry = {
     "vit_b": build_sam_vit_b,
 }
 
+
 def replace_prefix_in_dict_keys(my_dict, old_prefix, new_prefix=""):
     """
     This function replaces the old prefix with the new prefix in all keys of a dictionary.
@@ -485,6 +481,7 @@ def replace_prefix_in_dict_keys(my_dict, old_prefix, new_prefix=""):
             new_dict[new_key] = value
     return new_dict
 
+
 def _build_sam(
     encoder_embed_dim,
     encoder_depth,
@@ -495,8 +492,8 @@ def _build_sam(
     prompt_embed_dim = 256
     image_size = 1024
     vit_patch_size = 16
-    
-    image_encoder=ImageEncoderViT(
+
+    image_encoder = ImageEncoderViT(
         depth=encoder_depth,
         embed_dim=encoder_embed_dim,
         img_size=image_size,
@@ -513,11 +510,10 @@ def _build_sam(
     if checkpoint is not None:
         with open(checkpoint, "rb") as f:
             state_dict = torch.load(f)
-            state_dict=replace_prefix_in_dict_keys(state_dict,"image_encoder.")
+            state_dict = replace_prefix_in_dict_keys(state_dict, "image_encoder.")
         image_encoder.load_state_dict(state_dict)
     return image_encoder
 
-if __name__=="__main__":
-    build_sam_vit_h("/mnt/volume/models/sam_vit_h_4b8939.pth")
 
-    
+if __name__ == "__main__":
+    build_sam_vit_h("/mnt/volume/models/sam_vit_h_4b8939.pth")

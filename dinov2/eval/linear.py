@@ -16,8 +16,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from dinov2.data import SamplerType, make_data_loader, make_dataset
-from dinov2.data.transforms import (make_classification_eval_transform,
-                                    make_classification_train_transform)
+from dinov2.data.transforms import make_classification_eval_transform, make_classification_train_transform
 from dinov2.eval.metrics import MetricType, build_metric
 from dinov2.eval.setup import get_args_parser as get_setup_args_parser
 from dinov2.eval.setup import setup_and_build_model

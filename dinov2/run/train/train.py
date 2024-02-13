@@ -6,7 +6,8 @@
 import logging
 import os
 import sys
-sys.path.append('.')
+
+sys.path.append(".")
 
 from dinov2.logging import setup_logging
 from dinov2.train import get_args_parser as get_train_args_parser

@@ -11,13 +11,19 @@ import sys
 from functools import partial
 import time
 
-sys.path.append('.')
+sys.path.append(".")
 
 import dinov2.distributed as distributed
 import torch
 import wandb
-from dinov2.data import (DataAugmentationDINO, MaskingGenerator, SamplerType,
-                         collate_data_and_cast, make_data_loader, make_dataset)
+from dinov2.data import (
+    DataAugmentationDINO,
+    MaskingGenerator,
+    SamplerType,
+    collate_data_and_cast,
+    make_data_loader,
+    make_dataset,
+)
 from dinov2.fsdp import FSDPCheckpointer
 from dinov2.logging import MetricLogger
 from dinov2.train.ssl_meta_arch import SSLMetaArch
@@ -31,7 +37,9 @@ logger = logging.getLogger("dinov2")
 
 def get_args_parser(add_help: bool = True):
     parser = argparse.ArgumentParser("DINOv2 training", add_help=add_help)
-    parser.add_argument("--config-file", default="./dinov2/configs/train/custom.yaml", metavar="FILE", help="path to config file")
+    parser.add_argument(
+        "--config-file", default="./dinov2/configs/train/custom.yaml", metavar="FILE", help="path to config file"
+    )
     parser.add_argument(
         "--no-resume",
         action="store_true",
@@ -288,15 +296,17 @@ def do_train(cfg, model, resume=False):
         metric_logger.update(current_batch_size=current_batch_size)
         metric_logger.update(total_loss=losses_reduced, **loss_dict_reduced)
 
-        wandb.log({
-            'lr': lr,
-            'wd': wd,
-            'mom': mom,
-            'last_layer_lr': last_layer_lr,
-            'current_batch_size': current_batch_size,
-            'total_loss': losses_reduced,
-            **loss_dict_reduced
-        })
+        wandb.log(
+            {
+                "lr": lr,
+                "wd": wd,
+                "mom": mom,
+                "last_layer_lr": last_layer_lr,
+                "current_batch_size": current_batch_size,
+                "total_loss": losses_reduced,
+                **loss_dict_reduced,
+            }
+        )
 
         # compute smooth rank measure
 
@@ -305,7 +315,7 @@ def do_train(cfg, model, resume=False):
         if iteration % 1000 == 10:
             embedding_matrix = torch.cat(batch_collection, dim=0)
             smooth_rank = smooth_rank_measure(embedding_matrix)
-            wandb.log({'smooth_rank': smooth_rank})
+            wandb.log({"smooth_rank": smooth_rank})
             batch_collection = []
 
         if cfg.evaluation.eval_period_iterations > 0 and (iteration + 1) % cfg.evaluation.eval_period_iterations == 0:
@@ -346,13 +356,7 @@ def main(args):
 
 if __name__ == "__main__":
     args = get_args_parser(add_help=True).parse_args()
-    name=args.name+str(time.time())
-    args.output_dir = os.path.join(args.output_dir,name )
-    wandb.init(
-        entity="histo-collab",
-        project="dinov2",
-        name=name,
-        mode="online",
-        config=args
-    )
+    name = args.name + str(time.time())
+    args.output_dir = os.path.join(args.output_dir, name)
+    wandb.init(entity="histo-collab", project="dinov2", name=name, mode="online", config=args)
     main(args)

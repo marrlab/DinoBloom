@@ -37,7 +37,6 @@ try:
             else:
                 return torch.index_add(input, dim=0, source=scaling * source, index=index, alpha=alpha)
 
-
         def index_select_cat(sources, indices):
             is_proper_embed_dim = all(s.shape[-1] % 256 == 0 for s in sources)
             is_float16 = all(s.dtype == torch.half for s in sources)

@@ -1,4 +1,4 @@
-# adapted from https://github.com/hustvl/Vim/blob/main/vim/models_mamba.py 
+# adapted from https://github.com/hustvl/Vim/blob/main/vim/models_mamba.py
 # Copyright (c) 2015-present, Facebook, Inc.
 # All rights reserved.
 import math
@@ -16,25 +16,34 @@ from mamba_ssm.utils.hf import load_config_hf, load_state_dict_hf
 from models.vim_rope import VisionRotaryEmbeddingFast
 from timm.models.layers import DropPath, PatchEmbed, trunc_normal_
 from timm.models.registry import register_model
-from timm.models.vision_transformer import (VisionTransformer, _cfg,
-                                            _load_weights)
+from timm.models.vision_transformer import VisionTransformer, _cfg, _load_weights
 from torch import Tensor
 
 try:
-    from mamba_ssm.ops.triton.layernorm import (RMSNorm, layer_norm_fn,
-                                                rms_norm_fn)
+    from mamba_ssm.ops.triton.layernorm import RMSNorm, layer_norm_fn, rms_norm_fn
 except ImportError:
     RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
 
 
 __all__ = [
-    'vim_tiny_patch16_224', 'vim_small_patch16_224', 'vim_base_patch16_224',
-    'vim_tiny_patch16_384', 'vim_small_patch16_384', 'vim_base_patch16_384',
+    "vim_tiny_patch16_224",
+    "vim_small_patch16_224",
+    "vim_base_patch16_224",
+    "vim_tiny_patch16_384",
+    "vim_small_patch16_384",
+    "vim_base_patch16_384",
 ]
+
 
 class Block(nn.Module):
     def __init__(
-        self, dim, mixer_cls, norm_cls=nn.LayerNorm, fused_add_norm=False, residual_in_fp32=False,drop_path=0.,
+        self,
+        dim,
+        mixer_cls,
+        norm_cls=nn.LayerNorm,
+        fused_add_norm=False,
+        residual_in_fp32=False,
+        drop_path=0.0,
     ):
         """
         Simple block wrapping a mixer class with LayerNorm/RMSNorm and residual connection"
@@ -53,16 +62,14 @@ class Block(nn.Module):
         self.fused_add_norm = fused_add_norm
         self.mixer = mixer_cls(dim)
         self.norm = norm_cls(dim)
-        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+        self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
         if self.fused_add_norm:
             assert RMSNorm is not None, "RMSNorm import fails"
             assert isinstance(
                 self.norm, (nn.LayerNorm, RMSNorm)
             ), "Only LayerNorm and RMSNorm are supported for fused_add_norm"
 
-    def forward(
-        self, hidden_states: Tensor, residual: Optional[Tensor] = None, inference_params=None
-    ):
+    def forward(self, hidden_states: Tensor, residual: Optional[Tensor] = None, inference_params=None):
         r"""Pass the input through the encoder layer.
 
         Args:
@@ -74,7 +81,7 @@ class Block(nn.Module):
                 residual = hidden_states
             else:
                 residual = residual + self.drop_path(hidden_states)
-            
+
             hidden_states = self.norm(residual.to(dtype=self.norm.weight.dtype))
             if self.residual_in_fp32:
                 residual = residual.to(torch.float32)
@@ -99,7 +106,7 @@ class Block(nn.Module):
                     prenorm=True,
                     residual_in_fp32=self.residual_in_fp32,
                     eps=self.norm.eps,
-                )    
+                )
         hidden_states = self.mixer(hidden_states, inference_params=inference_params)
         return hidden_states, residual
 
@@ -111,7 +118,7 @@ def create_block(
     d_model,
     ssm_cfg=None,
     norm_epsilon=1e-5,
-    drop_path=0.,
+    drop_path=0.0,
     rms_norm=False,
     residual_in_fp32=False,
     fused_add_norm=False,
@@ -124,9 +131,7 @@ def create_block(
         ssm_cfg = {}
     factory_kwargs = {"device": device, "dtype": dtype}
     mixer_cls = partial(Mamba, layer_idx=layer_idx, bimamba_type=bimamba_type, **ssm_cfg, **factory_kwargs)
-    norm_cls = partial(
-        nn.LayerNorm if not rms_norm else RMSNorm, eps=norm_epsilon, **factory_kwargs
-    )
+    norm_cls = partial(nn.LayerNorm if not rms_norm else RMSNorm, eps=norm_epsilon, **factory_kwargs)
     block = Block(
         d_model,
         mixer_cls,
@@ -181,38 +186,41 @@ def segm_init_weights(m):
         nn.init.constant_(m.bias, 0)
         nn.init.constant_(m.weight, 1.0)
 
+
 class DINOVisionMamba(nn.Module):
-    def __init__(self, 
-                 img_size=224, 
-                 patch_size=16, 
-                 depth=24, 
-                 embed_dim=192, 
-                 channels=3, 
-                 num_classes=1000,
-                 ssm_cfg=None, 
-                 drop_rate=0.,
-                 drop_path_rate=0.1,
-                 norm_epsilon: float = 1e-5, 
-                 rms_norm: bool = False, 
-                 initializer_cfg=None,
-                 fused_add_norm=False,
-                 residual_in_fp32=False,
-                 device=None,
-                 dtype=None,
-                 ft_seq_len=None,
-                 pt_hw_seq_len=14,
-                 final_pool_type='none',
-                 if_abs_pos_embed=False,
-                 if_rope=False,
-                 if_rope_residual=False,
-                 bimamba_type="none",
-                 if_cls_token=False,
-                 interpolate_antialias=False,  # copied from DINOVisionTransformer
-                 interpolate_offset=0.1,  # copied from DINOVisionTransformer
-                 **kwargs):
+    def __init__(
+        self,
+        img_size=224,
+        patch_size=16,
+        depth=24,
+        embed_dim=192,
+        channels=3,
+        num_classes=1000,
+        ssm_cfg=None,
+        drop_rate=0.0,
+        drop_path_rate=0.1,
+        norm_epsilon: float = 1e-5,
+        rms_norm: bool = False,
+        initializer_cfg=None,
+        fused_add_norm=False,
+        residual_in_fp32=False,
+        device=None,
+        dtype=None,
+        ft_seq_len=None,
+        pt_hw_seq_len=14,
+        final_pool_type="none",
+        if_abs_pos_embed=False,
+        if_rope=False,
+        if_rope_residual=False,
+        bimamba_type="none",
+        if_cls_token=False,
+        interpolate_antialias=False,  # copied from DINOVisionTransformer
+        interpolate_offset=0.1,  # copied from DINOVisionTransformer
+        **kwargs
+    ):
         factory_kwargs = {"device": device, "dtype": dtype}
         # add factory_kwargs into kwargs
-        kwargs.update(factory_kwargs) 
+        kwargs.update(factory_kwargs)
         super().__init__()
         self.patch_size = patch_size
         self.residual_in_fp32 = residual_in_fp32
@@ -230,8 +238,7 @@ class DINOVisionMamba(nn.Module):
         self.num_classes = num_classes
         self.d_model = self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
 
-        self.patch_embed = PatchEmbed(
-            img_size=img_size, patch_size=patch_size, in_chans=channels, embed_dim=embed_dim)
+        self.patch_embed = PatchEmbed(img_size=img_size, patch_size=patch_size, in_chans=channels, embed_dim=embed_dim)
         num_patches = self.patch_embed.num_patches
 
         if if_cls_token:
@@ -244,20 +251,15 @@ class DINOVisionMamba(nn.Module):
         if if_rope:
             half_head_dim = embed_dim // 2
             hw_seq_len = img_size // patch_size
-            self.rope = VisionRotaryEmbeddingFast(
-                dim=half_head_dim,
-                pt_seq_len=pt_hw_seq_len,
-                ft_seq_len=hw_seq_len
-            )
+            self.rope = VisionRotaryEmbeddingFast(dim=half_head_dim, pt_seq_len=pt_hw_seq_len, ft_seq_len=hw_seq_len)
         self.head = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
-
 
         # TODO: release this comment
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
         # import ipdb;ipdb.set_trace()
         inter_dpr = [0.0] + dpr
-        self.drop_path = DropPath(drop_path_rate) if drop_path_rate > 0. else nn.Identity()
-                # transformer blocks
+        self.drop_path = DropPath(drop_path_rate) if drop_path_rate > 0.0 else nn.Identity()
+        # transformer blocks
         self.layers = nn.ModuleList(
             [
                 create_block(
@@ -275,11 +277,9 @@ class DINOVisionMamba(nn.Module):
                 for i in range(depth)
             ]
         )
-        
+
         # output head
-        self.norm_f = (nn.LayerNorm if not rms_norm else RMSNorm)(
-            embed_dim, eps=norm_epsilon, **factory_kwargs
-        )
+        self.norm_f = (nn.LayerNorm if not rms_norm else RMSNorm)(embed_dim, eps=norm_epsilon, **factory_kwargs)
 
         self.pre_logits = nn.Identity()
 
@@ -287,7 +287,7 @@ class DINOVisionMamba(nn.Module):
         self.apply(segm_init_weights)
         self.head.apply(segm_init_weights)
         if if_abs_pos_embed:
-            trunc_normal_(self.pos_embed, std=.02)
+            trunc_normal_(self.pos_embed, std=0.02)
 
         # mamba init
         self.apply(
@@ -314,7 +314,7 @@ class DINOVisionMamba(nn.Module):
     @torch.jit.ignore()
     def load_pretrained(self, checkpoint_path, prefix=""):
         _load_weights(self, checkpoint_path, prefix)
-    
+
     def interpolate_pos_encoding(self, x, w, h):
         previous_dtype = x.dtype
         npatch = x.shape[1] - 1
@@ -373,15 +373,18 @@ class DINOVisionMamba(nn.Module):
         else:
             # Set prenorm=False here since we don't need the residual
             fused_add_norm_fn = rms_norm_fn if isinstance(self.norm_f, RMSNorm) else layer_norm_fn
-            hidden_states = [fused_add_norm_fn(
-                self.drop_path(hs),
-                self.norm_f.weight,
-                self.norm_f.bias,
-                eps=self.norm_f.eps,
-                residual=res,
-                prenorm=False,
-                residual_in_fp32=self.residual_in_fp32,
-            ) for hs, res in zip(hidden_states, residual)]
+            hidden_states = [
+                fused_add_norm_fn(
+                    self.drop_path(hs),
+                    self.norm_f.weight,
+                    self.norm_f.bias,
+                    eps=self.norm_f.eps,
+                    residual=res,
+                    prenorm=False,
+                    residual_in_fp32=self.residual_in_fp32,
+                )
+                for hs, res in zip(hidden_states, residual)
+            ]
 
         all_hidden_states = hidden_states
         output = []
@@ -417,9 +420,7 @@ class DINOVisionMamba(nn.Module):
                 if residual is not None and self.if_rope_residual:
                     residual = self.rope(residual)
 
-            hidden_states, residual = layer(
-                hidden_states, residual, inference_params=inference_params
-            )
+            hidden_states, residual = layer(hidden_states, residual, inference_params=inference_params)
 
         if not self.fused_add_norm:
             if residual is None:
@@ -439,7 +440,7 @@ class DINOVisionMamba(nn.Module):
                 prenorm=False,
                 residual_in_fp32=self.residual_in_fp32,
             )
-        
+
         return {
             "x_norm_clstoken": hidden_states[:, 0, :],
             # "x_norm_regtokens": hidden_states[:, 1 : self.num_register_tokens + 1, :],
@@ -470,59 +471,76 @@ class DINOVisionMamba(nn.Module):
         return x
 
 
-def get_vision_mamba_model(interpolate_antialias: bool = False, interpolate_offset: float = 0.1, checkpoint='/home/haicu/sophia.wagner/projects/Vim/vim/vim_tiny_73p1.pth'):
+def get_vision_mamba_model(
+    interpolate_antialias: bool = False,
+    interpolate_offset: float = 0.1,
+    checkpoint="/home/haicu/sophia.wagner/projects/Vim/vim/vim_tiny_73p1.pth",
+):
     # load vision mamba model
     # model config for 'vim_tiny_patch16_224_bimambav2_final_pool_mean_abs_pos_embed_rope_also_residual_with_cls_token'
     model = DINOVisionMamba(
-        patch_size=16, embed_dim=192, depth=24, rms_norm=True, residual_in_fp32=True, fused_add_norm=True, final_pool_type='mean', if_abs_pos_embed=True, if_rope=True, if_rope_residual=True, bimamba_type="v2", if_cls_token=True, pretrained=True,
+        patch_size=16,
+        embed_dim=192,
+        depth=24,
+        rms_norm=True,
+        residual_in_fp32=True,
+        fused_add_norm=True,
+        final_pool_type="mean",
+        if_abs_pos_embed=True,
+        if_rope=True,
+        if_rope_residual=True,
+        bimamba_type="v2",
+        if_cls_token=True,
+        pretrained=True,
         num_classes=1000,  # args.nb_classes,
-        drop_rate=0.,  # default from vim repo
+        drop_rate=0.0,  # default from vim repo
         drop_path_rate=0.1,  # default from vim repo
         drop_block_rate=None,
         img_size=224,  # default from vim repo
         interpolate_antialias=interpolate_antialias,
         interpolate_offset=interpolate_offset,
     )
-    
+
     # if Path(checkpoint).name == 'vim_tiny_73p1.pth':
     #     checkpoint = torch.load(checkpoint['model'])
-    
+
     # else:
     checkpoint_model = torch.load(checkpoint)
     # checkpoint_model = checkpoint_model['model']
-    checkpoint_model = checkpoint_model['teacher'] if 'teacher' in checkpoint_model else checkpoint_model['model']
+    checkpoint_model = checkpoint_model["teacher"] if "teacher" in checkpoint_model else checkpoint_model["model"]
     # make correct state dict for loading
 
-    if Path(checkpoint).name != 'vim_tiny_73p1.pth':        
+    if Path(checkpoint).name != "vim_tiny_73p1.pth":
         new_state_dict = {}
         # for key, value in checkpoint_model.items():
         #     if 'teacher' in key:
         #         new_key = key.replace('teacher.backbone.', '')
         #         new_state_dict[new_key] = value
         for key, value in checkpoint_model.items():
-            new_key = key.replace('backbone.', '')
+            new_key = key.replace("backbone.", "")
             new_state_dict[new_key] = value
         checkpoint_model = new_state_dict
 
     # adapt pos_embed
-    pos_embed_checkpoint = checkpoint_model['pos_embed']
+    pos_embed_checkpoint = checkpoint_model["pos_embed"]
     embedding_size = pos_embed_checkpoint.shape[-1]
     num_patches = model.patch_embed.num_patches
     num_extra_tokens = model.pos_embed.shape[-2] - num_patches
     # height (== width) for the checkpoint position embedding
     orig_size = int((pos_embed_checkpoint.shape[-2] - num_extra_tokens) ** 0.5)
     # height (== width) for the new position embedding
-    new_size = int(num_patches ** 0.5)
+    new_size = int(num_patches**0.5)
     # class_token and dist_token are kept unchanged
     extra_tokens = pos_embed_checkpoint[:, :num_extra_tokens]
     # only the position tokens are interpolated
     pos_tokens = pos_embed_checkpoint[:, num_extra_tokens:]
     pos_tokens = pos_tokens.reshape(-1, orig_size, orig_size, embedding_size).permute(0, 3, 1, 2)
     pos_tokens = torch.nn.functional.interpolate(
-        pos_tokens, size=(new_size, new_size), mode='bicubic', align_corners=False)
+        pos_tokens, size=(new_size, new_size), mode="bicubic", align_corners=False
+    )
     pos_tokens = pos_tokens.permute(0, 2, 3, 1).flatten(1, 2)
     new_pos_embed = torch.cat((extra_tokens, pos_tokens), dim=1)
-    checkpoint_model['pos_embed'] = new_pos_embed
+    checkpoint_model["pos_embed"] = new_pos_embed
 
     # load state dict
     model.load_state_dict(checkpoint_model, strict=False)
@@ -539,27 +557,48 @@ def get_vision_mamba_model(interpolate_antialias: bool = False, interpolate_offs
 @register_model
 def vim_tiny_patch16_224_bimambav2_final_pool_mean_abs_pos_embed_rope_also_residual(pretrained=False, **kwargs):
     model = DINOVisionMamba(
-        patch_size=16, embed_dim=192, depth=24, rms_norm=True, residual_in_fp32=True, fused_add_norm=True, final_pool_type='mean', if_abs_pos_embed=True, if_rope=True, if_rope_residual=True, bimamba_type="v2", **kwargs)
+        patch_size=16,
+        embed_dim=192,
+        depth=24,
+        rms_norm=True,
+        residual_in_fp32=True,
+        fused_add_norm=True,
+        final_pool_type="mean",
+        if_abs_pos_embed=True,
+        if_rope=True,
+        if_rope_residual=True,
+        bimamba_type="v2",
+        **kwargs,
+    )
     model.default_cfg = _cfg()
     if pretrained:
-        checkpoint = torch.hub.load_state_dict_from_url(
-            url="to.do",
-            map_location="cpu", check_hash=True
-        )
+        checkpoint = torch.hub.load_state_dict_from_url(url="to.do", map_location="cpu", check_hash=True)
         model.load_state_dict(checkpoint["model"])
     return model
 
 
 @register_model
-def vim_tiny_patch16_224_bimambav2_final_pool_mean_abs_pos_embed_rope_also_residual_with_cls_token(pretrained=False, **kwargs):
+def vim_tiny_patch16_224_bimambav2_final_pool_mean_abs_pos_embed_rope_also_residual_with_cls_token(
+    pretrained=False, **kwargs
+):
     model = DINOVisionMamba(
-        patch_size=16, embed_dim=192, depth=24, rms_norm=True, residual_in_fp32=True, fused_add_norm=True, final_pool_type='mean', if_abs_pos_embed=True, if_rope=True, if_rope_residual=True, bimamba_type="v2", if_cls_token=True, **kwargs)
+        patch_size=16,
+        embed_dim=192,
+        depth=24,
+        rms_norm=True,
+        residual_in_fp32=True,
+        fused_add_norm=True,
+        final_pool_type="mean",
+        if_abs_pos_embed=True,
+        if_rope=True,
+        if_rope_residual=True,
+        bimamba_type="v2",
+        if_cls_token=True,
+        **kwargs,
+    )
     model.default_cfg = _cfg()
     if pretrained:
-        checkpoint = torch.hub.load_state_dict_from_url(
-            url="to.do",
-            map_location="cpu", check_hash=True
-        )
+        checkpoint = torch.hub.load_state_dict_from_url(url="to.do", map_location="cpu", check_hash=True)
         model.load_state_dict(checkpoint["model"])
     return model
 
@@ -567,27 +606,48 @@ def vim_tiny_patch16_224_bimambav2_final_pool_mean_abs_pos_embed_rope_also_resid
 @register_model
 def vim_tiny_patch8_224_bimambav2_final_pool_mean_abs_pos_embed_rope_also_residual(pretrained=False, **kwargs):
     model = DINOVisionMamba(
-        patch_size=8, embed_dim=192, depth=24, rms_norm=True, residual_in_fp32=True, fused_add_norm=True, final_pool_type='mean', if_abs_pos_embed=True, if_rope=True, if_rope_residual=True, bimamba_type="v2", **kwargs)
+        patch_size=8,
+        embed_dim=192,
+        depth=24,
+        rms_norm=True,
+        residual_in_fp32=True,
+        fused_add_norm=True,
+        final_pool_type="mean",
+        if_abs_pos_embed=True,
+        if_rope=True,
+        if_rope_residual=True,
+        bimamba_type="v2",
+        **kwargs,
+    )
     model.default_cfg = _cfg()
     if pretrained:
-        checkpoint = torch.hub.load_state_dict_from_url(
-            url="to.do",
-            map_location="cpu", check_hash=True
-        )
+        checkpoint = torch.hub.load_state_dict_from_url(url="to.do", map_location="cpu", check_hash=True)
         model.load_state_dict(checkpoint["model"])
     return model
 
 
 @register_model
-def vim_tiny_patch8_224_bimambav2_final_pool_mean_abs_pos_embed_rope_also_residual_with_cls_token(pretrained=False, **kwargs):
+def vim_tiny_patch8_224_bimambav2_final_pool_mean_abs_pos_embed_rope_also_residual_with_cls_token(
+    pretrained=False, **kwargs
+):
     model = DINOVisionMamba(
-        patch_size=8, embed_dim=192, depth=24, rms_norm=True, residual_in_fp32=True, fused_add_norm=True, final_pool_type='mean', if_abs_pos_embed=True, if_rope=True, if_rope_residual=True, bimamba_type="v2", if_cls_token=True, **kwargs)
+        patch_size=8,
+        embed_dim=192,
+        depth=24,
+        rms_norm=True,
+        residual_in_fp32=True,
+        fused_add_norm=True,
+        final_pool_type="mean",
+        if_abs_pos_embed=True,
+        if_rope=True,
+        if_rope_residual=True,
+        bimamba_type="v2",
+        if_cls_token=True,
+        **kwargs,
+    )
     model.default_cfg = _cfg()
     if pretrained:
-        checkpoint = torch.hub.load_state_dict_from_url(
-            url="to.do",
-            map_location="cpu", check_hash=True
-        )
+        checkpoint = torch.hub.load_state_dict_from_url(url="to.do", map_location="cpu", check_hash=True)
         model.load_state_dict(checkpoint["model"])
     return model
 
@@ -595,13 +655,22 @@ def vim_tiny_patch8_224_bimambav2_final_pool_mean_abs_pos_embed_rope_also_residu
 @register_model
 def vim_small_patch16_224_bimambav2_final_pool_mean_abs_pos_embed_rope_also_residual(pretrained=False, **kwargs):
     model = DINOVisionMamba(
-        patch_size=16, embed_dim=384, depth=24, rms_norm=True, residual_in_fp32=True, fused_add_norm=True, final_pool_type='mean', if_abs_pos_embed=True, if_rope=True, if_rope_residual=True, bimamba_type="v2", **kwargs)
+        patch_size=16,
+        embed_dim=384,
+        depth=24,
+        rms_norm=True,
+        residual_in_fp32=True,
+        fused_add_norm=True,
+        final_pool_type="mean",
+        if_abs_pos_embed=True,
+        if_rope=True,
+        if_rope_residual=True,
+        bimamba_type="v2",
+        **kwargs,
+    )
     model.default_cfg = _cfg()
     if pretrained:
-        checkpoint = torch.hub.load_state_dict_from_url(
-            url="to.do",
-            map_location="cpu", check_hash=True
-        )
+        checkpoint = torch.hub.load_state_dict_from_url(url="to.do", map_location="cpu", check_hash=True)
         model.load_state_dict(checkpoint["model"])
     return model
 
@@ -609,13 +678,21 @@ def vim_small_patch16_224_bimambav2_final_pool_mean_abs_pos_embed_rope_also_resi
 @register_model
 def vim_base_patch16_224_bimambav2_final_pool_mean_abs_pos_embed_rope_also_residual(pretrained=False, **kwargs):
     model = DINOVisionMamba(
-        patch_size=16, embed_dim=768, depth=24, rms_norm=True, residual_in_fp32=True, fused_add_norm=True, final_pool_type='mean', if_abs_pos_embed=True, if_rope=True, if_rope_residual=True, bimamba_type="v2", **kwargs)
+        patch_size=16,
+        embed_dim=768,
+        depth=24,
+        rms_norm=True,
+        residual_in_fp32=True,
+        fused_add_norm=True,
+        final_pool_type="mean",
+        if_abs_pos_embed=True,
+        if_rope=True,
+        if_rope_residual=True,
+        bimamba_type="v2",
+        **kwargs,
+    )
     model.default_cfg = _cfg()
     if pretrained:
-        checkpoint = torch.hub.load_state_dict_from_url(
-            url="to.do",
-            map_location="cpu", check_hash=True
-        )
+        checkpoint = torch.hub.load_state_dict_from_url(url="to.do", map_location="cpu", check_hash=True)
         model.load_state_dict(checkpoint["model"])
     return model
-

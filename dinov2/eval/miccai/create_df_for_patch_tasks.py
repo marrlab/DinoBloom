@@ -1,4 +1,3 @@
-
 import argparse
 import os
 
@@ -22,7 +21,7 @@ parser.add_argument(
 )
 
 
-def create_train_val_split(folder_path,dataset_name):
+def create_train_val_split(folder_path, dataset_name):
     """
     Splits the data in the given folder into training and validation sets,
     ensuring class balance between the sets. Assumes the folder structure
@@ -36,33 +35,31 @@ def create_train_val_split(folder_path,dataset_name):
     - 'val.csv': Contains paths and labels for the validation set.
     """
     data = []
-    
+
     # Iterate over each class directory in the folder
     for class_name in os.listdir(folder_path):
         class_dir = os.path.join(folder_path, class_name)
         if os.path.isdir(class_dir):
             # For each image in the class directory
             for img in os.listdir(class_dir):
-                if img.lower().endswith(('.png', '.jpg', '.jpeg',".tif",".tiff",".bmp")):
+                if img.lower().endswith((".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp")):
                     # Collect image path and class name
                     img_path = os.path.join(class_dir, img)
                     data.append((img_path, class_name))
-    
+
     # Convert collected data into a DataFrame
-    df = pd.DataFrame(data, columns=['Image Path', 'Label'])
-    
+    df = pd.DataFrame(data, columns=["Image Path", "Label"])
+
     # Split the data ensuring class balance
-    train_df, val_df = train_test_split(df, test_size=0.2, stratify=df['Label'], random_state=42)
-    
+    train_df, val_df = train_test_split(df, test_size=0.2, stratify=df["Label"], random_state=42)
+
     # Save to CSV files
-    train_df.to_csv(dataset_name+'_train.csv', index=False)
-    val_df.to_csv(dataset_name+'_val.csv', index=False)
-    
+    train_df.to_csv(dataset_name + "_train.csv", index=False)
+    val_df.to_csv(dataset_name + "_val.csv", index=False)
+
     return train_df.shape, val_df.shape
 
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    create_train_val_split(args.dataset_path,args.dataset_name)
-
-
+    create_train_val_split(args.dataset_path, args.dataset_name)

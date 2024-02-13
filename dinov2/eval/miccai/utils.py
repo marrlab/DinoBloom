@@ -1,4 +1,3 @@
-
 import argparse
 import json
 import xml.etree.ElementTree as ET
@@ -24,19 +23,20 @@ def create_label_mapping(df):
     - A dictionary mapping each unique label to an integer, starting from 0.
     """
     # Get unique labels and sort them
-    unique_labels = sorted(df['Label'].unique())
-    
+    unique_labels = sorted(df["Label"].unique())
+
     # Create mapping
     label_to_int = {label: index for index, label in enumerate(unique_labels)}
-    
+
     return label_to_int
+
 
 class CustomImageDataset(Dataset):
     def __init__(self, df, transform):
         self.df = df
         self.transform = transform
         self.class_to_label = create_label_mapping(df)
-        print (self.class_to_label)
+        print(self.class_to_label)
 
     def __len__(self):
         return len(self.df)
@@ -68,11 +68,7 @@ def bgr_format(xml_string: str):
 
     root = ET.fromstring(xml_string)
     pixel_type_elem = root.findall(".//PixelType")
-    return (
-        "bgr" in pixel_type_elem[0].text.lower()
-        if pixel_type_elem is not None
-        else False
-    )
+    return "bgr" in pixel_type_elem[0].text.lower() if pixel_type_elem is not None else False
 
 
 def get_driver(extension_name: str):
@@ -155,9 +151,7 @@ def threshold(patch: np.array, args: argparse.Namespace):
     )
     calc_pixels = dark_pixels - black_pixels
 
-    if (
-        calc_pixels / (patch.shape[0] * patch.shape[1]) >= 0.05
-    ):  # we always want to keep calc in! 
+    if calc_pixels / (patch.shape[0] * patch.shape[1]) >= 0.05:  # we always want to keep calc in!
         return True
 
     # Compute the ratio of foreground pixels to total pixels in the patch
@@ -235,7 +229,9 @@ def save_tile_preview(args, slide_name, scn, wsi, coords, tile_path):
     preview_im.save(tile_path / f"{slide_name}_{scn}.png")
 
 
-def save_qupath_annotation(args: argparse.Namespace, slide_name:str, scn:int, coords:pd.DataFrame, annotation_path:str):
+def save_qupath_annotation(
+    args: argparse.Namespace, slide_name: str, scn: int, coords: pd.DataFrame, annotation_path: str
+):
     """
     Saves the QuPath annotation to a geojson file.
 
@@ -251,7 +247,7 @@ def save_qupath_annotation(args: argparse.Namespace, slide_name:str, scn:int, co
     """
 
     # Function to create a single annotation feature
-    def create_feature(coordinates, color:str):
+    def create_feature(coordinates, color: str):
         # Define the coordinates of the feature polygon
         x, y = coordinates[0], coordinates[1]
         top_left = coordinates
@@ -294,7 +290,16 @@ def save_qupath_annotation(args: argparse.Namespace, slide_name:str, scn:int, co
         json.dump(features, annotation_file)
 
 
-def save_hdf5(save_dir: str, args: argparse.Namespace, slide_name: str , coords: pd.DataFrame, feats:dict, slide_sizes:list[tuple],downscaling_factors:list,model_dicts:list[dict]):
+def save_hdf5(
+    save_dir: str,
+    args: argparse.Namespace,
+    slide_name: str,
+    coords: pd.DataFrame,
+    feats: dict,
+    slide_sizes: list[tuple],
+    downscaling_factors: list,
+    model_dicts: list[dict],
+):
     """
     Save the extracted features and coordinates to an HDF5 file.
     Args:
@@ -305,10 +310,11 @@ def save_hdf5(save_dir: str, args: argparse.Namespace, slide_name: str , coords:
     Returns:
         None
     """
-    for (model_name, features),model_dict in zip(feats.items(),model_dicts):
+    for (model_name, features), model_dict in zip(feats.items(), model_dicts):
 
         if len(features) > 0:
-            with h5py.File(Path(save_dir) / f"{slide_name}.h5",
+            with h5py.File(
+                Path(save_dir) / f"{slide_name}.h5",
                 "w",
             ) as f:
                 f["coords"] = coords.astype("float64")
@@ -330,4 +336,3 @@ def save_hdf5(save_dir: str, args: argparse.Namespace, slide_name: str , coords:
                 slide_name,
                 "reason could be poor slide quality.",
             )
-

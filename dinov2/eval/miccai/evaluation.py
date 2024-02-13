@@ -1,4 +1,3 @@
-
 import argparse
 import os
 from concurrent.futures import ThreadPoolExecutor
@@ -12,8 +11,7 @@ import torch
 import umap
 import wandb
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import (accuracy_score, balanced_accuracy_score,
-                             classification_report, f1_score, log_loss)
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, classification_report, f1_score, log_loss
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from tqdm import tqdm
@@ -28,7 +26,9 @@ parser.add_argument(
     type=bool,
 )
 parser.add_argument(
-    "--logistic_regression", "--logistic-regression", "-log",
+    "--logistic_regression",
+    "--logistic-regression",
+    "-log",
     help="perform logistic regression or not",
     default=True,
     type=bool,
@@ -40,13 +40,17 @@ parser.add_argument(
     type=bool,
 )
 parser.add_argument(
-    "--path_folder", "--path-folder", "-p",
+    "--path_folder",
+    "--path-folder",
+    "-p",
     help="path to folder containing subfolders with training, val and test data",
     default="/lustre/groups/shared/users/peng_marr/HistoDINO/features",
     type=str,
 )
 parser.add_argument(
-    "--save_dir", "--save-dir", "-s",
+    "--save_dir",
+    "--save-dir",
+    "-s",
     help="specify where to save the umap",
     default="/lustre/groups/shared/users/peng_marr/HistoDINO/eval",
     type=str,
@@ -71,21 +75,26 @@ parser.add_argument(
     type=str,
 )
 
+
 def process_file(file_name):
-    with h5py.File(file_name, 'r') as hf:
-        features = torch.tensor(hf['features'][:]).tolist()
-        label = int(hf['labels'][()])
+    with h5py.File(file_name, "r") as hf:
+        features = torch.tensor(hf["features"][:]).tolist()
+        label = int(hf["labels"][()])
     return features, label
 
 
 def get_data(args):
     # Define the directories for train, validation, and test data and labels
     if args.checkpoint is not None:
-        args.path_folder = Path(args.path_folder) / args.dataset / f"{args.model_name}_{Path(args.checkpoint).parent.name}_{Path(args.checkpoint).stem}"
-    
-    train_dir = os.path.join(args.path_folder, 'train_data')
-    validation_dir = os.path.join(args.path_folder, 'val_data')
-    test_dir = os.path.join(args.path_folder, 'test_data')
+        args.path_folder = (
+            Path(args.path_folder)
+            / args.dataset
+            / f"{args.model_name}_{Path(args.checkpoint).parent.name}_{Path(args.checkpoint).stem}"
+        )
+
+    train_dir = os.path.join(args.path_folder, "train_data")
+    validation_dir = os.path.join(args.path_folder, "val_data")
+    test_dir = os.path.join(args.path_folder, "test_data")
 
     # Load training data into dictionaries
     train_features, train_labels = [], []
@@ -100,7 +109,9 @@ def get_data(args):
             train_labels.append(label_train)
 
     with ThreadPoolExecutor() as executor:
-        futures_val = [executor.submit(process_file, file_name) for file_name in list(Path(validation_dir).glob("*.h5"))]
+        futures_val = [
+            executor.submit(process_file, file_name) for file_name in list(Path(validation_dir).glob("*.h5"))
+        ]
 
         for i, future_val in tqdm(enumerate(futures_val), desc="Loading validation data"):
             feature_val, label_val = future_val.result()
@@ -121,13 +132,14 @@ def get_data(args):
     test_labels = np.array(test_labels).flatten()
     # Flatten test_data
     test_data = test_data.reshape(test_data.shape[0], -1)  # Reshape to (n_samples, 384)
-    
+
     train_data = np.array(train_features)
     train_labels = np.array(train_labels).flatten()
     # Flatten test_data
     train_data = train_data.reshape(train_data.shape[0], -1)
 
     return train_data, train_labels, test_data, test_labels
+
 
 def test_data_creation():
     # Create synthetic data
@@ -149,8 +161,8 @@ def test_data_creation():
 def perform_knn(train_data, train_labels, test_data, test_labels, save_dir):
     # Define a range of values for n_neighbors to search
     n_neighbors_values = [1, 20]
-    #n_neighbors_values = [1, 2, 5, 10, 20, 50, 100, 500]
-    #n_neighbors_values = [1, 2, 3, 4, 5] # -> for testing
+    # n_neighbors_values = [1, 2, 5, 10, 20, 50, 100, 500]
+    # n_neighbors_values = [1, 2, 3, 4, 5] # -> for testing
 
     for n_neighbors in n_neighbors_values:
         # Initialize a KNeighborsClassifier with the current n_neighbors
@@ -165,7 +177,7 @@ def perform_knn(train_data, train_labels, test_data, test_labels, save_dir):
         # Evaluate the classifier
         accuracy = accuracy_score(test_labels, test_predictions)
         balanced_acc = balanced_accuracy_score(test_labels, test_predictions)
-        weighted_f1 = f1_score(test_labels, test_predictions, average='weighted')
+        weighted_f1 = f1_score(test_labels, test_predictions, average="weighted")
 
         print(f"n_neighbors = {n_neighbors}")
         print(f"Accuracy: {accuracy}")
@@ -175,12 +187,14 @@ def perform_knn(train_data, train_labels, test_data, test_labels, save_dir):
         # If you want to log the results with Weights & Biases (wandb), you can initialize a wandb run:
         wandb.init(
             entity="histo-collab",
-            project="knn", 
+            project="knn",
             name=run_name,
         )
 
         # Log the n_neighbors value, accuracy
-        wandb.log({"n_neighbors": n_neighbors, "Accuracy": accuracy, "Balanced_Acc": balanced_acc, "Weighted_F1": weighted_f1})
+        wandb.log(
+            {"n_neighbors": n_neighbors, "Accuracy": accuracy, "Balanced_Acc": balanced_acc, "Weighted_F1": weighted_f1}
+        )
 
         ## Calculate the classification report
         report = classification_report(test_labels, test_predictions, output_dict=True)
@@ -196,21 +210,22 @@ def perform_knn(train_data, train_labels, test_data, test_labels, save_dir):
         # Finish the wandb run
         wandb.finish()
 
-        df_labels_to_save = pd.DataFrame({'True Labels': test_labels, 'Predicted Labels': test_predictions})
+        df_labels_to_save = pd.DataFrame({"True Labels": test_labels, "Predicted Labels": test_predictions})
         filename = f"{Path(save_dir).name}_labels_and_predictions.csv"
         file_path = os.path.join(save_dir, filename)
         # Speichern des DataFrames in der CSV-Datei
         df_labels_to_save.to_csv(file_path, index=False)
 
+
 def create_umap(data, labels, save_dir, filename_addon="train"):
     # Create a UMAP model and fit it to your data
-    #reducer = umap.UMAP(random_state=42)
+    # reducer = umap.UMAP(random_state=42)
     reducer = umap.UMAP()
     umap_data = reducer.fit_transform(data)
 
     # Specify the directory for saving the images
 
-    umap_dir= os.path.join(save_dir, "umaps")
+    umap_dir = os.path.join(save_dir, "umaps")
     os.makedirs(umap_dir, exist_ok=True)
 
     # Loop through different figure sizes
@@ -219,36 +234,33 @@ def create_umap(data, labels, save_dir, filename_addon="train"):
     for size in figure_sizes:
         # Create a scatter plot with the specified size
         plt.figure(figsize=size, dpi=300)
-        plt.scatter(umap_data[:, 0], umap_data[:, 1], c=labels, s=0.1, cmap='Spectral')
+        plt.scatter(umap_data[:, 0], umap_data[:, 1], c=labels, s=0.1, cmap="Spectral")
         plt.colorbar()
         plt.title("UMAP")
 
         # Specify the filename with the size information
-        image_filename = f'umap_visualization_{Path(save_dir).name}_{size[0]}x{size[1]}_{filename_addon}.png'
+        image_filename = f"umap_visualization_{Path(save_dir).name}_{size[0]}x{size[1]}_{filename_addon}.png"
 
         # Save the UMAP visualization as an image in the specified directory
         plt.savefig(os.path.join(umap_dir, image_filename))
 
 
-def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, dataset, save_dir, max_iter=1000):
+def train_and_evaluate_logistic_regression(
+    train_data, train_labels, test_data, test_labels, dataset, save_dir, max_iter=1000
+):
     # Initialize wandb
     wandb.init(
         entity="histo-collab",
-        project="logistic_regression", 
+        project="logistic_regression",
         name=f"{dataset}_{Path(save_dir).name}",
     )
 
-    M = train_data.shape[1]  
-    C = 9  
+    M = train_data.shape[1]
+    C = 9
     l2_reg_coef = 100 / (M * C)
 
     # Initialize the logistic regression model with L-BFGS solver
-    logistic_reg = LogisticRegression(
-        C=1 / l2_reg_coef,  
-        max_iter=max_iter,
-        multi_class='multinomial',
-        solver='lbfgs'
-    )
+    logistic_reg = LogisticRegression(C=1 / l2_reg_coef, max_iter=max_iter, multi_class="multinomial", solver="lbfgs")
 
     logistic_reg.fit(train_data, train_labels)
 
@@ -258,18 +270,20 @@ def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, 
     loss = log_loss(train_labels, predicted_probabilities)
     accuracy = accuracy_score(test_labels, test_predictions)
     balanced_acc = balanced_accuracy_score(test_labels, test_predictions)
-    weighted_f1 = f1_score(test_labels, test_predictions, average='weighted')
-    #auroc = roc_auc_score(test_labels, test_predictions, multi_class='ovr', average='weighted')
+    weighted_f1 = f1_score(test_labels, test_predictions, average="weighted")
+    # auroc = roc_auc_score(test_labels, test_predictions, multi_class='ovr', average='weighted')
     report = classification_report(test_labels, test_predictions, output_dict=True)
 
-    df_labels_to_save = pd.DataFrame({'True Labels': test_labels, 'Predicted Labels': test_predictions})    
+    df_labels_to_save = pd.DataFrame({"True Labels": test_labels, "Predicted Labels": test_predictions})
     filename = f"{Path(save_dir).name}_labels_and_predictions.csv"
     os.makedirs(save_dir, exist_ok=True)
     file_path = os.path.join(save_dir, filename)
     # Speichern des DataFrames in der CSV-Datei
     df_labels_to_save.to_csv(file_path, index=False)
 
-    predicted_probabilities_df = pd.DataFrame(predicted_probabilities, columns=[f'Probability Class {i}' for i in range(predicted_probabilities.shape[1])])
+    predicted_probabilities_df = pd.DataFrame(
+        predicted_probabilities, columns=[f"Probability Class {i}" for i in range(predicted_probabilities.shape[1])]
+    )
     predicted_probabilities_filename = f"{Path(save_dir).name}_predicted_probabilities_test.csv"
     predicted_probabilities_file_path = os.path.join(save_dir, predicted_probabilities_filename)
     predicted_probabilities_df.to_csv(predicted_probabilities_file_path, index=False)
@@ -284,31 +298,40 @@ def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, 
 
     # Log the final loss, accuracy, and classification report using wandb.log
     final_loss = loss
-    wandb.log({"Final Loss": final_loss, "Accuracy": accuracy, "Balanced_Acc": balanced_acc, "Weighted_F1": weighted_f1, "Classification Report": wandb.Table(dataframe=report_df)})
+    wandb.log(
+        {
+            "Final Loss": final_loss,
+            "Accuracy": accuracy,
+            "Balanced_Acc": balanced_acc,
+            "Weighted_F1": weighted_f1,
+            "Classification Report": wandb.Table(dataframe=report_df),
+        }
+    )
 
     # Finish the wandb run
     wandb.finish()
 
 
-
 def main(args):
     train_data, train_labels, test_data, test_labels = get_data(args)
-    #train_data, train_labels, test_data, test_labels = test_data_creation()
+    # train_data, train_labels, test_data, test_labels = test_data_creation()
     print("data fully loaded")
     print("Shape of train_data:", train_data.shape)
     print("Shape of train_labels:", train_labels.shape)
     print("Shape of test_data:", test_data.shape)
     print("Shape of test_labels:", test_labels.shape)
-    
-    # run_name = f"{Path(args.path_folder).name}"
-    # save_directory = Path(args.save_dir) / args.dataset / run_name 
 
-    if args.checkpoint is not None:        
+    # run_name = f"{Path(args.path_folder).name}"
+    # save_directory = Path(args.save_dir) / args.dataset / run_name
+
+    if args.checkpoint is not None:
         args.model_name = f"{args.model_name}_{Path(args.checkpoint).parent.name}_{Path(args.checkpoint).stem}"
     args.save_dir = Path(args.save_dir) / args.dataset / args.model_name
 
     if args.logistic_regression:
-        train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, args.dataset, args.save_dir, max_iter=1000)
+        train_and_evaluate_logistic_regression(
+            train_data, train_labels, test_data, test_labels, args.dataset, args.save_dir, max_iter=1000
+        )
         print("logistic_regression done")
 
     if args.umap:
@@ -319,6 +342,7 @@ def main(args):
     if args.knn:
         perform_knn(train_data, train_labels, test_data, test_labels, args.save_dir)
         print("knn done")
+
 
 if __name__ == "__main__":
     args = parser.parse_args()

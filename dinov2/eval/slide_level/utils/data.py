@@ -20,7 +20,7 @@ def get_cohort_df(
     target_labels: Iterable[str],
     label_dict: dict,
     cohort: str,
-    clini_info: dict = {}
+    clini_info: dict = {},
 ) -> pd.DataFrame:
     """
     Generate a cohort DataFrame based on clinical information and available slides.
@@ -41,33 +41,35 @@ def get_cohort_df(
     Raises:
         AssertionError: If no slide features are found in the feature directory.
     """
-    clini_df = pd.read_csv(
-        clini_table, dtype=str
-    ) if Path(clini_table).suffix == '.csv' else pd.read_excel(clini_table, dtype=str)
+    clini_df = (
+        pd.read_csv(clini_table, dtype=str)
+        if Path(clini_table).suffix == ".csv"
+        else pd.read_excel(clini_table, dtype=str)
+    )
     slide_df = pd.read_csv(slide_csv, dtype=str)
-    df = clini_df.merge(slide_df, on='PATIENT')
+    df = clini_df.merge(slide_df, on="PATIENT")
 
     # remove columns not in target_labels
     for key in df.columns:
-        if key not in target_labels + ['PATIENT', 'SLIDE', 'FILENAME', *list(clini_info.keys())]:
+        if key not in target_labels + ["PATIENT", "SLIDE", "FILENAME", *list(clini_info.keys())]:
             df.drop(key, axis=1, inplace=True)
     # remove rows/slides with non-valid labels
     for target in target_labels:
         df = df.dropna(subset=target)
         df[target] = df[target].map(lambda p: int(p) if p.isdigit() else label_dict[p])
     # remove slides we don't have
-    h5s = set(feature_dir.glob('**/*.h5'))
-    assert h5s, f'no features found in {feature_dir}!'
-    h5_df = pd.DataFrame(h5s, columns=['slide_path'])
-    h5_df['FILENAME'] = h5_df.slide_path.map(
-        lambda p: p.stem.split('.')[0].split('_files')[0]
+    h5s = set(feature_dir.glob("**/*.h5"))
+    assert h5s, f"no features found in {feature_dir}!"
+    h5_df = pd.DataFrame(h5s, columns=["slide_path"])
+    h5_df["FILENAME"] = h5_df.slide_path.map(
+        lambda p: p.stem.split(".")[0].split("_files")[0]
     )  # additional split('.')[0].split('_files') for TCGA cohorts
-    df['FILENAME'] = df.FILENAME.map(lambda p: Path(p).stem)
-    df = df.merge(h5_df, on='FILENAME')
+    df["FILENAME"] = df.FILENAME.map(lambda p: Path(p).stem)
+    df = df.merge(h5_df, on="FILENAME")
     # reduce to one row per patient with list of slides in `df['slide_path']`
-    patient_df = df.groupby('PATIENT').first().drop(columns='slide_path')
-    patient_slides = df.groupby('PATIENT').slide_path.apply(list)
-    df = patient_df.merge(patient_slides, left_on='PATIENT', right_index=True).reset_index()
+    patient_df = df.groupby("PATIENT").first().drop(columns="slide_path")
+    patient_slides = df.groupby("PATIENT").slide_path.apply(list)
+    df = patient_df.merge(patient_slides, left_on="PATIENT", right_index=True).reset_index()
 
     return df
 
@@ -150,13 +152,12 @@ def transform_clini_info(df: pd.DataFrame, clini_info: dict) -> pd.DataFrame:
             std = col.std()
             col = (col - mean) / std
             # Adjust mean and std to desired values and update clini info dictionary
-            if clini_info[info]['mean'] is None:
-                clini_info[info]['mean'] = mean
-                clini_info[info]['std'] = std
+            if clini_info[info]["mean"] is None:
+                clini_info[info]["mean"] = mean
+                clini_info[info]["std"] = std
                 desired_mean, desired_std = 0, 1
             else:
-                desired_mean, desired_std = cfg.clini_info[info]['mean'], cfg.clini_info[info]['std'
-                                                                                              ]
+                desired_mean, desired_std = cfg.clini_info[info]["mean"], cfg.clini_info[info]["std"]
             col = col * desired_std + desired_mean
             # add normalized columns back to dataframe
             df.loc[df[info].str.isdigit().notnull(), info] = col
@@ -167,9 +168,9 @@ def get_multi_cohort_df(
     cohorts: Iterable[str],
     target_labels: Iterable[str],
     label_dict: dict,
-    norm: str = 'macenko',
-    feats: str = 'ctranspath',
-    clini_info: dict = {}
+    norm: str = "macenko",
+    feats: str = "ctranspath",
+    clini_info: dict = {},
 ) -> Tuple[pd.DataFrame, dict]:
     """
     Generate a multi-cohort DataFrame concatenating the DataFrame from single cohorts.
@@ -193,26 +194,22 @@ def get_multi_cohort_df(
     np_list = []
 
     for cohort in cohorts:
-        clini_table = Path(data_config[cohort]['clini_table'])
-        slide_csv = Path(data_config[cohort]['slide_csv'])
-        feature_dir = Path(data_config[cohort]['feature_dir'][norm][feats])
+        clini_table = Path(data_config[cohort]["clini_table"])
+        slide_csv = Path(data_config[cohort]["slide_csv"])
+        feature_dir = Path(data_config[cohort]["feature_dir"][norm][feats])
 
-        current_df = get_cohort_df(
-            clini_table, slide_csv, feature_dir, target_labels, label_dict, cohort, clini_info
-        )
+        current_df = get_cohort_df(clini_table, slide_csv, feature_dir, target_labels, label_dict, cohort, clini_info)
         df_list.append(current_df)
         np_list.append(len(current_df.PATIENT))
 
     data = pd.concat(df_list, ignore_index=True)
 
     if clini_info:
-        data, mean, std = transform_clini_info(
-            data, cfg, clini_info[label]['mean'], clini_info[label]['std']
-        )
+        data, mean, std = transform_clini_info(data, cfg, clini_info[label]["mean"], clini_info[label]["std"])
 
     if len(data.PATIENT) != sum(np_list):
         print(
-            f'number of patients in joint dataset {len(data.PATIENT)} is not equal to the sum of each dataset {sum(np_list)}'
+            f"number of patients in joint dataset {len(data.PATIENT)} is not equal to the sum of each dataset {sum(np_list)}"
         )
 
     return data, clini_info
@@ -240,6 +237,7 @@ class MILDataset(Dataset):
             Returns the length of the dataset.
 
     """
+
     def __init__(
         self,
         data: pd.DataFrame,
@@ -248,9 +246,9 @@ class MILDataset(Dataset):
         clini_info: dict = {},
         num_tiles: int = -1,
         pad_tiles: bool = True,
-        norm: str = 'macenko'
+        norm: str = "macenko",
     ):
-        self.data = data[data['PATIENT'].isin(split)] 
+        self.data = data[data["PATIENT"].isin(split)]
         self.target_labels = target_labels
         self.clini_info = clini_info
         self.norm = norm
@@ -263,31 +261,30 @@ class MILDataset(Dataset):
         h5_path = self.data.slide_path.iloc[item][0]
         h5_file = h5py.File(h5_path)
         # load augmented features if augmentation is used
-        if (self.norm == 'histaugan' or
-            self.norm == 'efficient_histaugan') and torch.rand((1, )) < 0.5:
-            if 'feats_aug' in h5_file.keys():
-                features = torch.Tensor(np.array(h5_file['feats_aug']))
-            elif 'histaugan' in h5_file.keys():
-                features = torch.Tensor(np.array(h5_file['histaugan']))
+        if (self.norm == "histaugan" or self.norm == "efficient_histaugan") and torch.rand((1,)) < 0.5:
+            if "feats_aug" in h5_file.keys():
+                features = torch.Tensor(np.array(h5_file["feats_aug"]))
+            elif "histaugan" in h5_file.keys():
+                features = torch.Tensor(np.array(h5_file["histaugan"]))
             else:
-                features = torch.Tensor(np.array(h5_file['augmented']))
-            version = torch.randint(features.shape[0], (1, )).item()
+                features = torch.Tensor(np.array(h5_file["augmented"]))
+            version = torch.randint(features.shape[0], (1,)).item()
             features = features[version]
         else:
-            if 'feats' in h5_file.keys():
-                features = torch.Tensor(np.array(h5_file['feats']))
-            elif 'data' in h5_file.keys():
-                features = torch.Tensor(np.array(h5_file['data']))
-            elif 'features' in h5_file.keys():
-                features = torch.Tensor(np.array(h5_file['features']))
+            if "feats" in h5_file.keys():
+                features = torch.Tensor(np.array(h5_file["feats"]))
+            elif "data" in h5_file.keys():
+                features = torch.Tensor(np.array(h5_file["data"]))
+            elif "features" in h5_file.keys():
+                features = torch.Tensor(np.array(h5_file["features"]))
             else:
-                raise KeyError('No features found in .h5 file')
-        
+                raise KeyError("No features found in .h5 file")
+
         try:
-            coords = torch.Tensor(np.array(h5_file['coords']))
+            coords = torch.Tensor(np.array(h5_file["coords"]))
         except KeyError:
             try:
-                coords = torch.Tensor(np.array(h5_file['indices']))
+                coords = torch.Tensor(np.array(h5_file["indices"]))
             except KeyError:
                 coords = 0  # NoneType is not accepted by dataloader
 
@@ -296,14 +293,14 @@ class MILDataset(Dataset):
         if self.num_tiles > 0:
             if features.shape[0] <= self.num_tiles and self.pad_tiles:
                 pad = torch.zeros((self.num_tiles, features.shape[1]))
-                pad[:features.shape[0]] = features
+                pad[: features.shape[0]] = features
                 features = pad
                 # also pad the coords vector, for stacking in dataloader
                 pad_coords = torch.zeros((self.num_tiles, 2))
-                pad_coords[:coords.shape[0]] = coords
+                pad_coords[: coords.shape[0]] = coords
                 coords = pad_coords
             else:
-                feat_idxs = torch.randperm(features.shape[0])[:self.num_tiles]
+                feat_idxs = torch.randperm(features.shape[0])[: self.num_tiles]
                 features = features[feat_idxs]
                 coords = coords[feat_idxs]
 
@@ -314,8 +311,9 @@ class MILDataset(Dataset):
         # add clinical information to feature vector
         if self.clini_info:
             for info in self.clini_info.keys():
-                clini_info = torch.Tensor([self.data[info].iloc[item]]
-                                         ).unsqueeze(0).repeat_interleave(features.shape[0], dim=0)
+                clini_info = (
+                    torch.Tensor([self.data[info].iloc[item]]).unsqueeze(0).repeat_interleave(features.shape[0], dim=0)
+                )
                 features = torch.concat((features, clini_info), dim=1)
 
         patient = self.data.PATIENT.iloc[item]

@@ -21,7 +21,6 @@ logger = logging.getLogger("dinov2")
 
 
 class WSIDataset(VisionDataset):
-
     def __init__(
         self,
         *,
@@ -41,7 +40,7 @@ class WSIDataset(VisionDataset):
                 self.slides.append(slide)
         else:
             self.slides = list(Path(root).glob("*.svs"))
-    
+
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
         try:
             image = self.get_image_data(index)
@@ -53,11 +52,11 @@ class WSIDataset(VisionDataset):
             image, target = self.transforms(image, target)
 
         return image, target
-    
+
     def get_image_data(self, index: int) -> Image:
         if self.load:
             slide = self.slides[index]
-        else: 
+        else:
             slide = openslide.open_slide(str(self.slides[index]))
 
         dim_x, dim_y = slide.dimensions
@@ -65,7 +64,9 @@ class WSIDataset(VisionDataset):
         patch_size = 224
 
         # sample patch from image center
-        patch = slide.read_region((center[0] - patch_size // 2, center[1] - patch_size // 2), 0, (patch_size, patch_size)).convert(mode="RGB")
+        patch = slide.read_region(
+            (center[0] - patch_size // 2, center[1] - patch_size // 2), 0, (patch_size, patch_size)
+        ).convert(mode="RGB")
 
         return patch
 
@@ -79,7 +80,6 @@ class WSIDataset(VisionDataset):
 
 
 class PatchDataset(VisionDataset):
-
     def __init__(
         self,
         *,
@@ -95,23 +95,23 @@ class PatchDataset(VisionDataset):
             self.patches = np.loadtxt(root, dtype=str)
         else:
             self.patches = list(Path(root).glob("**/*.jpeg"))
-            np.savetxt(f"{root}_jpeg_patches.txt", self.patches, delimiter="\n", fmt='%s')
+            np.savetxt(f"{root}_jpeg_patches.txt", self.patches, delimiter="\n", fmt="%s")
         np.random.shuffle(self.patches)
-    
+
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
         try:
             image = self.get_image_data(index)
         except Exception as e:
             print(f"can not read image for sample {index, e, self.patches[index]}")
-            return self.__getitem__(index+1)
+            return self.__getitem__(index + 1)
         target = self.get_target(index)
 
         if self.transforms is not None:
             image, target = self.transforms(image, target)
 
         return image, target
-    
-    def get_image_data(self, index: int,min_dimension=224) -> Image:
+
+    def get_image_data(self, index: int, min_dimension=224) -> Image:
 
         # load image from file
         patch = Image.open(self.patches[index]).convert(mode="RGB")
@@ -147,7 +147,7 @@ class PatchDataset(VisionDataset):
         # patch = transforms.functional.resize(patch, (224, 224))
 
         return patch
-    
+
     def __len__(self) -> int:
         return len(self.patches)
 
@@ -162,18 +162,18 @@ def arrange_files(file_paths):
     for file_path in file_paths:
         parent_folder = Path(file_path).parent.name
         grouped_files[parent_folder].append(file_path)
-    
+
     # Create a balanced ordering of files
     balanced_ordering = []
     # Use itertools.zip_longest for round-robin style iteration
     for group in itertools.zip_longest(*grouped_files.values()):
         # Filter out 'None' in case some groups are smaller than others
         balanced_ordering.extend(filter(None, group))
-    
+
     return balanced_ordering
 
-class BalancedPatchDataset(VisionDataset):
 
+class BalancedPatchDataset(VisionDataset):
     def __init__(
         self,
         *,
@@ -183,45 +183,45 @@ class BalancedPatchDataset(VisionDataset):
         target_transform: Optional[Callable] = None,
     ) -> None:
         super().__init__(root, transforms, transform, target_transform)
-        self.patches=[]
-        self.dataset_sizes=[]
+        self.patches = []
+        self.dataset_sizes = []
 
-        all_dataset_files=Path(root).glob("*.txt")
+        all_dataset_files = Path(root).glob("*.txt")
 
         for dataset_file in all_dataset_files:
-            
-            file_list=arrange_files(np.loadtxt(dataset_file, dtype=str))
+
+            file_list = arrange_files(np.loadtxt(dataset_file, dtype=str))
             self.patches.append(file_list)
             self.dataset_sizes.append(int(len(file_list)))
-            
-        self.num_datasets=len(self.patches)
+
+        self.num_datasets = len(self.patches)
 
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
 
-        dataset_index=index%self.num_datasets
-        index_in_dataset= int(index/self.num_datasets)%self.dataset_sizes[dataset_index]
-        
+        dataset_index = index % self.num_datasets
+        index_in_dataset = int(index / self.num_datasets) % self.dataset_sizes[dataset_index]
+
         try:
-            
-            image = self.get_image_data(dataset_index,index_in_dataset)
-            
+
+            image = self.get_image_data(dataset_index, index_in_dataset)
+
         except Exception as e:
             print(f"can not read image for sample {index, e,self.patches[dataset_index][index_in_dataset]}")
-            return self.__getitem__(index+1)
-        
+            return self.__getitem__(index + 1)
+
         target = self.get_target(index)
 
         if self.transforms is not None:
             image, target = self.transforms(image, target)
 
         return image, target
-    
-    def get_image_data(self, dataset_index:int,index_in_dataset: int,min_dimension=224) -> Image:
+
+    def get_image_data(self, dataset_index: int, index_in_dataset: int, min_dimension=224) -> Image:
 
         # load image from jpeg file
-        filepath=self.patches[dataset_index][index_in_dataset]
+        filepath = self.patches[dataset_index][index_in_dataset]
         patch = Image.open(filepath).convert(mode="RGB")
-        
+
         h, w = patch.size
 
         # random crop to (300, 300)

@@ -12,14 +12,13 @@ logger = logging.getLogger("dinov2")
 
 
 try:
-    from xformers.ops import (fmha, index_select_cat,
-                              memory_efficient_attention, scaled_index_add,
-                              unbind)
+    from xformers.ops import fmha, index_select_cat, memory_efficient_attention, scaled_index_add, unbind
 
-    XFORMERS_AVAILABLE = False #maybe change later
+    XFORMERS_AVAILABLE = False  # maybe change later
 except ImportError:
     logger.warning("xFormers not available")
     XFORMERS_AVAILABLE = False
+
 
 class LayerScale(nn.Module):
     def __init__(
@@ -90,6 +89,7 @@ class MemEffAttention(Attention):
         x = self.proj_drop(x)
         return x
 
+
 def drop_path(x, drop_prob: float = 0.0, training: bool = False):
     if drop_prob == 0.0 or not training:
         return x
@@ -111,7 +111,8 @@ class DropPath(nn.Module):
 
     def forward(self, x):
         return drop_path(x, self.drop_prob, self.training)
-    
+
+
 class Mlp(nn.Module):
     def __init__(
         self,
@@ -357,6 +358,7 @@ class NestedTensorBlock(Block):
         else:
             raise AssertionError
 
+
 from typing import Callable, Optional
 
 import torch.nn.functional as F
@@ -388,7 +390,7 @@ class SwiGLUFFN(nn.Module):
 try:
     from xformers.ops import SwiGLU
 
-    XFORMERS_AVAILABLE = False # maybe change later
+    XFORMERS_AVAILABLE = False  # maybe change later
 except ImportError:
     SwiGLU = SwiGLUFFN
     XFORMERS_AVAILABLE = False

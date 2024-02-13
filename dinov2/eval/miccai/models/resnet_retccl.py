@@ -3,13 +3,21 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Parameter
 
-__all__ = ['ResNet',  'resnet50']
+__all__ = ["ResNet", "resnet50"]
 
 
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
     """3x3 convolution with padding"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                     padding=dilation, groups=groups, bias=False, dilation=dilation)
+    return nn.Conv2d(
+        in_planes,
+        out_planes,
+        kernel_size=3,
+        stride=stride,
+        padding=dilation,
+        groups=groups,
+        bias=False,
+        dilation=dilation,
+    )
 
 
 def conv1x1(in_planes, out_planes, stride=1):
@@ -20,17 +28,16 @@ def conv1x1(in_planes, out_planes, stride=1):
 class BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, groups=1,
-                 base_width=64, dilation=1, norm_layer=None):
+    def __init__(
+        self, inplanes, planes, stride=1, downsample=None, groups=1, base_width=64, dilation=1, norm_layer=None
+    ):
         super(BasicBlock, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         if groups != 1 or base_width != 64:
-            raise ValueError(
-                'BasicBlock only supports groups=1 and base_width=64')
+            raise ValueError("BasicBlock only supports groups=1 and base_width=64")
         if dilation > 1:
-            raise NotImplementedError(
-                "Dilation > 1 not supported in BasicBlock")
+            raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
         # Both self.conv1 and self.downsample layers downsample the input when stride != 1
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = norm_layer(planes)
@@ -62,12 +69,22 @@ class BasicBlock(nn.Module):
 class Bottleneck(nn.Module):
     expansion = 4
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, groups=1,
-                 base_width=64, dilation=1, norm_layer=None, momentum_bn=0.1):
+    def __init__(
+        self,
+        inplanes,
+        planes,
+        stride=1,
+        downsample=None,
+        groups=1,
+        base_width=64,
+        dilation=1,
+        norm_layer=None,
+        momentum_bn=0.1,
+    ):
         super(Bottleneck, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
-        width = int(planes * (base_width / 64.)) * groups
+        width = int(planes * (base_width / 64.0)) * groups
         # Both self.conv2 and self.downsample layers downsample the input when stride != 1
         self.conv1 = conv1x1(inplanes, width)
         self.bn1 = norm_layer(width, momentum=momentum_bn)
@@ -103,7 +120,6 @@ class Bottleneck(nn.Module):
 
 
 class NormedLinear(nn.Module):
-
     def __init__(self, in_features, out_features):
         super(NormedLinear, self).__init__()
         self.weight = Parameter(torch.Tensor(in_features, out_features))
@@ -115,11 +131,24 @@ class NormedLinear(nn.Module):
 
 
 class ResNet(nn.Module):
-
-    def __init__(self, block, layers, num_classes=1000, zero_init_residual=False,
-                 groups=1, width_per_group=64, replace_stride_with_dilation=None,
-                 norm_layer=None, two_branch=False, mlp=False, normlinear=False,
-                 momentum_bn=0.1, attention=False, attention_layers=3, return_attn=False):
+    def __init__(
+        self,
+        block,
+        layers,
+        num_classes=1000,
+        zero_init_residual=False,
+        groups=1,
+        width_per_group=64,
+        replace_stride_with_dilation=None,
+        norm_layer=None,
+        two_branch=False,
+        mlp=False,
+        normlinear=False,
+        momentum_bn=0.1,
+        attention=False,
+        attention_layers=3,
+        return_attn=False,
+    ):
         super(ResNet, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -133,8 +162,10 @@ class ResNet(nn.Module):
             # the 2x2 stride with a dilated convolution instead
             replace_stride_with_dilation = [False, False, False]
         if len(replace_stride_with_dilation) != 3:
-            raise ValueError("replace_stride_with_dilation should be None "
-                             "or a 3-element tuple, got {}".format(replace_stride_with_dilation))
+            raise ValueError(
+                "replace_stride_with_dilation should be None "
+                "or a 3-element tuple, got {}".format(replace_stride_with_dilation)
+            )
         self.groups = groups
         self.base_width = width_per_group
         self.two_branch = two_branch
@@ -142,22 +173,17 @@ class ResNet(nn.Module):
         self.mlp = mlp
         linear = NormedLinear if normlinear else nn.Linear
 
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3,
-                               bias=False)
+        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = norm_layer(self.inplanes, momentum=momentum_bn)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2,
-                                       dilate=replace_stride_with_dilation[0])
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2,
-                                       dilate=replace_stride_with_dilation[1])
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2,
-                                       dilate=replace_stride_with_dilation[2])
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, dilate=replace_stride_with_dilation[0])
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1])
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2])
 
         if attention:
-            self.att_branch = self._make_layer(
-                block, 512, attention_layers, 1, attention=True)
+            self.att_branch = self._make_layer(block, 512, attention_layers, 1, attention=True)
         else:
             self.att_branch = None
 
@@ -165,17 +191,14 @@ class ResNet(nn.Module):
 
         if self.mlp:
             if self.two_branch:
-                self.fc = nn.Sequential(
-                    nn.Linear(512 * block.expansion, 512 * block.expansion),
-                    nn.ReLU()
-                )
+                self.fc = nn.Sequential(nn.Linear(512 * block.expansion, 512 * block.expansion), nn.ReLU())
                 self.instDis = linear(512 * block.expansion, num_classes)
                 self.groupDis = linear(512 * block.expansion, num_classes)
             else:
                 self.fc = nn.Sequential(
                     nn.Linear(512 * block.expansion, 512 * block.expansion),
                     nn.ReLU(),
-                    linear(512 * block.expansion, num_classes)
+                    linear(512 * block.expansion, num_classes),
                 )
         else:
             self.fc = nn.Linear(512 * block.expansion, num_classes)
@@ -184,8 +207,7 @@ class ResNet(nn.Module):
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(
-                    m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
             elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
@@ -210,28 +232,48 @@ class ResNet(nn.Module):
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
                 conv1x1(self.inplanes, planes * block.expansion, stride),
-                norm_layer(planes * block.expansion,
-                           momentum=self.momentum_bn),
+                norm_layer(planes * block.expansion, momentum=self.momentum_bn),
             )
 
         layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample, self.groups,
-                            self.base_width, previous_dilation, norm_layer, momentum_bn=self.momentum_bn))
+        layers.append(
+            block(
+                self.inplanes,
+                planes,
+                stride,
+                downsample,
+                self.groups,
+                self.base_width,
+                previous_dilation,
+                norm_layer,
+                momentum_bn=self.momentum_bn,
+            )
+        )
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
-            layers.append(block(self.inplanes, planes, groups=self.groups,
-                                base_width=self.base_width, dilation=self.dilation,
-                                norm_layer=norm_layer, momentum_bn=self.momentum_bn))
+            layers.append(
+                block(
+                    self.inplanes,
+                    planes,
+                    groups=self.groups,
+                    base_width=self.base_width,
+                    dilation=self.dilation,
+                    norm_layer=norm_layer,
+                    momentum_bn=self.momentum_bn,
+                )
+            )
 
         if attention:
-            layers.append(nn.Sequential(
-                conv1x1(self.inplanes, 128),
-                nn.BatchNorm2d(128),
-                nn.ReLU(inplace=True),
-                conv1x1(128, 1),
-                nn.BatchNorm2d(1),
-                nn.Sigmoid()
-            ))
+            layers.append(
+                nn.Sequential(
+                    conv1x1(self.inplanes, 128),
+                    nn.BatchNorm2d(128),
+                    nn.ReLU(inplace=True),
+                    conv1x1(128, 1),
+                    nn.BatchNorm2d(1),
+                    nn.Sigmoid(),
+                )
+            )
 
         return nn.Sequential(*layers)
 

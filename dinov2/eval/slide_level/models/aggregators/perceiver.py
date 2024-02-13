@@ -4,8 +4,7 @@ from einops.layers.torch import Reduce
 from torch import nn
 
 from models.aggregators import BaseAggregator
-from models.aggregators.model_utils import (FeedForward, PerceiverAttention,
-                                            PreNorm, cache_fn, fourier_encode)
+from models.aggregators.model_utils import FeedForward, PerceiverAttention, PreNorm, cache_fn, fourier_encode
 
 
 class Perceiver(BaseAggregator):
@@ -13,8 +12,8 @@ class Perceiver(BaseAggregator):
         self,
         *,
         num_freq_bands=6,
-        depth=2,  
-        max_freq=10.,
+        depth=2,
+        max_freq=10.0,
         input_dim=512,
         input_axis=1,
         num_latents=256,
@@ -25,7 +24,7 @@ class Perceiver(BaseAggregator):
         latent_dim_head=64,
         num_classes=1000,
         attn_dropout=0.1,
-        ff_dropout=0.,
+        ff_dropout=0.0,
         weight_tie_layers=False,
         fourier_encode_data=True,
         self_per_cross_attn=1,
@@ -63,80 +62,47 @@ class Perceiver(BaseAggregator):
         self.max_freq = max_freq
         self.num_freq_bands = num_freq_bands
 
-        self._fc1 = nn.Sequential(
-            nn.Linear(2048, 512), nn.ReLU()
-        )  # adapted to 2048 from RetCCL features
+        self._fc1 = nn.Sequential(nn.Linear(2048, 512), nn.ReLU())  # adapted to 2048 from RetCCL features
 
         self.fourier_encode_data = fourier_encode_data
-        fourier_channels = (
-            input_axis * ((num_freq_bands * 2) + 1)
-        ) if fourier_encode_data else 0
+        fourier_channels = (input_axis * ((num_freq_bands * 2) + 1)) if fourier_encode_data else 0
         input_dim = fourier_channels + input_dim
 
         self.latents = nn.Parameter(torch.randn(num_latents, latent_dim))
 
         get_cross_attn = lambda: PreNorm(
             latent_dim,
-            PerceiverAttention(
-                latent_dim,
-                input_dim,
-                heads=cross_heads,
-                dim_head=cross_dim_head,
-                dropout=attn_dropout
-            ),
-            context_dim=input_dim
+            PerceiverAttention(latent_dim, input_dim, heads=cross_heads, dim_head=cross_dim_head, dropout=attn_dropout),
+            context_dim=input_dim,
         )
-        get_cross_ff = lambda: PreNorm(
-            latent_dim, FeedForward(latent_dim, dropout=ff_dropout)
-        )
+        get_cross_ff = lambda: PreNorm(latent_dim, FeedForward(latent_dim, dropout=ff_dropout))
         get_latent_attn = lambda: PreNorm(
             latent_dim,
-            PerceiverAttention(
-                latent_dim,
-                heads=latent_heads,
-                dim_head=latent_dim_head,
-                dropout=attn_dropout
-            )
+            PerceiverAttention(latent_dim, heads=latent_heads, dim_head=latent_dim_head, dropout=attn_dropout),
         )
-        get_latent_ff = lambda: PreNorm(
-            latent_dim, FeedForward(latent_dim, dropout=ff_dropout)
-        )
+        get_latent_ff = lambda: PreNorm(latent_dim, FeedForward(latent_dim, dropout=ff_dropout))
 
         get_cross_attn, get_cross_ff, get_latent_attn, get_latent_ff = map(
-            cache_fn,
-            (get_cross_attn, get_cross_ff, get_latent_attn, get_latent_ff)
+            cache_fn, (get_cross_attn, get_cross_ff, get_latent_attn, get_latent_ff)
         )
 
         self.layers = nn.ModuleList([])
         for i in range(depth):
             should_cache = i > 0 and weight_tie_layers
-            cache_args = {'_cache': should_cache}
+            cache_args = {"_cache": should_cache}
 
             self_attns = nn.ModuleList([])
 
             for _ in range(self_per_cross_attn):
-                self_attns.append(
-                    nn.ModuleList(
-                        [
-                            get_latent_attn(**cache_args),
-                            get_latent_ff(**cache_args)
-                        ]
-                    )
-                )
+                self_attns.append(nn.ModuleList([get_latent_attn(**cache_args), get_latent_ff(**cache_args)]))
 
-            self.layers.append(
-                nn.ModuleList(
-                    [
-                        get_cross_attn(**cache_args),
-                        get_cross_ff(**cache_args), self_attns
-                    ]
-                )
-            )
+            self.layers.append(nn.ModuleList([get_cross_attn(**cache_args), get_cross_ff(**cache_args), self_attns]))
 
-        self.to_logits = nn.Sequential(
-            Reduce('b n d -> b d', 'max'), nn.LayerNorm(latent_dim),
-            nn.Linear(latent_dim, num_classes)
-        ) if final_classifier_head else nn.Identity()
+        self.to_logits = (
+            nn.Sequential(Reduce("b n d -> b d", "max"), nn.LayerNorm(latent_dim), nn.Linear(latent_dim, num_classes))
+            if final_classifier_head
+            else nn.Identity()
+        )
 
     def forward(self, data, mask=None, return_embeddings=False):
 
@@ -144,31 +110,24 @@ class Perceiver(BaseAggregator):
         data = self._fc1(data)
 
         b, *axis, _, device = *data.shape, data.device
-        assert len(
-            axis
-        ) == self.input_axis, 'input data must have the right number of axis'
+        assert len(axis) == self.input_axis, "input data must have the right number of axis"
 
         if self.fourier_encode_data:
             # calculate fourier encoded positions in the range of [-1, 1], for all axis
 
-            axis_pos = list(
-                map(
-                    lambda size: torch.
-                    linspace(-1., 1., steps=size, device=device), axis
-                )
-            )
-            pos = torch.stack(torch.meshgrid(*axis_pos, indexing='ij'), dim=-1)
+            axis_pos = list(map(lambda size: torch.linspace(-1.0, 1.0, steps=size, device=device), axis))
+            pos = torch.stack(torch.meshgrid(*axis_pos, indexing="ij"), dim=-1)
             enc_pos = fourier_encode(pos, self.max_freq, self.num_freq_bands)
-            enc_pos = rearrange(enc_pos, '... n d -> ... (n d)')
-            enc_pos = repeat(enc_pos, '... -> b ...', b=b)
+            enc_pos = rearrange(enc_pos, "... n d -> ... (n d)")
+            enc_pos = repeat(enc_pos, "... -> b ...", b=b)
 
             data = torch.cat((data, enc_pos), dim=-1)
 
         # concat to channels of data and flatten axis
 
-        data = rearrange(data, 'b ... d -> b (...) d')
+        data = rearrange(data, "b ... d -> b (...) d")
 
-        x = repeat(self.latents, 'n d -> b n d', b=b)
+        x = repeat(self.latents, "n d -> b n d", b=b)
 
         # layers
 

@@ -158,8 +158,8 @@ class _TorchDistributedEnvironment:
         self.local_world_size = -1
 
         # disable getting distributed settings from slurm environment
-        # if _is_slurm_job_process():  
-            # return self._set_from_slurm_env()
+        # if _is_slurm_job_process():
+        # return self._set_from_slurm_env()
 
         env_vars = _collect_env_vars()
         if not env_vars:

@@ -18,11 +18,9 @@ class EncoderContent(nn.Module):
         super(EncoderContent, self).__init__()
         enc_c = []
         tch = 64
-        enc_c += [LeakyReLUConv2d(input_dim, tch,
-                                  kernel_size=7, stride=1, padding=3)]
+        enc_c += [LeakyReLUConv2d(input_dim, tch, kernel_size=7, stride=1, padding=3)]
         for i in range(1, 3):
-            enc_c += [ReLUINSConv2d(tch, tch * 2,
-                                    kernel_size=3, stride=2, padding=1)]
+            enc_c += [ReLUINSConv2d(tch, tch * 2, kernel_size=3, stride=2, padding=1)]
             tch *= 2
         for i in range(0, 3):
             enc_c += [INSResBlock(tch, tch)]
@@ -45,13 +43,11 @@ class EncoderAttribute(nn.Module):
         max_ndf = 4
 
         conv_layers = [nn.ReflectionPad2d(1)]
-        conv_layers += [nn.Conv2d(input_dim+c_dim, ndf,
-                                  kernel_size=4, stride=2, padding=0, bias=True)]
+        conv_layers += [nn.Conv2d(input_dim + c_dim, ndf, kernel_size=4, stride=2, padding=0, bias=True)]
         for n in range(1, n_blocks):
             input_ndf = ndf * min(max_ndf, n)  # 2**(n-1)
-            output_ndf = ndf * min(max_ndf, n+1)  # 2**n
-            conv_layers += [BasicBlock(input_ndf,
-                                       output_ndf, norm_layer, nl_layer)]
+            output_ndf = ndf * min(max_ndf, n + 1)  # 2**n
+            conv_layers += [BasicBlock(input_ndf, output_ndf, norm_layer, nl_layer)]
         conv_layers += [nl_layer(), nn.AdaptiveAvgPool2d(1)]  # AvgPool2d(13)
         self.fc = nn.Sequential(*[nn.Linear(output_ndf, output_nc)])
         self.fcVar = nn.Sequential(*[nn.Linear(output_ndf, output_nc)])
@@ -77,25 +73,24 @@ class Generator(nn.Module):
         dec_share = []
         dec_share += [INSResBlock(tch, tch)]
         self.dec_share = nn.Sequential(*dec_share)
-        tch = 256+self.nz+self.c_dim
+        tch = 256 + self.nz + self.c_dim
         dec1 = []
         for i in range(0, 3):
             dec1 += [INSResBlock(tch, tch)]
         tch = tch + self.nz
-        dec2 = [ReLUINSConvTranspose2d(
-            tch, tch//2, kernel_size=3, stride=2, padding=1, output_padding=1)]
-        tch = tch//2
+        dec2 = [ReLUINSConvTranspose2d(tch, tch // 2, kernel_size=3, stride=2, padding=1, output_padding=1)]
+        tch = tch // 2
         tch = tch + self.nz
-        dec3 = [ReLUINSConvTranspose2d(
-            tch, tch//2, kernel_size=3, stride=2, padding=1, output_padding=1)]
-        tch = tch//2
+        dec3 = [ReLUINSConvTranspose2d(tch, tch // 2, kernel_size=3, stride=2, padding=1, output_padding=1)]
+        tch = tch // 2
         tch = tch + self.nz
-        dec4 = [nn.ConvTranspose2d(
-            tch, output_dim, kernel_size=1, stride=1, padding=0)]+[nn.Tanh()]
+        dec4 = [nn.ConvTranspose2d(tch, output_dim, kernel_size=1, stride=1, padding=0)] + [nn.Tanh()]
         # with additional conv layer to counteract grid artifacts
-        dec4_conv = [nn.ConvTranspose2d(tch, tch, kernel_size=1, stride=1, padding=0)] + \
-                    [nn.Conv2d(tch, output_dim, kernel_size=3, padding=1)] + \
-                    [nn.Tanh()]
+        dec4_conv = (
+            [nn.ConvTranspose2d(tch, tch, kernel_size=1, stride=1, padding=0)]
+            + [nn.Conv2d(tch, output_dim, kernel_size=3, padding=1)]
+            + [nn.Tanh()]
+        )
         self.dec1 = nn.Sequential(*dec1)
         self.dec2 = nn.Sequential(*dec2)
         self.dec3 = nn.Sequential(*dec3)
@@ -104,22 +99,18 @@ class Generator(nn.Module):
 
     def forward(self, x, z, c):
         out0 = self.dec_share(x)
-        z_img = z.view(z.size(0), z.size(1), 1, 1).expand(
-            z.size(0), z.size(1), x.size(2), x.size(3))
+        z_img = z.view(z.size(0), z.size(1), 1, 1).expand(z.size(0), z.size(1), x.size(2), x.size(3))
         c = c.view(c.size(0), c.size(1), 1, 1)
         c = c.repeat(1, 1, out0.size(2), out0.size(3))
         x_c_z = torch.cat([out0, c, z_img], 1)
         out1 = self.dec1(x_c_z)
-        z_img2 = z.view(z.size(0), z.size(1), 1, 1).expand(
-            z.size(0), z.size(1), out1.size(2), out1.size(3))
+        z_img2 = z.view(z.size(0), z.size(1), 1, 1).expand(z.size(0), z.size(1), out1.size(2), out1.size(3))
         x_and_z2 = torch.cat([out1, z_img2], 1)
         out2 = self.dec2(x_and_z2)
-        z_img3 = z.view(z.size(0), z.size(1), 1, 1).expand(
-            z.size(0), z.size(1), out2.size(2), out2.size(3))
+        z_img3 = z.view(z.size(0), z.size(1), 1, 1).expand(z.size(0), z.size(1), out2.size(2), out2.size(3))
         x_and_z3 = torch.cat([out2, z_img3], 1)
         out3 = self.dec3(x_and_z3)
-        z_img4 = z.view(z.size(0), z.size(1), 1, 1).expand(
-            z.size(0), z.size(1), out3.size(2), out3.size(3))
+        z_img4 = z.view(z.size(0), z.size(1), 1, 1).expand(z.size(0), z.size(1), out3.size(2), out3.size(3))
         x_and_z4 = torch.cat([out3, z_img4], 1)
         out4 = self.dec4(x_and_z4)
         # out4 = self.dec4_conv(x_and_z4)
@@ -127,31 +118,26 @@ class Generator(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, input_dim, norm='None', sn=False, c_dim=3, image_size=216):
+    def __init__(self, input_dim, norm="None", sn=False, c_dim=3, image_size=216):
         super(Discriminator, self).__init__()
         ch = 64
         n_layer = 6
         self.model, curr_dim = self._make_net(ch, input_dim, n_layer, norm, sn)
-        self.conv1 = nn.Conv2d(curr_dim, 1, kernel_size=1,
-                               stride=1, padding=0, bias=False)  # was padding=1 before -s
-        kernel_size = int(image_size/np.power(2, n_layer))
-        self.conv2 = nn.Conv2d(
-            curr_dim, c_dim, kernel_size=kernel_size, bias=False)
+        self.conv1 = nn.Conv2d(curr_dim, 1, kernel_size=1, stride=1, padding=0, bias=False)  # was padding=1 before -s
+        kernel_size = int(image_size / np.power(2, n_layer))
+        self.conv2 = nn.Conv2d(curr_dim, c_dim, kernel_size=kernel_size, bias=False)
         self.pool = nn.AdaptiveAvgPool2d(1)
 
     def _make_net(self, ch, input_dim, n_layer, norm, sn):
         model = []
-        model += [LeakyReLUConv2d(input_dim, ch, kernel_size=3,
-                                  stride=2, padding=1, norm=norm, sn=sn)]  # 16
+        model += [LeakyReLUConv2d(input_dim, ch, kernel_size=3, stride=2, padding=1, norm=norm, sn=sn)]  # 16
         tch = ch
-        for i in range(1, n_layer-1):
-            model += [LeakyReLUConv2d(tch, tch * 2, kernel_size=3,
-                                      stride=2, padding=1, norm=norm, sn=sn)]  # 8
+        for i in range(1, n_layer - 1):
+            model += [LeakyReLUConv2d(tch, tch * 2, kernel_size=3, stride=2, padding=1, norm=norm, sn=sn)]  # 8
             tch *= 2
-        model += [LeakyReLUConv2d(tch, tch, kernel_size=3,
-                                  stride=2, padding=1, norm='None', sn=sn)]  # 2
+        model += [LeakyReLUConv2d(tch, tch, kernel_size=3, stride=2, padding=1, norm="None", sn=sn)]  # 2
         # model += [LeakyReLUConv2d(tch, tch * 2, kernel_size=3, stride=2, padding=1, norm='None', sn=sn)] # 2
-        #tch *= 2
+        # tch *= 2
         return nn.Sequential(*model), tch
 
     def forward(self, x):
@@ -166,14 +152,10 @@ class DiscriminatorContent(nn.Module):
     def __init__(self, c_dim=3):
         super(DiscriminatorContent, self).__init__()
         model = []
-        model += [LeakyReLUConv2d(256, 256, kernel_size=7,
-                                  stride=2, padding=1, norm='Instance')]
-        model += [LeakyReLUConv2d(256, 256, kernel_size=7,
-                                  stride=2, padding=1, norm='Instance')]
-        model += [LeakyReLUConv2d(256, 256, kernel_size=7,
-                                  stride=2, padding=1, norm='Instance')]
-        model += [LeakyReLUConv2d(256, 256, kernel_size=4,
-                                  stride=1, padding=0)]
+        model += [LeakyReLUConv2d(256, 256, kernel_size=7, stride=2, padding=1, norm="Instance")]
+        model += [LeakyReLUConv2d(256, 256, kernel_size=7, stride=2, padding=1, norm="Instance")]
+        model += [LeakyReLUConv2d(256, 256, kernel_size=7, stride=2, padding=1, norm="Instance")]
+        model += [LeakyReLUConv2d(256, 256, kernel_size=4, stride=1, padding=0)]
         model += [nn.Conv2d(256, c_dim, kernel_size=1, stride=1, padding=0)]
         self.model = nn.Sequential(*model)
 
@@ -187,26 +169,24 @@ class DiscriminatorContent(nn.Module):
 # ------------------------- Basic Functions -------------------------
 ####################################################################
 def get_scheduler(optimizer, opts, cur_ep=-1):
-    if opts.lr_policy == 'lambda':
+    if opts.lr_policy == "lambda":
+
         def lambda_rule(ep):
-            lr_l = 1.0 - max(0, ep - opts.n_ep_decay) / \
-                float(opts.n_ep - opts.n_ep_decay + 1)
+            lr_l = 1.0 - max(0, ep - opts.n_ep_decay) / float(opts.n_ep - opts.n_ep_decay + 1)
             return lr_l
-        scheduler = lr_scheduler.LambdaLR(
-            optimizer, lr_lambda=lambda_rule, last_epoch=cur_ep)
-    elif opts.lr_policy == 'step':
-        scheduler = lr_scheduler.StepLR(
-            optimizer, step_size=opts.n_ep_decay, gamma=0.1, last_epoch=cur_ep)
+
+        scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_rule, last_epoch=cur_ep)
+    elif opts.lr_policy == "step":
+        scheduler = lr_scheduler.StepLR(optimizer, step_size=opts.n_ep_decay, gamma=0.1, last_epoch=cur_ep)
     else:
-        return NotImplementedError('no such learn rate policy')
+        return NotImplementedError("no such learn rate policy")
     return scheduler
 
 
 def meanpoolConv(inplanes, outplanes):
     sequence = []
     sequence += [nn.AvgPool2d(kernel_size=2, stride=2)]
-    sequence += [nn.Conv2d(inplanes, outplanes,
-                           kernel_size=1, stride=1, padding=0, bias=True)]
+    sequence += [nn.Conv2d(inplanes, outplanes, kernel_size=1, stride=1, padding=0, bias=True)]
     return nn.Sequential(*sequence)
 
 
@@ -217,30 +197,27 @@ def convMeanpool(inplanes, outplanes):
     return nn.Sequential(*sequence)
 
 
-def get_norm_layer(layer_type='instance'):
-    if layer_type == 'batch':
+def get_norm_layer(layer_type="instance"):
+    if layer_type == "batch":
         norm_layer = functools.partial(nn.BatchNorm2d, affine=True)
-    elif layer_type == 'instance':
+    elif layer_type == "instance":
         norm_layer = functools.partial(nn.InstanceNorm2d, affine=False)
-    elif layer_type == 'none':
+    elif layer_type == "none":
         norm_layer = None
     else:
-        raise NotImplementedError(
-            'normalization layer [%s] is not found' % layer_type)
+        raise NotImplementedError("normalization layer [%s] is not found" % layer_type)
     return norm_layer
 
 
-def get_non_linearity(layer_type='relu'):
-    if layer_type == 'relu':
+def get_non_linearity(layer_type="relu"):
+    if layer_type == "relu":
         nl_layer = functools.partial(nn.ReLU, inplace=True)
-    elif layer_type == 'lrelu':
-        nl_layer = functools.partial(
-            nn.LeakyReLU, negative_slope=0.2, inplace=False)
-    elif layer_type == 'elu':
+    elif layer_type == "lrelu":
+        nl_layer = functools.partial(nn.LeakyReLU, negative_slope=0.2, inplace=False)
+    elif layer_type == "elu":
         nl_layer = functools.partial(nn.ELU, inplace=True)
     else:
-        raise NotImplementedError(
-            'nonlinearity activitation [%s] is not found' % layer_type)
+        raise NotImplementedError("nonlinearity activitation [%s] is not found" % layer_type)
     return nl_layer
 
 
@@ -250,8 +227,9 @@ def conv3x3(in_planes, out_planes):
 
 def gaussian_weights_init(m):
     classname = m.__class__.__name__
-    if classname.find('Conv') != -1 and classname.find('Conv') == 0:
+    if classname.find("Conv") != -1 and classname.find("Conv") == 0:
         m.weight.data.normal_(0.0, 0.02)
+
 
 ####################################################################
 # -------------------------- Basic Blocks --------------------------
@@ -273,7 +251,9 @@ class LayerNorm(nn.Module):
     def forward(self, x):
         normalized_shape = x.size()[1:]
         if self.affine:
-            return F.layer_norm(x, normalized_shape, self.weight.expand(normalized_shape), self.bias.expand(normalized_shape))
+            return F.layer_norm(
+                x, normalized_shape, self.weight.expand(normalized_shape), self.bias.expand(normalized_shape)
+            )
         else:
             return F.layer_norm(x, normalized_shape)
 
@@ -299,17 +279,17 @@ class BasicBlock(nn.Module):
 
 
 class LeakyReLUConv2d(nn.Module):
-    def __init__(self, n_in, n_out, kernel_size, stride, padding=0, norm='None', sn=False):
+    def __init__(self, n_in, n_out, kernel_size, stride, padding=0, norm="None", sn=False):
         super(LeakyReLUConv2d, self).__init__()
         model = []
         model += [nn.ReflectionPad2d(padding)]
         if sn:
-            model += [spectral_norm(nn.Conv2d(n_in, n_out,
-                                    kernel_size=kernel_size, stride=stride, padding=0, bias=True))]
+            model += [
+                spectral_norm(nn.Conv2d(n_in, n_out, kernel_size=kernel_size, stride=stride, padding=0, bias=True))
+            ]
         else:
-            model += [nn.Conv2d(n_in, n_out, kernel_size=kernel_size,
-                                stride=stride, padding=0, bias=True)]
-        if 'norm' == 'Instance':
+            model += [nn.Conv2d(n_in, n_out, kernel_size=kernel_size, stride=stride, padding=0, bias=True)]
+        if "norm" == "Instance":
             model += [nn.InstanceNorm2d(n_out, affine=False)]
         model += [nn.LeakyReLU(inplace=True)]
         self.model = nn.Sequential(*model)
@@ -325,8 +305,7 @@ class ReLUINSConv2d(nn.Module):
         super(ReLUINSConv2d, self).__init__()
         model = []
         model += [nn.ReflectionPad2d(padding)]
-        model += [nn.Conv2d(n_in, n_out, kernel_size=kernel_size,
-                            stride=stride, padding=0, bias=True)]
+        model += [nn.Conv2d(n_in, n_out, kernel_size=kernel_size, stride=stride, padding=0, bias=True)]
         model += [nn.InstanceNorm2d(n_out, affine=False)]
         model += [nn.ReLU(inplace=True)]
         self.model = nn.Sequential(*model)
@@ -369,22 +348,20 @@ class MisINSResBlock(nn.Module):
 
     def __init__(self, dim, dim_extra, stride=1, dropout=0.0):
         super(MisINSResBlock, self).__init__()
-        self.conv1 = nn.Sequential(
-            self.conv3x3(dim, dim, stride),
-            nn.InstanceNorm2d(dim))
-        self.conv2 = nn.Sequential(
-            self.conv3x3(dim, dim, stride),
-            nn.InstanceNorm2d(dim))
+        self.conv1 = nn.Sequential(self.conv3x3(dim, dim, stride), nn.InstanceNorm2d(dim))
+        self.conv2 = nn.Sequential(self.conv3x3(dim, dim, stride), nn.InstanceNorm2d(dim))
         self.blk1 = nn.Sequential(
             self.conv1x1(dim + dim_extra, dim + dim_extra),
             nn.ReLU(inplace=False),
             self.conv1x1(dim + dim_extra, dim),
-            nn.ReLU(inplace=False))
+            nn.ReLU(inplace=False),
+        )
         self.blk2 = nn.Sequential(
             self.conv1x1(dim + dim_extra, dim + dim_extra),
             nn.ReLU(inplace=False),
             self.conv1x1(dim + dim_extra, dim),
-            nn.ReLU(inplace=False))
+            nn.ReLU(inplace=False),
+        )
         model = []
         if dropout > 0:
             model += [nn.Dropout(p=dropout)]
@@ -397,8 +374,7 @@ class MisINSResBlock(nn.Module):
 
     def forward(self, x, z):
         residual = x
-        z_expand = z.view(z.size(0), z.size(1), 1, 1).expand(
-            z.size(0), z.size(1), x.size(2), x.size(3))
+        z_expand = z.view(z.size(0), z.size(1), 1, 1).expand(z.size(0), z.size(1), x.size(2), x.size(3))
         o1 = self.conv1(x)
         o2 = self.blk1(torch.cat([o1, z_expand], dim=1))
         o3 = self.conv2(o2)
@@ -408,7 +384,9 @@ class MisINSResBlock(nn.Module):
 
 
 class GaussianNoiseLayer(nn.Module):
-    def __init__(self,):
+    def __init__(
+        self,
+    ):
         super(GaussianNoiseLayer, self).__init__()
 
     def forward(self, x):
@@ -422,8 +400,17 @@ class ReLUINSConvTranspose2d(nn.Module):
     def __init__(self, n_in, n_out, kernel_size, stride, padding, output_padding):
         super(ReLUINSConvTranspose2d, self).__init__()
         model = []
-        model += [nn.ConvTranspose2d(n_in, n_out, kernel_size=kernel_size, stride=stride,
-                                     padding=padding, output_padding=output_padding, bias=True)]
+        model += [
+            nn.ConvTranspose2d(
+                n_in,
+                n_out,
+                kernel_size=kernel_size,
+                stride=stride,
+                padding=padding,
+                output_padding=output_padding,
+                bias=True,
+            )
+        ]
         model += [LayerNorm(n_out)]
         model += [nn.ReLU(inplace=True)]
         self.model = nn.Sequential(*model)
@@ -438,31 +425,30 @@ class ReLUINSConvTranspose2d(nn.Module):
 #  This part of code is copied from pytorch master branch (0.5.0)
 ####################################################################
 class SpectralNorm(object):
-    def __init__(self, name='weight', n_power_iterations=1, dim=0, eps=1e-12):
+    def __init__(self, name="weight", n_power_iterations=1, dim=0, eps=1e-12):
         self.name = name
         self.dim = dim
         if n_power_iterations <= 0:
-            raise ValueError('Expected n_power_iterations to be positive, but '
-                             'got n_power_iterations={}'.format(n_power_iterations))
+            raise ValueError(
+                "Expected n_power_iterations to be positive, but "
+                "got n_power_iterations={}".format(n_power_iterations)
+            )
         self.n_power_iterations = n_power_iterations
         self.eps = eps
 
     def compute_weight(self, module):
-        weight = getattr(module, self.name + '_orig')
-        u = getattr(module, self.name + '_u')
+        weight = getattr(module, self.name + "_orig")
+        u = getattr(module, self.name + "_u")
         weight_mat = weight
         if self.dim != 0:
             # permute dim to front
-            weight_mat = weight_mat.permute(self.dim,
-                                            *[d for d in range(weight_mat.dim()) if d != self.dim])
+            weight_mat = weight_mat.permute(self.dim, *[d for d in range(weight_mat.dim()) if d != self.dim])
         height = weight_mat.size(0)
         weight_mat = weight_mat.reshape(height, -1)
         with torch.no_grad():
             for _ in range(self.n_power_iterations):
-                v = F.normalize(torch.matmul(
-                    weight_mat.t(), u), dim=0, eps=self.eps)
-                u = F.normalize(torch.matmul(weight_mat, v),
-                                dim=0, eps=self.eps)
+                v = F.normalize(torch.matmul(weight_mat.t(), u), dim=0, eps=self.eps)
+                u = F.normalize(torch.matmul(weight_mat, v), dim=0, eps=self.eps)
         sigma = torch.dot(u, torch.matmul(weight_mat, v))
         weight = weight / sigma
         return weight, u
@@ -470,17 +456,17 @@ class SpectralNorm(object):
     def remove(self, module):
         weight = getattr(module, self.name)
         delattr(module, self.name)
-        delattr(module, self.name + '_u')
-        delattr(module, self.name + '_orig')
+        delattr(module, self.name + "_u")
+        delattr(module, self.name + "_orig")
         module.register_parameter(self.name, torch.nn.Parameter(weight))
 
     def __call__(self, module, inputs):
         if module.training:
             weight, u = self.compute_weight(module)
             setattr(module, self.name, weight)
-            setattr(module, self.name + '_u', u)
+            setattr(module, self.name + "_u", u)
         else:
-            r_g = getattr(module, self.name + '_orig').requires_grad
+            r_g = getattr(module, self.name + "_orig").requires_grad
             getattr(module, self.name).detach_().requires_grad_(r_g)
 
     @staticmethod
@@ -488,8 +474,7 @@ class SpectralNorm(object):
         fn = SpectralNorm(name, n_power_iterations, dim, eps)
         weight = module._parameters[name]
         height = weight.size(dim)
-        u = F.normalize(weight.new_empty(
-            height).normal_(0, 1), dim=0, eps=fn.eps)
+        u = F.normalize(weight.new_empty(height).normal_(0, 1), dim=0, eps=fn.eps)
         delattr(module, fn.name)
         module.register_parameter(fn.name + "_orig", weight)
         module.register_buffer(fn.name, weight.data)
@@ -498,11 +483,9 @@ class SpectralNorm(object):
         return fn
 
 
-def spectral_norm(module, name='weight', n_power_iterations=1, eps=1e-12, dim=None):
+def spectral_norm(module, name="weight", n_power_iterations=1, eps=1e-12, dim=None):
     if dim is None:
-        if isinstance(module, (torch.nn.ConvTranspose1d,
-                               torch.nn.ConvTranspose2d,
-                               torch.nn.ConvTranspose3d)):
+        if isinstance(module, (torch.nn.ConvTranspose1d, torch.nn.ConvTranspose2d, torch.nn.ConvTranspose3d)):
             dim = 1
         else:
             dim = 0
@@ -510,11 +493,10 @@ def spectral_norm(module, name='weight', n_power_iterations=1, eps=1e-12, dim=No
     return module
 
 
-def remove_spectral_norm(module, name='weight'):
+def remove_spectral_norm(module, name="weight"):
     for k, hook in module._forward_pre_hooks.items():
         if isinstance(hook, SpectralNorm) and hook.name == name:
             hook.remove(module)
             del module._forward_pre_hooks[k]
             return module
-    raise ValueError(
-        "spectral_norm of '{}' not found in {}".format(name, module))
+    raise ValueError("spectral_norm of '{}' not found in {}".format(name, module))

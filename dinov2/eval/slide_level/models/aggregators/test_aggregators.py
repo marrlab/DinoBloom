@@ -19,15 +19,15 @@ def test_attentionmil():
 
 # TODO: Make LAMIL work!
 def test_lamil():
-    batch_size = 1 
-    num_tiles = 1000 
-    tile_dim = 1024 
+    batch_size = 1
+    num_tiles = 1000
+    tile_dim = 1024
     num_classes = 4
-    tile_coords = torch.tensor([(random.random(), random.random()) for _ in range(num_tiles)]) 
-    knn1, knn2 = 16, 64 
-    g1, g2 = dgl.knn_graph(tile_coords, knn1), dgl.knn_graph(tile_coords, knn2) 
-    wsi = torch.randn(batch_size, num_tiles, tile_dim) 
-    
+    tile_coords = torch.tensor([(random.random(), random.random()) for _ in range(num_tiles)])
+    knn1, knn2 = 16, 64
+    g1, g2 = dgl.knn_graph(tile_coords, knn1), dgl.knn_graph(tile_coords, knn2)
+    wsi = torch.randn(batch_size, num_tiles, tile_dim)
+
     lamil = LAMIL(num_classes=num_classes)
     output = lamil(wsi, g1, g2)
     assert torch.equal(torch.tensor(output.size()), torch.tensor([1, 2]))
@@ -57,11 +57,7 @@ def test_transmil():
 if __name__ == "__main__":
 
     test_attentionmil()
-    #test_lamil()
+    # test_lamil()
     test_perceiver()
     test_transformer()
     test_transmil()
-    
-   
-
-

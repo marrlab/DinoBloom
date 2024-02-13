@@ -19,8 +19,11 @@ class ClassifierLightning(pl.LightningModule):
             input_dim=config.input_dim,
             **self.config.model_config,
         )
-        self.criterion = get_loss(config.criterion, pos_weight=config.pos_weight
-                                 ) if config.task == "binary" else get_loss(config.criterion)
+        self.criterion = (
+            get_loss(config.criterion, pos_weight=config.pos_weight)
+            if config.task == "binary"
+            else get_loss(config.criterion)
+        )
         self.save_hyperparameters()
 
         self.lr = config.lr
@@ -76,15 +79,15 @@ class ClassifierLightning(pl.LightningModule):
         )
 
         self.cm_val = torchmetrics.ConfusionMatrix(task=config.task, num_classes=config.num_classes)
-        self.cm_test = torchmetrics.ConfusionMatrix(
-            task=config.task, num_classes=config.num_classes
-        )
+        self.cm_test = torchmetrics.ConfusionMatrix(task=config.task, num_classes=config.num_classes)
 
     def forward(self, x, *args):
         logits = self.model(x, *args)
         return logits
 
-    def configure_optimizers(self, ):
+    def configure_optimizers(
+        self,
+    ):
         optimizer = get_optimizer(
             name=self.config.optimizer,
             model=self.model,
@@ -147,9 +150,7 @@ class ClassifierLightning(pl.LightningModule):
         self.log("f1/val", self.f1_val, prog_bar=True, on_step=False, on_epoch=True)
         self.log("precision/val", self.precision_val, prog_bar=False, on_step=False, on_epoch=True)
         self.log("recall/val", self.recall_val, prog_bar=False, on_step=False, on_epoch=True)
-        self.log(
-            "specificity/val", self.specificity_val, prog_bar=False, on_step=False, on_epoch=True
-        )
+        self.log("specificity/val", self.specificity_val, prog_bar=False, on_step=False, on_epoch=True)
 
     def on_validation_epoch_end(self):
         if self.global_step != 0:
@@ -161,15 +162,15 @@ class ClassifierLightning(pl.LightningModule):
 
             # log to wandb
             plt.clf()
-            cm = sns.heatmap(normalized_cm.cpu(), annot=cm.cpu(), cmap='rocket_r', vmin=0, vmax=1)
+            cm = sns.heatmap(normalized_cm.cpu(), annot=cm.cpu(), cmap="rocket_r", vmin=0, vmax=1)
             wandb.log({"confusion_matrix/val": wandb.Image(cm)})
 
         self.cm_val.reset()
 
     def on_test_epoch_start(self) -> None:
         # save test outputs in dataframe per test dataset
-        logits_labels = [f'logits_{i}' for i in range(self.config.num_classes)]
-        self.outputs = pd.DataFrame(columns=['patient', 'ground_truth', 'predictions', *logits_labels, 'correct'])
+        logits_labels = [f"logits_{i}" for i in range(self.config.num_classes)]
+        self.outputs = pd.DataFrame(columns=["patient", "ground_truth", "predictions", *logits_labels, "correct"])
 
     def test_step(self, batch, batch_idx, dataloader_idx=0):
         x, coords, y, _, patient = batch  # x = features, coords, y = labels, tiles, patient
@@ -197,24 +198,14 @@ class ClassifierLightning(pl.LightningModule):
         self.log("acc/test", self.acc_test, prog_bar=True, on_step=False, on_epoch=True)
         self.log("auroc/test", self.auroc_test, prog_bar=True, on_step=False, on_epoch=True)
         self.log("f1/test", self.f1_test, prog_bar=True, on_step=False, on_epoch=True)
-        self.log(
-            "precision/test", self.precision_test, prog_bar=False, on_step=False, on_epoch=True
-        )
+        self.log("precision/test", self.precision_test, prog_bar=False, on_step=False, on_epoch=True)
         self.log("recall/test", self.recall_test, prog_bar=False, on_step=False, on_epoch=True)
-        self.log(
-            "specificity/test", self.specificity_test, prog_bar=False, on_step=False, on_epoch=True
-        )
+        self.log("specificity/test", self.specificity_test, prog_bar=False, on_step=False, on_epoch=True)
 
-        logits_labels = [f'logits_{i}' for i in range(self.config.num_classes)]
+        logits_labels = [f"logits_{i}" for i in range(self.config.num_classes)]
         outputs = pd.DataFrame(
-            data=[
-                [patient[0],
-                 y.item(),
-                 preds.item(),
-                 *logits.squeeze().tolist(), 
-                 (y == preds).int().item()]
-            ],
-            columns=['patient', 'ground_truth', 'predictions', *logits_labels, 'correct']
+            data=[[patient[0], y.item(), preds.item(), *logits.squeeze().tolist(), (y == preds).int().item()]],
+            columns=["patient", "ground_truth", "predictions", *logits_labels, "correct"],
         )
         self.outputs = pd.concat([self.outputs, outputs], ignore_index=True)
 
@@ -228,7 +219,7 @@ class ClassifierLightning(pl.LightningModule):
 
             # log to wandb
             plt.clf()
-            cm = sns.heatmap(normalized_cm.cpu(), annot=cm.cpu(), cmap='rocket_r', vmin=0, vmax=1)
+            cm = sns.heatmap(normalized_cm.cpu(), annot=cm.cpu(), cmap="rocket_r", vmin=0, vmax=1)
             wandb.log({"confusion_matrix/test": wandb.Image(cm)})
 
         self.cm_test.reset()
