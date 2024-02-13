@@ -21,6 +21,6 @@ cd /home/icb/valentin.koch/dinov2
 conda activate feature_ex
 
 # set checkpoint to evaluate as input 
-python dinov2/eval/miccai/extract_and_eval.py --run_path /home/icb/valentin.koch/dinov2/debug/eval
+python dinov2/eval/miccai/extract_and_eval_patches.py --run_path /home/icb/valentin.koch/dinov2/debug/eval
 
 

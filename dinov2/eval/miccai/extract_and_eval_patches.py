@@ -2,7 +2,7 @@ import argparse
 import os
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-import random
+
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,15 +10,14 @@ import pandas as pd
 import torch
 import umap
 from models.return_model import get_models, get_transforms
+from PIL import Image
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (accuracy_score, balanced_accuracy_score,
                              classification_report, f1_score, log_loss)
-from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from utils import CustomImageDataset, create_datasets
-from PIL import Image
+from utils import CustomImageDataset
 
 import wandb
 
@@ -30,6 +29,13 @@ parser.add_argument(
     "--model_name",
     help="name of model",
     default="dinov2_finetuned",
+    type=str,
+)
+
+parser.add_argument(
+    "--experiment_name",
+    help="name of experiment",
+    default="crc_patch",
     type=str,
 )
 
@@ -118,22 +124,20 @@ def main(args):
     image_paths = args.image_path_train
     image_test_paths = args.image_path_test
     model_name = args.model_name
+
     df = pd.read_csv(image_paths)
     df_test = pd.read_csv(image_test_paths)
 
     transform = get_transforms(model_name)
 
     # make sure encoding is always the same
-    class_to_label = {"ADI": 0, "BACK": 1, "DEB": 2, "LYM": 3, "MUC": 4, "MUS": 5, "NORM": 6, "STR": 7, "TUM": 8}
 
-    train_dataset, val_dataset = create_datasets(df, transform, class_to_label=class_to_label)
-    test_dataset = CustomImageDataset(df_test, transform=transform, class_to_label=class_to_label)
 
-    # Create data loaders for the three datasets    
+    train_dataset = CustomImageDataset(df, transform=transform)
+    test_dataset = CustomImageDataset(df_test, transform=transform)
+
+    # Create data loaders for the  datasets    
     train_dataloader = DataLoader(train_dataset, batch_size=256, shuffle=False, num_workers=args.num_workers)
-
-    val_dataloader = DataLoader(val_dataset, batch_size=256, shuffle=False, num_workers=args.num_workers)
-
     test_dataloader = DataLoader(test_dataset, batch_size=256, shuffle=False, num_workers=args.num_workers)
 
 
@@ -152,17 +156,15 @@ def main(args):
     for checkpoint in sorted_paths:
         
         feature_extractor = get_models(model_name, saved_model_path=checkpoint)
-        feature_dir = checkpoint.parent / "features_crc"
+        feature_dir = checkpoint.parent / args.experiment_name
 
         train_dir= os.path.join(feature_dir, "train_data")
-        val_dir = os.path.join(feature_dir, "val_data")
         test_dir = os.path.join(feature_dir, "test_data")
 
         save_features_and_labels_individual(feature_extractor, train_dataloader, train_dir)
-        save_features_and_labels_individual(feature_extractor, val_dataloader,val_dir )
         save_features_and_labels_individual(feature_extractor, test_dataloader, test_dir)
 
-        train_data, train_labels, test_data, test_labels = get_data(train_dir,val_dir, test_dir)
+        train_data, train_labels, test_data, test_labels = get_data(train_dir, test_dir)
 
         print("data fully loaded")
         print("Shape of train_data:", train_data.shape)
@@ -201,14 +203,14 @@ def process_file(file_name):
 #{"Accuracy": accuracy, "Balanced_Acc": balanced_acc, "Weighted_F1": weighted_f1}
 
 
-def get_data(train_dir,val_dir,test_dir):
+def get_data(train_dir,test_dir):
     # Define the directories for train, validation, and test data and labels
     
     # Load training data into dictionaries
     train_features, train_labels = [], []
     test_features, test_labels = [], []
+
     train_files= list(Path(train_dir).glob("*.h5"))
-    val_files= list(Path(val_dir).glob("*.h5"))
     test_files= list(Path(test_dir).glob("*.h5"))
 
     with ThreadPoolExecutor() as executor:
@@ -218,14 +220,6 @@ def get_data(train_dir,val_dir,test_dir):
             feature_train, label_train = future_train.result()
             train_features.append(feature_train)
             train_labels.append(label_train)
-
-    with ThreadPoolExecutor() as executor:
-        futures_val = [executor.submit(process_file, file_name) for file_name in val_files]
-
-        for i, future_val in tqdm(enumerate(futures_val), desc="Loading validation data"):
-            feature_val, label_val = future_val.result()
-            train_features.append(feature_val)
-            train_labels.append(label_val)
 
     with ThreadPoolExecutor() as executor:
         futures_test = [executor.submit(process_file, file_name) for file_name in test_files]
@@ -336,7 +330,7 @@ def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, 
     # Initialize wandb
 
     M = train_data.shape[1]  
-    C = 9  
+    C = len(np.unique(train_labels))
     l2_reg_coef = 100 / (M * C)
 
     # Initialize the logistic regression model with L-BFGS solver
@@ -387,4 +381,5 @@ def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, 
 if __name__ == "__main__":
     args = parser.parse_args()
     main(args)
+
 

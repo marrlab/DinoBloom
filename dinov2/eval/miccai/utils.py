@@ -1,16 +1,42 @@
 
+import argparse
+import json
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
+import cv2
+import h5py
+import numpy as np
+import pandas as pd
 from PIL import Image
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset
 
 
+def create_label_mapping(df):
+    """
+    Creates a dictionary mapping each unique class label in the dataframe to an integer.
+
+    Parameters:
+    - df: pandas DataFrame containing a column 'Label' with class labels.
+
+    Returns:
+    - A dictionary mapping each unique label to an integer, starting from 0.
+    """
+    # Get unique labels and sort them
+    unique_labels = sorted(df['Label'].unique())
+    
+    # Create mapping
+    label_to_int = {label: index for index, label in enumerate(unique_labels)}
+    
+    return label_to_int
+
 class CustomImageDataset(Dataset):
-    def __init__(self, df, transform, class_to_label):
+    def __init__(self, df, transform):
         self.df = df
         self.transform = transform
-        self.class_to_label = class_to_label
+        self.class_to_label = create_label_mapping(df)
+        print (self.class_to_label)
 
     def __len__(self):
         return len(self.df)
@@ -25,43 +51,6 @@ class CustomImageDataset(Dataset):
         encoded_label = self.class_to_label[label]
 
         return image, encoded_label, Path(image_path).stem
-
-
-
-def create_datasets(data, transform, class_to_label):
-    train_val_idxs, val_idxs = train_test_split(
-        range(len(data)), 
-        test_size=0.10,    
-        stratify=data['Label'],  
-        random_state=42,
-    )
-
-    # Create training, validation, and test datasets
-    train_dataset = CustomImageDataset(
-        data.iloc[train_val_idxs],
-        transform=transform,
-        class_to_label=class_to_label
-    )
-    
-    val_dataset = CustomImageDataset(
-        data.iloc[val_idxs],
-        transform=transform,
-        class_to_label=class_to_label
-    )
-
-    return train_dataset, val_dataset
-
-
-import argparse
-import json
-import xml.etree.ElementTree as ET
-from pathlib import Path
-
-import cv2
-import h5py
-import numpy as np
-import pandas as pd
-from PIL import Image
 
 
 def bgr_format(xml_string: str):
