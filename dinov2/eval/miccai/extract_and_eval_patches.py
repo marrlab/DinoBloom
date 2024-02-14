@@ -155,7 +155,7 @@ def main(args):
     # sorry for the bad naming here, its not yet sorted :)
     sorted_paths = Path(args.run_path).rglob("*.pth")
 
-    if len(list(sorted_paths))>0:
+    if len(list(sorted_paths))>1:
         sorted_paths = sorted(sorted_paths, key=sort_key)
 
     if args.evaluate_untrained_baseline:
