@@ -8,7 +8,7 @@ from models.sam import build_sam_vit_b, build_sam_vit_h, build_sam_vit_l
 
 from torchvision import transforms
 from torchvision.models import resnet
-from transformers import BeitFeatureExtractor, Data2VecVisionModel
+from transformers import BeitFeatureExtractor, Data2VecVisionModel, ViTModel, AutoImageProcessor
 
 # RETCCL_PATH = '/lustre/groups/shared/users/peng_marr/pretrained_models/retccl.pth'
 # CTRANSPATH_PATH = '/lustre/groups/shared/users/peng_marr/pretrained_models/ctranspath.pth'
@@ -27,14 +27,20 @@ from transformers import BeitFeatureExtractor, Data2VecVisionModel
 def get_models(modelname, saved_model_path=None):
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
+    # --- histology-pretrained models
     if modelname.lower() == "ctranspath":
         model = get_ctranspath(saved_model_path)
     # elif modelname.lower() == 'remedis':
     #    model = hub.load('cxr-52x2-remedis-m')
-    elif modelname.lower() == "resnet50":
-        model = get_res50()
     elif modelname.lower() == "retccl":
         model = get_retCCL(saved_model_path)
+    elif modelname.lower() == "owkin":
+        model = Phikon()
+
+    # --- vision foundation models 
+    elif modelname.lower() == "resnet50":
+        model = get_res50()
     elif modelname.lower() == "resnet50_full":
         model = get_full_res50()
     elif modelname.lower() == "sam_vit_h":
@@ -43,23 +49,22 @@ def get_models(modelname, saved_model_path=None):
         model = get_sam_vit_b(saved_model_path)
     elif modelname.lower() == "sam_vit_l":
         model = get_sam_vit_l(saved_model_path)
-
+    elif modelname.lower() == "imagebind":
+        model = get_imagebind(saved_model_path)
+    elif modelname.lower() == "beit_fb":
+        model = BeitModel(device)    
     elif modelname.lower() == "dinov2_vits14_downloaded":
         model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
-
     elif modelname.lower() == "dinov2_vits14_reg_downloaded":
         model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14_reg")
-
     elif modelname.lower() == "dinov2_vitb14":
         model = get_dino_vit_b()
     elif modelname.lower() == "dinov2_vitb14_downloaded":
         model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitb14")
-
     elif modelname.lower() == "dinov2_vitl14":
         model = get_dino_vit_l(saved_model_path)
     elif modelname.lower() == "dinov2_vitl14_downloaded":
         model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitl14")
-
     elif modelname.lower() == "dinov2_vitg14":
         model = get_dino_vit_g(saved_model_path)
 
@@ -69,17 +74,15 @@ def get_models(modelname, saved_model_path=None):
     elif modelname.lower() == "dinov2_vitg14_reg_downloaded":
         model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitg14_reg")
 
+    # --- our finetuned models
     elif modelname.lower() == "dinov2_finetuned":
         model = get_dino_finetuned_downloaded(saved_model_path)
-
-    elif modelname.lower() == "imagebind":
-        model = get_imagebind(saved_model_path)
-
-    elif modelname.lower() == "beit_fb":
-        model = BeitModel(device)
-
     elif modelname.lower() == "vim_finetuned":
         model = get_vim_finetuned(saved_model_path)
+        
+    else: 
+        raise ValueError(f"Model {modelname} not found")
+
     model = model.to(device)
     model.eval()
 
@@ -270,7 +273,11 @@ def get_transforms(model_name):
     std = (0.229, 0.224, 0.225)
 
     if model_name.lower() in ["ctranspath", "resnet50", "simclr_lung", "beit_fb", "resnet50_full"]:
-        resolution = 224
+        size = 224
+    elif model_name.lower() == "owkin":
+        image_processor = AutoImageProcessor.from_pretrained("owkin/phikon")
+        mean, std = image_processor.image_mean, image_processor.image_std
+        size = image_processor.size['height']
     elif model_name.lower() in [
         "dinov2_vitg14_downloaded",
         "dinov2_vits14_downloaded",
@@ -279,13 +286,13 @@ def get_transforms(model_name):
         "dinov2_vits14_reg_downloaded",
         "dinov2_vitg14_reg_downloaded",
     ]:
-        resolution = 518
+        size = 518
     elif model_name.lower() == "retccl":
-        resolution = 256
+        size = 256
     elif model_name.lower() == "kimianet":
-        resolution = 1000
+        size = 1000
     elif model_name.lower() == "imagebind":
-        resolution = 224
+        size = 224
         mean = (0.48145466, 0.4578275, 0.40821073)
         std = (0.26862954, 0.26130258, 0.27577711)
     # change later to correct value
@@ -300,26 +307,26 @@ def get_transforms(model_name):
         "remedis",
         "vim_finetuned",
     ]:
-        resolution = 224
+        size = 224
     elif "sam" in model_name.lower():
-        resolution = 1024
+        size = 1024
         mean = (123.675, 116.28, 103.53)
         std = (58.395, 57.12, 57.375)
     else:
         raise ValueError("Model name not found")
 
-    transforms_list = [transforms.Resize(resolution), transforms.ToTensor(), transforms.Normalize(mean=mean, std=std)]
+    transforms_list = [transforms.Resize(size), transforms.ToTensor(), transforms.Normalize(mean=mean, std=std)]
 
     if "beit_fb" in model_name.lower():
         transforms_list = [
-            transforms.Resize(resolution),
+            transforms.Resize(size),
             transforms.ToTensor(),
         ]
 
     elif "sam" in model_name.lower():
         # multiply image by 255 for "sam" model
         transforms_list = [
-            transforms.Resize(resolution),
+            transforms.Resize(size),
             transforms.ToTensor(),
             transforms.Lambda(multiply_by_255),
             transforms.Normalize(mean=mean, std=std),
@@ -350,3 +357,14 @@ class BeitModel(torch.nn.Module):
         features = self.avg_pooling(features)
 
         return features.squeeze(dim=2)
+
+
+class Phikon(nn.Module):
+    def __init__(self):
+        super(Phikon, self).__init__()
+        self.model = ViTModel.from_pretrained("owkin/phikon", add_pooling_layer=False)
+
+    def forward(self, x):
+        outputs = self.model(x)
+        features = outputs.last_hidden_state[:, 0, :]
+        return features
