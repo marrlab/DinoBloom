@@ -41,7 +41,7 @@ parser.add_argument(
 parser.add_argument(
     "--num_workers",
     help="num workers to load data",
-    default=4,
+    default=16,
     type=int,
 )
 
@@ -149,7 +149,7 @@ def main(args):
     wandb.init(
         entity="histo-collab",
         project="dino_eval",
-        name=Path(args.run_path).name,
+        name=Path(args.run_path).name +"_"+ model_name,
     )
 
     # Log the n_neighbors value, accuracy
@@ -201,7 +201,7 @@ def main(args):
             knn_metrics = perform_knn(train_data, train_labels, test_data, test_labels, knn_dir)
             print("knn done")
 
-        if parent_dir is not None:
+        if checkpoint is not None:
             step = int(parent_dir.name.split("_")[1])
         else: 
             step=0
