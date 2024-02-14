@@ -74,6 +74,12 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--evaluate_untrained_baseline",
+    help="Set to true if original dino should be tested.",
+    action='store_true',
+)
+
+parser.add_argument(
     "--logistic_regression",
     "--logistic-regression",
     "-log",
@@ -150,11 +156,19 @@ def main(args):
     checkpoint_paths = Path(args.run_path).rglob("*teacher_checkpoint.pth")
     # Sort the paths
     sorted_paths = sorted(checkpoint_paths, key=sort_key)
-    print(sorted_paths)
+
+    
+    if args.evaluate_untrained_baseline:
+        sorted_paths.insert(0, None)
+
     for checkpoint in sorted_paths:
+        if checkpoint is not None:
+            parent_dir=checkpoint.parent 
+        else:
+            parent_dir = Path(args.run_path) / (model_name+"_baseline")
 
         feature_extractor = get_models(model_name, saved_model_path=checkpoint)
-        feature_dir = checkpoint.parent / args.experiment_name
+        feature_dir = parent_dir / args.experiment_name
 
         train_dir = os.path.join(feature_dir, "train_data")
         test_dir = os.path.join(feature_dir, "test_data")
@@ -171,23 +185,27 @@ def main(args):
         print("Shape of test_labels:", test_labels.shape)
 
         if args.logistic_regression:
-            logreg_dir = checkpoint.parent / "log_reg_eval"
+            logreg_dir = parent_dir/ "log_reg_eval"
             log_reg = train_and_evaluate_logistic_regression(
                 train_data, train_labels, test_data, test_labels, logreg_dir, max_iter=1000
             )
             print("logistic_regression done")
 
         if args.umap:
-            umap_dir = checkpoint.parent / "umaps"
+            umap_dir = parent_dir/ "umaps"
             umap_train = create_umap(train_data, train_labels, umap_dir)
             umap_test = create_umap(test_data, test_labels, umap_dir, "test")
             print("umap done")
 
         if args.knn:
-            knn_dir = checkpoint.parent / "knn_eval"
+            knn_dir = parent_dir / "knn_eval"
             knn_metrics = perform_knn(train_data, train_labels, test_data, test_labels, knn_dir)
             print("knn done")
-        step = int(checkpoint.parent.name.split("_")[1])
+
+        if parent_dir is not None:
+            step = int(parent_dir.name.split("_")[1])
+        else: 
+            step=0
 
         wandb.log(knn_metrics, step=step)
         wandb.log(
