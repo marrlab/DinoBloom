@@ -153,11 +153,10 @@ def main(args):
     )
 
     # Log the n_neighbors value, accuracy
-    checkpoint_paths = Path(args.run_path).rglob("*teacher_checkpoint.pth")
+    checkpoint_paths = Path(args.run_path).rglob("*.pth")
     # Sort the paths
     sorted_paths = sorted(checkpoint_paths, key=sort_key)
 
-    
     if args.evaluate_untrained_baseline:
         sorted_paths.insert(0, None)
 
