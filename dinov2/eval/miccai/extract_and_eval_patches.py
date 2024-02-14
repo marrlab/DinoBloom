@@ -200,7 +200,7 @@ def main(args):
             knn_metrics = perform_knn(train_data, train_labels, test_data, test_labels, knn_dir)
             print("knn done")
 
-        if checkpoint is not None:
+        if checkpoint is not None and len(sorted_paths)>1:
             step = int(parent_dir.name.split("_")[1])
         else: 
             step=0
