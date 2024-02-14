@@ -160,7 +160,7 @@ def main(args):
 
     if args.evaluate_untrained_baseline:
         sorted_paths.insert(0, None)
-
+    print(sorted_paths)
     for checkpoint in sorted_paths:
         if checkpoint is not None:
             parent_dir=checkpoint.parent 
