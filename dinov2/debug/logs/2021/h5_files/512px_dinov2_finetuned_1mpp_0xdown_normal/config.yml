@@ -1,0 +1,21 @@
+slide_path: /mnt/ceph_vol/raw_data/2021
+save_path: /mnt/ceph_vol/features/test/
+file_extension: .czi
+model: dinov2_finetuned
+checkpoints: ['/mnt/ceph_vol/dinov2/dinov2/debug/logs/teacher_checkpoint.pth']
+scene_list: [0]
+patch_size: 512
+white_thresh: [175, 190, 178]
+black_thresh: 0
+invalid_ratio_thresh: 0.3
+edge_threshold: 1
+resolution_in_mpp: 1
+downscaling_factor: 0
+save_tile_preview: False
+save_patch_images: False
+preview_size: 4096
+batch_size: 256
+exctraction_list: None
+save_qupath_annotation: False
+calc_thresh: [40, 40, 40]
+split: [0, 1]
