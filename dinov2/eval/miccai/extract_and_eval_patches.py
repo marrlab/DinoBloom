@@ -97,7 +97,7 @@ parser.add_argument(
 
 
 def save_features_and_labels_individual(feature_extractor, dataloader, save_dir):
-
+    print("extracting features..")
     os.makedirs(save_dir, exist_ok=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
