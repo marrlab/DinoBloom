@@ -152,10 +152,11 @@ def main(args):
         name= model_name +"_" +args.experiment_name,
     )
 
-    # Log the n_neighbors value, accuracy
-    checkpoint_paths = Path(args.run_path).rglob("*.pth")
-    # Sort the paths
-    sorted_paths = sorted(checkpoint_paths, key=sort_key)
+    # sorry for the bad naming here, its not yet sorted :)
+    sorted_paths = Path(args.run_path).rglob("*.pth")
+
+    if len(sorted_paths)>0:
+        sorted_paths = sorted(sorted_paths, key=sort_key)
 
     if args.evaluate_untrained_baseline:
         sorted_paths.insert(0, None)
