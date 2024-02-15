@@ -81,7 +81,6 @@ parser.add_argument(
 
 parser.add_argument(
     "--logistic_regression",
-    "--logistic-regression",
     "-log",
     help="perform logistic regression or not",
     default=True,
