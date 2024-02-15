@@ -48,14 +48,14 @@ parser.add_argument(
 parser.add_argument(
     "--image_path_train",
     help="path to csv file",
-    default="./dinov2/eval/miccai/bild_pfade_with_label.csv",
+    default="./dinov2/eval/miccai/nct_crc_train.csv",
     type=str,
 )
 
 parser.add_argument(
     "--image_path_test",
     help="path to csv file",
-    default="./dinov2/eval/miccai/bild_pfade_with_label_test.csv",
+    default="./dinov2/eval/miccai/nct_crc_test.csv",
     type=str,
 )
 
