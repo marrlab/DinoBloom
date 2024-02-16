@@ -67,8 +67,10 @@ def get_models(modelname, saved_model_path=None):
         model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitl14")
     elif modelname.lower() == "dinov2_vitg14":
         model = get_dino_vit_g(saved_model_path)
+
     elif modelname.lower() == "dinov2_vitg14_downloaded":
         model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitg14")
+
     elif modelname.lower() == "dinov2_vitg14_reg_downloaded":
         model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitg14_reg")
 
@@ -126,21 +128,22 @@ def get_dino_finetuned_downloaded(model_path):
     model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
     # model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitg14')
     # load finetuned weights
-    pretrained = torch.load(model_path, map_location=torch.device("cpu"))
-    # make correct state dict for loading
-    new_state_dict = {}
-    for key, value in pretrained["teacher"].items():
-        if "dino_head" in key or "ibot_head" in key:
-            print("not used")
-        else:
-            new_key = key.replace("backbone.", "")
-            new_state_dict[new_key] = value
-    # change shape of pos_embed
-    pos_embed = nn.Parameter(torch.zeros(1, 257, 384))
-    # pos_embed = nn.Parameter(torch.zeros(1, 257, 1536))
-    model.pos_embed = pos_embed
-    # load state dict
-    model.load_state_dict(new_state_dict, strict=True)
+    if model_path is not None:
+        pretrained = torch.load(model_path, map_location=torch.device("cpu"))
+        # make correct state dict for loading
+        new_state_dict = {}
+        for key, value in pretrained["teacher"].items():
+            if "dino_head" in key or "ibot_head" in key:
+                print("not used")
+            else:
+                new_key = key.replace("backbone.", "")
+                new_state_dict[new_key] = value
+        # change shape of pos_embed
+        pos_embed = nn.Parameter(torch.zeros(1, 257, 384))
+        # pos_embed = nn.Parameter(torch.zeros(1, 257, 1536))
+        model.pos_embed = pos_embed
+        # load state dict
+        model.load_state_dict(new_state_dict, strict=True)
     return model
 
 

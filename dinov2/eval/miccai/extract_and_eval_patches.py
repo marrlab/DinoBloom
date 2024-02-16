@@ -41,21 +41,21 @@ parser.add_argument(
 parser.add_argument(
     "--num_workers",
     help="num workers to load data",
-    default=4,
+    default=16,
     type=int,
 )
 
 parser.add_argument(
     "--image_path_train",
     help="path to csv file",
-    default="./dinov2/eval/miccai/bild_pfade_with_label.csv",
+    default="./dinov2/eval/miccai/nct_crc_train.csv",
     type=str,
 )
 
 parser.add_argument(
     "--image_path_test",
     help="path to csv file",
-    default="./dinov2/eval/miccai/bild_pfade_with_label_test.csv",
+    default="./dinov2/eval/miccai/nct_crc_test.csv",
     type=str,
 )
 
@@ -71,6 +71,12 @@ parser.add_argument(
     help="perform knn or not",
     default=True,
     type=bool,
+)
+
+parser.add_argument(
+    "--evaluate_untrained_baseline",
+    help="Set to true if original dino should be tested.",
+    action='store_true',
 )
 
 parser.add_argument(
@@ -91,7 +97,7 @@ parser.add_argument(
 
 
 def save_features_and_labels_individual(feature_extractor, dataloader, save_dir):
-
+    print("extracting features..")
     os.makedirs(save_dir, exist_ok=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -143,18 +149,31 @@ def main(args):
     wandb.init(
         entity="histo-collab",
         project="dino_eval",
-        name=Path(args.run_path).name,
+        name= model_name +"_" +args.experiment_name,
+        config=args
     )
 
-    # Log the n_neighbors value, accuracy
-    checkpoint_paths = Path(args.run_path).rglob("*teacher_checkpoint.pth")
-    # Sort the paths
-    sorted_paths = sorted(checkpoint_paths, key=sort_key)
-    print(sorted_paths)
+    # sorry for the bad naming here, its not yet sorted :)
+    
+
+    if model_name in ["owkin","resnet50","resnet50_full","remedis"]:
+        sorted_paths=[None]
+    else:
+        sorted_paths = list(Path(args.run_path).rglob("*.pth"))
+
+    if len(sorted_paths)>1:
+        sorted_paths = sorted(sorted_paths, key=sort_key)
+    if args.evaluate_untrained_baseline:
+        sorted_paths.insert(0, None)
+
     for checkpoint in sorted_paths:
+        if checkpoint is not None:
+            parent_dir=checkpoint.parent 
+        else:
+            parent_dir = Path(args.run_path) / (model_name+"_baseline")
 
         feature_extractor = get_models(model_name, saved_model_path=checkpoint)
-        feature_dir = checkpoint.parent / args.experiment_name
+        feature_dir = parent_dir / args.experiment_name
 
         train_dir = os.path.join(feature_dir, "train_data")
         test_dir = os.path.join(feature_dir, "test_data")
@@ -171,23 +190,27 @@ def main(args):
         print("Shape of test_labels:", test_labels.shape)
 
         if args.logistic_regression:
-            logreg_dir = checkpoint.parent / "log_reg_eval"
+            logreg_dir = parent_dir/ "log_reg_eval"
             log_reg = train_and_evaluate_logistic_regression(
                 train_data, train_labels, test_data, test_labels, logreg_dir, max_iter=1000
             )
             print("logistic_regression done")
 
         if args.umap:
-            umap_dir = checkpoint.parent / "umaps"
+            umap_dir = parent_dir/ "umaps"
             umap_train = create_umap(train_data, train_labels, umap_dir)
             umap_test = create_umap(test_data, test_labels, umap_dir, "test")
             print("umap done")
 
         if args.knn:
-            knn_dir = checkpoint.parent / "knn_eval"
+            knn_dir = parent_dir / "knn_eval"
             knn_metrics = perform_knn(train_data, train_labels, test_data, test_labels, knn_dir)
             print("knn done")
-        step = int(checkpoint.parent.name.split("_")[1])
+
+        if checkpoint is not None and len(sorted_paths)>1:
+            step = int(parent_dir.name.split("_")[1])
+        else: 
+            step=0
 
         wandb.log(knn_metrics, step=step)
         wandb.log(
