@@ -253,4 +253,4 @@ class BalancedPatchDataset(VisionDataset):
 
     def __len__(self) -> int:
         # assert len(entries) == self.split.length
-        return int(np.sum(self.dataset_sizes))
+        return int(np.sum(self.dataset_sizes)*4)

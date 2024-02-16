@@ -45,7 +45,7 @@ ibot:
   separate_head: true
   # head_n_prototypes: 131072
 train:
-  batch_size_per_gpu: 256
+  batch_size_per_gpu: 320
   num_workers: 26
   OFFICIAL_EPOCH_LENGTH: 500  # 1250
   dataset_path: BalancedPatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/train_lists
@@ -73,8 +73,9 @@ evaluation:
 # adapt to model architecture
 # ---------------------------
 # config for vit
+# "dinov2_vits14","dinov2_vitb14","dinov2_vitl14","dinov2_vitg14"
 student:
-  arch: vit_small
+  arch: dinov2_vits14
   patch_size: 14
 crops:
   local_crops_size: 98
