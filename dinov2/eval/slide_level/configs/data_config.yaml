@@ -1,6 +1,7 @@
-CPTAC:
+CPTAC-CRC:
   clini_table: /lustre/groups/peng/datasets/histology_data/clini_tables/coad_cptac_2019_clinical_data.xlsx
   slide_csv: /lustre/groups/peng/datasets/histology_data/clini_tables/coad_cptac_2019_slide.csv
+  slide_dir: /lustre/groups/shared/histology_data/CPTAC/CRC/slides
   feature_dir:
     raw:
       retccl: /lustre/groups/peng/datasets/histology_data/CPTAC/features/Raw/RetCCL/
