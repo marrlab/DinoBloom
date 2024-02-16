@@ -150,6 +150,7 @@ def main(args):
         entity="histo-collab",
         project="dino_eval",
         name= model_name +"_" +args.experiment_name,
+        config=args
     )
 
     # sorry for the bad naming here, its not yet sorted :)
