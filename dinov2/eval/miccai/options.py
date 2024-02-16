@@ -9,7 +9,8 @@ class Options:
         self.parser.add_argument(
             "--model", help="select model ctranspath, retccl, all", nargs="+", default="dinov2_finetuned", type=str
         )
-        self.parser.add_argument("--run", help="path to folder of run", type=str)
+        self.parser.add_argument("--base_dir", help="path to folder of run", type=str)
+        self.parser.add_argument("--checkpoints", help="path to checkpoint", nargs="+", default=None, type=str)
         self.parser.add_argument(
             "--data_config",
             help="path to config file for data paths",
@@ -17,8 +18,9 @@ class Options:
             type=str,
         )
         self.parser.add_argument("--dataset", help="name of dataset", default="TCGA-CRC", type=str)
+
         # size and resolution
-        self.parser.add_argument("--patch_size", help="Patch size for saving", default=512, type=int)
+        self.parser.add_argument("--patch_size", help="Patch size for saving", default=224, type=int)
         self.parser.add_argument(
             "--resolution_in_mpp",
             help="resolution in mpp, usually 10x= 1mpp, 20x=0.5mpp, 40x=0.25, ",

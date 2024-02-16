@@ -8,7 +8,8 @@ class Options:
 
         # feature extraction options
         self.parser.add_argument("--feature_dir", type=str, help="path to extracted features")
-        self.parser.add_argument("--results_dir", type=str, help="path where to save results")
+        self.parser.add_argument("--base_dir", type=str, help="path to folder with logs")
+        self.parser.add_argument("--feature_extractor", type=str, help="model used for feature extraction")
 
         # logging options
         self.parser.add_argument("--config_file", default="config.yaml", type=str, help="path to config file")

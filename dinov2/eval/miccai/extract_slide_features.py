@@ -44,7 +44,8 @@ def main(args):
         slides = [file for file in slides if file.name in to_extract]
 
     # filter out slide files using RegEx
-    slides = sorted([file for file in slides if re.search("-DX", str(file))])
+    if args.dataset[:4] == "TCGA":
+        slides = sorted([file for file in slides if re.search("-DX", str(file))])
 
     chunk_len = math.ceil(len(slides) / args.split[1])
     start = args.split[0] * chunk_len
@@ -55,22 +56,19 @@ def main(args):
     driver = get_driver(args.file_extension)
 
     # Load models for checkpoints
-    model_dicts = []
-    if args.model == ['owkin']:
-        checkpoints = [Path(args.run)]
-    elif Path(args.run).is_dir():
-        checkpoints = Path(args.run).rglob("**/*teacher_checkpoint.pth")
-    else:
-        checkpoints = [Path(args.run)]
-        args.run = str(Path(args.run).parent.parent.parent)
+    if args.checkpoints is None:
+        args.checkpoints = Path(args.base_dir).rglob("**/*teacher_checkpoint.pth")
+        args.checkpoints = [str(c) for c in args.checkpoints]
+    assert args.checkpoints, "List of checkpoints is empty"
 
-    for i, c in enumerate(checkpoints):
+    model_dicts = []
+    for i, c in enumerate(args.checkpoints):
         output_dir = (
-            Path(args.run)
+            Path(args.base_dir)
             / "features"
-            / f"{args.dataset}_{c.parent.name}_{args.patch_size}px_{args.model[i]}_{args.resolution_in_mpp}mpp_{args.downscaling_factor}xdown_normal"
+            / f"{args.dataset}_{Path(c).parent.name}_{args.patch_size}px_{args.model[i]}_{args.resolution_in_mpp}mpp"
         )
-        output_dir.mkdir(parents=True)
+        output_dir.mkdir(parents=True, exist_ok=True)
         model_dicts.append(
             {
                 "model": get_models(args.model[i], c),
@@ -188,6 +186,8 @@ def extract_features(
     Returns:
         None
     """
+    if (Path(save_dir) / f"{slide_name}.h5").exists():
+        return
 
     feats = {model_dict["name"]: [] for model_dict in model_dicts}
     coords = pd.DataFrame({"scn": [], "x": [], "y": []}, dtype=int)
