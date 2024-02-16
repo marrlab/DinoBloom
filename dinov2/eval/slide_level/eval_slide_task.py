@@ -9,7 +9,7 @@ import pytorch_lightning as pl
 import torch
 import wandb
 import yaml
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.loggers import CSVLogger, WandbLogger
 from sklearn.model_selection import StratifiedKFold, train_test_split
 from torch.utils.data import DataLoader
@@ -60,6 +60,11 @@ def eval_slide_level(cfg):
     result_path = base_path / "results"
     result_path.mkdir(parents=True, exist_ok=True)
 
+    # check if results csv exists already
+    if Path(base_path / f"results_test_{cfg.logging_name}.csv").exists() and cfg.name != "debug":
+        print(f"results for {cfg.logging_name} already exist")
+        return
+
     norm_val = "raw" if cfg.norm in ["histaugan", "efficient_histaugan"] else cfg.norm
     norm_test = "raw" if cfg.norm in ["histaugan", "efficient_histaugan"] else cfg.norm
 
@@ -102,7 +107,7 @@ def eval_slide_level(cfg):
         )
         dataset_ext = MILDataset(
             test_data,
-            test_data,
+            test_data["PATIENT"],
             [cfg.target],
             clini_info=clini_info,
             norm=norm_test,
@@ -170,11 +175,11 @@ def eval_slide_level(cfg):
             dataset=train_dataset,
             batch_size=cfg.bs,
             shuffle=True,
-            num_workers=int(os.environ.get("SLURM_CPUS_PER_TASK", "1")),
+            num_workers=0, # int(os.environ.get("SLURM_CPUS_PER_TASK", "1")),
             pin_memory=True,
         )
-        if len(train_dataset) < cfg.val_check_interval:
-            cfg.val_check_interval = len(train_dataset)
+        if len(train_dataloader) < cfg.val_check_interval:
+            cfg.val_check_interval = len(train_dataloader)
         if cfg.lr_scheduler == "OneCycleLR":
             cfg.lr_scheduler_config["total_steps"] = cfg.num_epochs * len(train_dataloader)
 
@@ -185,7 +190,7 @@ def eval_slide_level(cfg):
             dataset=val_dataset,
             batch_size=1,
             shuffle=False,
-            num_workers=int(os.environ.get("SLURM_CPUS_PER_TASK", "1")),
+            num_workers=0, # int(os.environ.get("SLURM_CPUS_PER_TASK", "1")),
             pin_memory=True,
         )
 
@@ -214,13 +219,11 @@ def eval_slide_level(cfg):
         # logging
         # --------------------------------------------------------
         logger = WandbLogger(
-            project="dino_eval_slide-level",
+            project=cfg.project,
             entity="histo-collab",
             name=f"{cfg.logging_name}_fold{k}",
             group=f"{cfg.logging_name}",
-            tags=[
-                f"{cfg.cohorts}",
-            ],
+            tags=[f"{cfg.cohorts}"],
             save_dir=cfg.save_dir,
             reinit=True,
             settings=wandb.Settings(start_method="fork"),
@@ -233,7 +236,7 @@ def eval_slide_level(cfg):
         )
 
         # --------------------------------------------------------
-        # model saving
+        # callbacks
         # --------------------------------------------------------
         checkpoint_callback = ModelCheckpoint(
             monitor="auroc/val" if cfg.stop_criterion == "auroc" else "loss/val",
@@ -243,6 +246,8 @@ def eval_slide_level(cfg):
             mode="max" if cfg.stop_criterion == "auroc" else "min",
         )
 
+        lr_monitor = LearningRateMonitor(logging_interval="step")
+
         # --------------------------------------------------------
         # set up trainer
         # --------------------------------------------------------
@@ -250,8 +255,8 @@ def eval_slide_level(cfg):
         trainer = pl.Trainer(
             logger=[logger, csv_logger],
             accelerator="auto",
-            devices=1,
-            callbacks=[checkpoint_callback],
+            devices=-1,
+            callbacks=[checkpoint_callback, lr_monitor],
             max_epochs=cfg.num_epochs,
             val_check_interval=cfg.val_check_interval,
             check_val_every_n_epoch=None,
@@ -299,26 +304,47 @@ if __name__ == "__main__":
     parser = Options()
     args = parser.parse()
 
-    # uses all subdirectories of the given feature directory if it contain
-    if (Path(args.feature_dir) / "features").is_dir():
-        feature_dirs = [f.path for f in os.scandir(folder + "/features") if f.is_dir()]
+    # uses all subdirectories of the given feature directory if it is named "features"
+    if args.feature_dir is None:
+        args.feature_dir = Path(args.base_dir) / "features"
+
+    if Path(args.feature_dir).name == "features":
+        feature_dirs = [f.path for f in os.scandir(args.feature_dir) if f.is_dir()]
     else:
         feature_dirs = [args.feature_dir]
+    
+    # set input dim depending on model
+    input_dims = {
+        "ctranspath": 768,
+        "owkin": 768,
+        "vim_finetuned": 192,
+        "dinov2_finetuned": 384,
+        "dinov2_vits14_downloaded": 384,
+        "resnet50": 1024,
+        "resnet50full": 2048,
+    }
 
     # retrieve task/dataset from feature directory
     configs = [Path(f).name.split("_")[0] for f in feature_dirs]
-
+    if "CPTAC-CRC" in configs:
+        configs.pop(configs.index("CPTAC-CRC"))
+        feature_dirs.pop(feature_dirs.index([f for f in feature_dirs if "CPTAC-CRC" in f][0]))
+    
     for fd, c in zip(feature_dirs, configs):
-        args.save_dir = Path(args.results_dir) / Path(fd).name
-        if Path(args.save_dir).is_dir():
-            print(f"Path {args.save_dir} already exists. Please choose a different path.")
-            continue
-        Path(args.save_dir).mkdir(parents=True)
 
         with open(args.data_config, "r") as f:
             args.data_config = yaml.safe_load(f)
 
-        args.data_config[c]["feature_dir"]["raw"]["custom"] = fd
+        args.save_dir = Path(args.base_dir) / 'results'
+        args.name = Path(fd).name if args.name is None else args.name
+        
+        args.feats = "custom"
+        args.data_config[c]["feature_dir"]["raw"][args.feats] = fd
+        if c == "TCGA-CRC":
+            args.data_config["CPTAC-CRC"]["feature_dir"]["raw"][args.feats] = fd.replace("TCGA-CRC", "CPTAC-CRC")
+
+        # set input dim depending on model
+        args.input_dim = input_dims[args.feature_extractor]
 
         # Load the configuration from the YAML file
         args.config_file = f"dinov2/eval/slide_level/configs/{c}.yaml"

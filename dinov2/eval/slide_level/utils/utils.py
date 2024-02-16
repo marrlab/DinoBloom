@@ -3,9 +3,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import torch
 import torch.nn as nn
-import torch.optim as optim
-import torch.optim.lr_scheduler as lr_scheduler
 
 from models.aggregators.aggregator import BaseAggregator
 
@@ -49,9 +48,9 @@ def get_model(model_name, **kwargs):
 
 def get_optimizer(name, model, lr=0.01, wd=0.1):
     # Check if the name is a valid optimizer name
-    if name in optim.__dict__:
+    if name in torch.optim.__dict__:
         # Get the optimizer class from the torch.optim module
-        optimizer_class = getattr(optim, name)
+        optimizer_class = getattr(torch.optim, name)
         # Instantiate the optimizer with the model parameters and the learning rate
         optimizer = optimizer_class(model.parameters(), lr=lr, weight_decay=wd)
         # Return the optimizer
@@ -63,16 +62,44 @@ def get_optimizer(name, model, lr=0.01, wd=0.1):
 
 def get_scheduler(name, optimizer, *args, **kwargs):
     # Check if the name is a valid scheduler name
-    if name in lr_scheduler.__dict__:
+    if name in torch.optim.lr_scheduler.__dict__:
         # Get the scheduler class from the torch.optim.lr_scheduler module
-        scheduler_class = getattr(lr_scheduler, name)
+        scheduler_class = getattr(torch.optim.lr_scheduler, name)
         # Instantiate the scheduler with the optimizer and other keyword arguments
         scheduler = scheduler_class(optimizer, *args, **kwargs)
+        if name == "OneCycleLR":
+            scheduler = {
+                "scheduler": scheduler,
+                "interval": "step",
+                "frequency": 1,
+            }
         # Return the scheduler
         return scheduler
     else:
         # Raise an exception if the name is not valid
         raise ValueError(f"Invalid scheduler name: {name}")
+
+# def get_scheduler(name, optimizer, config_main, name_warmup=None, config_warmup={}):
+#     # Check if the name is a valid scheduler name
+#     if name in torch.optim.lr_scheduler.__dict__:
+#         # Get the scheduler class from the torch.optim.lr_scheduler module
+#         scheduler_class = getattr(torch.optim.lr_scheduler, name)
+#         # Instantiate the scheduler with the optimizer and other keyword arguments
+#         main_lr_scheduler = scheduler_class(optimizer, **config_main)
+#         if name_warmup is not None:
+#             if name in torch.optim.lr_scheduler.__dict__:
+#                 warmup_scheduler_class = getattr(torch.optim.lr_scheduler, name_warmup)
+#                 warmup_lr_scheduler = warmup_scheduler_class(optimizer, **config_warmup)
+#             else:
+#                 raise ValueError(f"Invalid scheduler name: {name}")
+#             warmup_epochs = config_warmup["total_iters"]
+#             # return the combined scheduler
+#             return torch.optim.lr_scheduler.SequentialLR(
+#             optimizer, schedulers=[warmup_lr_scheduler, main_lr_scheduler], milestones=[warmup_epochs]
+#             )
+#         else:
+#             # no warmupepochs = -1 when no warmup
+#             return main_lr_scheduler
 
 
 def save_results(cfg, results, base_path, train_cohorts, test_cohorts, mode="test"):
@@ -109,13 +136,27 @@ def save_results(cfg, results, base_path, train_cohorts, test_cohorts, mode="tes
     # append to existing dataframe
     if Path(base_path / f"results_{cfg.logging_name}.csv").is_file():
         existing = pd.read_csv(base_path / f"results_{mode}_{cfg.logging_name}.csv", sep=",")
-        results_df = pd.concat([existing, results_df], ignore_index=True)
-    results_df.to_csv(base_path / f"results_{mode}_{cfg.logging_name}.csv", sep=",", index=False)
+        save_df = pd.concat([existing, results_df], ignore_index=True)
+
+    else:
+        save_df = results_df
+    save_df.to_csv(base_path / f"results_{mode}_{cfg.logging_name}.csv", sep=",", index=False)
+    
+    # append to global results dataframe
+    global_path = '/lustre/groups/shared/users/peng_marr/HistoDINO/logs/MIL_results.csv'
+    if Path(global_path).is_file() and cfg.name != "debug":
+        existing = pd.read_csv(global_path, sep=",")
+        save_df = pd.concat([existing, results_df], ignore_index=True)
+        save_df.to_csv(global_path, sep=",", index=False)
+    else:
+        results_df.to_csv(global_path, sep=",", index=False)
 
 
+# --------------------------------------
 # test get_model function for all models
-get_model("Transformer", num_classes=4, input_dim=512)
-get_model("AttentionMIL", num_classes=4, input_dim=512)
+# --------------------------------------
+# get_model("Transformer", num_classes=4, input_dim=512)
+# get_model("AttentionMIL", num_classes=4, input_dim=512)
 # get_model('LAMIL', num_classes=4, input_dim=512)
-get_model("Perceiver", num_classes=4, input_dim=512)
-get_model("TransMIL", num_classes=4, input_dim=512)
+# get_model("Perceiver", num_classes=4, input_dim=512)
+# get_model("TransMIL", num_classes=4, input_dim=512)
