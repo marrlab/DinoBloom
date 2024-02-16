@@ -33,6 +33,9 @@ class ClassifierLightning(pl.LightningModule):
         self.acc_val = torchmetrics.Accuracy(task=config.task, num_classes=config.num_classes)
         self.acc_test = torchmetrics.Accuracy(task=config.task, num_classes=config.num_classes)
 
+        self.bacc_val = torchmetrics.Accuracy(task=config.task, num_classes=config.num_classes, average="macro")
+        self.bacc_test = torchmetrics.Accuracy(task=config.task, num_classes=config.num_classes, average="macro") 
+
         self.auroc_val = torchmetrics.AUROC(
             task=config.task,
             num_classes=config.num_classes,
@@ -99,6 +102,9 @@ class ClassifierLightning(pl.LightningModule):
                 self.config.lr_scheduler,
                 optimizer,
                 **self.config.lr_scheduler_config,
+                # self.config.lr_scheduler_config,
+                # self.config.lr_scheduler_warmup,
+                # self.config.lr_scheduler_warmup_config,
             )
             return [optimizer], [scheduler]
         else:
@@ -108,7 +114,7 @@ class ClassifierLightning(pl.LightningModule):
         x, coords, y, _, _ = batch  # x = features, coords, y = labels, tiles, patient
         logits = self.forward(x, coords)
         if self.config.task == "binary":
-            loss = self.criterion(logits, y.unsqueeze(0).float())
+            loss = self.criterion(logits, y.unsqueeze(1).float())
             probs = torch.sigmoid(logits)
             preds = torch.round(probs)
         else:
@@ -138,6 +144,7 @@ class ClassifierLightning(pl.LightningModule):
 
         self.acc_val(probs, y)
         self.auroc_val(probs, y)
+        self.bacc_val(probs, y)
         self.f1_val(probs, y)
         self.precision_val(probs, y)
         self.recall_val(probs, y)
@@ -147,6 +154,7 @@ class ClassifierLightning(pl.LightningModule):
         self.log("loss/val", loss, prog_bar=True)
         self.log("acc/val", self.acc_val, prog_bar=True, on_step=False, on_epoch=True)
         self.log("auroc/val", self.auroc_val, prog_bar=True, on_step=False, on_epoch=True)
+        self.log("bacc/val", self.bacc_val, prog_bar=True, on_step=False, on_epoch=True)
         self.log("f1/val", self.f1_val, prog_bar=True, on_step=False, on_epoch=True)
         self.log("precision/val", self.precision_val, prog_bar=False, on_step=False, on_epoch=True)
         self.log("recall/val", self.recall_val, prog_bar=False, on_step=False, on_epoch=True)
@@ -188,6 +196,7 @@ class ClassifierLightning(pl.LightningModule):
 
         self.acc_test(probs, y)
         self.auroc_test(probs, y)
+        self.bacc_test(probs, y)
         self.f1_test(probs, y)
         self.precision_test(probs, y)
         self.recall_test(probs, y)
@@ -197,14 +206,16 @@ class ClassifierLightning(pl.LightningModule):
         self.log("loss/test", loss, prog_bar=False)
         self.log("acc/test", self.acc_test, prog_bar=True, on_step=False, on_epoch=True)
         self.log("auroc/test", self.auroc_test, prog_bar=True, on_step=False, on_epoch=True)
+        self.log("bacc/test", self.bacc_test, prog_bar=True, on_step=False, on_epoch=True)
         self.log("f1/test", self.f1_test, prog_bar=True, on_step=False, on_epoch=True)
         self.log("precision/test", self.precision_test, prog_bar=False, on_step=False, on_epoch=True)
         self.log("recall/test", self.recall_test, prog_bar=False, on_step=False, on_epoch=True)
         self.log("specificity/test", self.specificity_test, prog_bar=False, on_step=False, on_epoch=True)
 
         logits_labels = [f"logits_{i}" for i in range(self.config.num_classes)]
+
         outputs = pd.DataFrame(
-            data=[[patient[0], y.item(), preds.item(), *logits.squeeze().tolist(), (y == preds).int().item()]],
+            data=[[patient[0], y.item(), preds.item(), *logits.tolist(), (y == preds).int().item()]],
             columns=["patient", "ground_truth", "predictions", *logits_labels, "correct"],
         )
         self.outputs = pd.concat([self.outputs, outputs], ignore_index=True)
