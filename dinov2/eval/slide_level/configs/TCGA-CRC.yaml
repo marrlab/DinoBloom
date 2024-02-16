@@ -1,6 +1,5 @@
 # logging options
-project: dinov2_eval
-name: debug
+project: dino_eval_slide-level
 
 # task definition
 data_config: dinov2/eval/slide_level/data_config.yaml
@@ -8,7 +7,7 @@ task: binary
 target: isMSIH
 num_classes: 1
 cohorts: ['TCGA-CRC']
-ext_cohorts: ['CPTAC']
+ext_cohorts: ['CPTAC-CRC']
 clini_info: {}
 seed: null
 label_dict:
@@ -16,27 +15,33 @@ label_dict:
   MSIH: 1
 
 # model options
-model: Transformer
-model_config:
-  heads: 8
-  dim_head: 64
-  dim: 512
-  mlp_dim: 512
+model: AttentionMIL
+model_config: {}
+  # dropout: 0.2
+  # heads: 4
+  # dim_head: 64
+  # dim: 256
+  # mlp_dim: 256
 norm: raw
-feats: ctranspath
-input_dim: 192
 num_tiles: -1
 pad_tiles: false
 
 # training options
 folds: 5
-num_epochs: 8
+num_epochs: 10
 criterion:  BCEWithLogitsLoss 
 optimizer: AdamW
-lr_scheduler: null
+lr_scheduler: 'OneCycleLR'
+lr_scheduler_config:
+  max_lr: 1.0e-04
+#   T_max: 10
+# lr_scheduler_warmup: null # 'LinearLR'
+# lr_scheduler_warmup_config: {}
+#   start_factor: 0.033
+#   total_iters: 2
 lr: 2.0e-05
 wd: 2.0e-05
 bs: 1
 stop_criterion: loss
-val_check_interval: 1000
+val_check_interval: 500
 num_samples: null

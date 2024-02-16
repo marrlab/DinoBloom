@@ -12,6 +12,7 @@ class AttentionMIL(BaseAggregator):
         self,
         input_dim: int,
         num_classes: int,
+        hidden_dim: int = 512,
         encoder: Optional[nn.Module] = None,
         attention: Optional[nn.Module] = None,
         head: Optional[nn.Module] = None,
@@ -24,13 +25,13 @@ class AttentionMIL(BaseAggregator):
             encoder:  A network transforming bag instances into feature vectors.
         """
         super(BaseAggregator, self).__init__()
-        self.encoder = encoder or nn.Sequential(nn.Linear(input_dim, 256), nn.ReLU())
-        self.attention = attention or MILAttention(256)
+        self.encoder = encoder or nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.ReLU())
+        self.attention = attention or MILAttention(n_in=hidden_dim, n_latent=hidden_dim)
         self.head = head or nn.Sequential(
             nn.Flatten(),
             # nn.BatchNorm1d(256),
             nn.Dropout(),
-            nn.Linear(256, num_classes),
+            nn.Linear(hidden_dim, num_classes),
         )
 
     def forward(self, bags, coords=None, tiles=None, **kwargs):
