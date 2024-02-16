@@ -280,13 +280,13 @@ class MILDataset(Dataset):
             else:
                 raise KeyError("No features found in .h5 file")
 
-        try:
-            coords = torch.Tensor(np.array(h5_file["coords"]))
-        except KeyError:
-            try:
-                coords = torch.Tensor(np.array(h5_file["indices"]))
-            except KeyError:
-                coords = 0  # NoneType is not accepted by dataloader
+        # try:
+        #     coords = torch.Tensor(np.array(h5_file["coords"]))
+        # except KeyError:
+        #     try:
+        #         coords = torch.Tensor(np.array(h5_file["indices"]))
+        #     except KeyError:
+        coords = torch.zeros((1,))  # NoneType is not accepted by dataloader
 
         # randomly sample num_tiles tiles, if #tiles < num_tiles, fill vector with 0s
         tiles = torch.tensor([features.shape[0]])  # only needed for AttentionMIL implementation
@@ -296,13 +296,13 @@ class MILDataset(Dataset):
                 pad[: features.shape[0]] = features
                 features = pad
                 # also pad the coords vector, for stacking in dataloader
-                pad_coords = torch.zeros((self.num_tiles, 2))
-                pad_coords[: coords.shape[0]] = coords
-                coords = pad_coords
+                # pad_coords = torch.zeros((self.num_tiles, 2))
+                # pad_coords[: coords.shape[0]] = coords
+                # coords = pad_coords
             else:
                 feat_idxs = torch.randperm(features.shape[0])[: self.num_tiles]
                 features = features[feat_idxs]
-                coords = coords[feat_idxs]
+                # coords = coords[feat_idxs]
 
         # create binary or numeric labels from categorical labels
         label = [self.data[target].iloc[item] for target in self.target_labels]
