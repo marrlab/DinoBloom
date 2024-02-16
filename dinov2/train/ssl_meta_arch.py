@@ -52,14 +52,14 @@ def interpolate_pos_encoding(x, w, h):
     return torch.cat((x[:, :1], patch_pos_embed), dim=1)
 
 
-def get_downloaded_dino_vit_s_interpolated():
-    model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")  #
+def get_downloaded_dino_vit_interpolated(modelname="dinov2_vits14"):
+
+    model = torch.hub.load("facebookresearch/dinov2", modelname)  #
     input_tensor = model.pos_embed
     tensor_corr_shape = interpolate_pos_encoding(input_tensor, 16, 16)
     pos_embed = nn.Parameter(torch.zeros(1, 257))
     pos_embed.data = tensor_corr_shape
     model.pos_embed = pos_embed
-
     return model
 
 
@@ -72,10 +72,12 @@ class SSLMetaArch(nn.Module):
         student_model_dict = dict()
         teacher_model_dict = dict()
 
-        if cfg.student.arch == "vit_small":
-            student_backbone = get_downloaded_dino_vit_s_interpolated()
-            teacher_backbone = get_downloaded_dino_vit_s_interpolated()
-            embed_dim = 384
+        if cfg.student.arch in ["dinov2_vits14","dinov2_vitb14","dinov2_vitl14","dinov2_vitg14"]:
+            student_backbone = get_downloaded_dino_vit_interpolated(cfg.student.arch)
+            teacher_backbone = get_downloaded_dino_vit_interpolated(cfg.student.arch)
+            embed_dict={"dinov2_vits14":384,"dinov2_vitb14":768,"dinov2_vitl14":1024,"dinov2_vitg14":1536}
+            embed_dim = embed_dict[cfg.student.arch]
+            
         elif cfg.student.arch == "vim_tiny":
             from dinov2.models.vision_mamba import get_vision_mamba_model
 
