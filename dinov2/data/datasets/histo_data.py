@@ -92,6 +92,7 @@ class PatchDataset(VisionDataset):
         super().__init__(root, transforms, transform, target_transform)
 
         if Path(root).is_file():
+            print("Loading ", root)
             self.patches = np.loadtxt(root, dtype=str)
         else:
             self.patches = list(Path(root).glob("**/*.jpeg"))
