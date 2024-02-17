@@ -190,7 +190,7 @@ class BalancedPatchDataset(VisionDataset):
         all_dataset_files = Path(root).glob("*.txt")
 
         for dataset_file in all_dataset_files:
-
+            print("Loading ", dataset_file)
             file_list = arrange_files(np.loadtxt(dataset_file, dtype=str))
             self.patches.append(file_list)
             self.dataset_sizes.append(int(len(file_list)))
