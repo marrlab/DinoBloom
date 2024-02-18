@@ -208,7 +208,7 @@ class BalancedPatchDataset(VisionDataset):
 
         try:
 
-            image = self.get_image_data(dataset_index, index_in_dataset)
+            image , filepath = self.get_image_data(dataset_index, index_in_dataset)
 
         except Exception as e:
             print(f"can not read image for sample {index, e,self.patches[dataset_index][index_in_dataset]}")
@@ -219,7 +219,7 @@ class BalancedPatchDataset(VisionDataset):
         if self.transforms is not None:
             image, target = self.transforms(image, target)
 
-        return image, target
+        return image, target, filepath
 
     def get_image_data(self, dataset_index: int, index_in_dataset: int, min_dimension=224) -> Image:
 
@@ -250,7 +250,7 @@ class BalancedPatchDataset(VisionDataset):
 
             patch = patch.resize((new_width, new_height), Image.Resampling.NEAREST)
 
-        return patch
+        return patch, filepath
 
     def get_target(self, index: int) -> torch.Tensor:
         # labels are not used for training

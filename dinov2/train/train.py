@@ -257,6 +257,15 @@ def do_train(cfg, model, resume=False):
 
         optimizer.zero_grad(set_to_none=True)
         loss_dict, class_tokens = model.forward_backward(data, teacher_temp=teacher_temp)
+        if loss_dict["dino_global_crops_loss"].item() > 1.0 and iteration > 2000:
+            print(data['paths'])
+            filename = f'paths_{iteration}.txt'
+
+            # Save the paths to the .txt file with the iteration in the filename
+            with open(filename, 'w') as file:
+                for path in data['paths']:
+                    file.write(f'{path}\n')
+
 
         # clip gradients
 
