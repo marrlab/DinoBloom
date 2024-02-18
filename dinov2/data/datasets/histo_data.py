@@ -194,10 +194,9 @@ class BalancedPatchDataset(VisionDataset):
             with open(dataset_file, 'r') as file:
                 content = file.read()
             file_list_unsorted = content.splitlines()
-
-        file_list = arrange_files(file_list_unsorted)
-        self.patches.append(file_list)
-        self.dataset_sizes.append(int(len(file_list)))
+            file_list = arrange_files(file_list_unsorted)
+            self.patches.append(file_list)
+            self.dataset_sizes.append(int(len(file_list)))
 
         self.num_datasets = len(self.patches)
 
