@@ -46,6 +46,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--batch_size",
+    help="num workers to load data",
+    default=128,
+    type=int,
+)
+
+parser.add_argument(
     "--image_path_train",
     help="path to csv file",
     default="./dinov2/eval/miccai/nct_crc_train.csv",
@@ -142,8 +149,8 @@ def main(args):
     test_dataset = CustomImageDataset(df_test, transform=transform)
 
     # Create data loaders for the  datasets
-    train_dataloader = DataLoader(train_dataset, batch_size=256, shuffle=False, num_workers=args.num_workers)
-    test_dataloader = DataLoader(test_dataset, batch_size=256, shuffle=False, num_workers=args.num_workers)
+    train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+    test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
     # If you want to log the results with Weights & Biases (wandb), you can initialize a wandb run:
     wandb.init(
