@@ -166,7 +166,7 @@ def main(args):
     if model_name in ["owkin","resnet50","resnet50_full","remedis"]:
         sorted_paths=[None]
     else:
-        sorted_paths = list(Path(args.run_path).rglob("*.pth"))
+        sorted_paths = list(Path(args.run_path).rglob("*teacher_checkpoint.pth"))
 
     if len(sorted_paths)>1:
         sorted_paths = sorted(sorted_paths, key=sort_key)
@@ -178,7 +178,8 @@ def main(args):
             parent_dir=checkpoint.parent 
         else:
             parent_dir = Path(args.run_path) / (model_name+"_baseline")
-
+            
+        print("loading checkpoint: ", checkpoint)
         feature_extractor = get_models(model_name, saved_model_path=checkpoint)
         feature_dir = parent_dir / args.experiment_name
 
