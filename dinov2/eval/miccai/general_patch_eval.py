@@ -127,35 +127,24 @@ def sort_key(path):
     return number_part
 
 
-def create_stratified_folds(base_path):
+def create_stratified_folds(labels):
     """
-    Splits the files in subfolders of the given path into 5 stratified folds,
-    returning DataFrames for train and test sets for each fold.
+    Splits indices into 5 stratified folds based on the provided labels,
+    returning indices for train and test sets for each fold.
     
     Args:
-    - base_path (str): Path to the folder containing subfolders to be used for creating folds.
+    - labels (array-like): Array or list of labels to be used for creating stratified folds.
     
     Returns:
-    - A list of tuples, each containing two DataFrames: (train_df, test_df) for each fold.
+    - A list of tuples, each containing two arrays: (train_indices, test_indices) for each fold.
     """
-    file_paths = []
-    labels = []
     
-    # Traverse the directory structure
-    for root, dirs, files in os.walk(base_path):
-        for file in files:
-            if file.endswith(('.tiff', '.jpg', '.png')):  # Add or remove file extensions as needed
-                file_path = os.path.join(root, file)
-                label = os.path.basename(root)
-                file_paths.append(file_path)
-                labels.append(label)
-       
     # Initialize StratifiedKFold
     skf = StratifiedKFold(n_splits=5)
     
     # Prepare for stratified splitting
     folds = []
-    for train_index, test_index in skf.split(X=df, y=df['Label']):
+    for train_index, test_index in skf.split(X=np.arange(len(labels)), y=labels):
         folds.append((train_index, test_index))
     
     return folds
@@ -211,14 +200,20 @@ def main(args):
         knn_folds=[]
 
         all_features=list(feature_dir.glob("*.h5"))
-        folds=create_stratified_folds(args.dataset_path)
+        
+        data,labels=get_data(all_features)
+        folds=create_stratified_folds(labels)
 
         for i, (train_indices, test_indices) in enumerate(folds):
             assert not set(train_indices) & set(test_indices), "There are common indices in train and test lists."
 
+            train_data=data[train_indices]
+            train_labels=labels[train_indices]
+
+            test_data=data[test_indices]
+            test_labels=labels[test_indices]
             # Create data loaders for the  datasets
-            train_data,train_labels=get_data(all_features, train_indices)
-            test_data, test_labels = get_data(all_features, test_indices)
+
 
             print("data fully loaded")
 
@@ -267,15 +262,14 @@ def process_file(file_name):
 # {"Accuracy": accuracy, "Balanced_Acc": balanced_acc, "Weighted_F1": weighted_f1}
 
 
-def get_data(all_data, indices):
+def get_data(all_data):
     # Define the directories for train, validation, and test data and labels
 
     # Load training data into dictionaries
     features, labels = [], []
-    filtered_files = all_data[indices]
 
     with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(process_file, file_name) for file_name in filtered_files]
+        futures = [executor.submit(process_file, file_name) for file_name in all_data]
 
         for i, future in tqdm(enumerate(futures), desc="Loading data"):
             feature, label = future.result()
