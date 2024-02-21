@@ -234,7 +234,7 @@ def do_train(cfg, model, resume=False):
 
     batch_collection = []
     total_tokens_collected = 0 
-    
+
     for data in metric_logger.log_every(
         data_loader,
         10,
