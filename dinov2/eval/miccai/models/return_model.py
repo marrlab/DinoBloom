@@ -43,12 +43,12 @@ def get_models(modelname, saved_model_path=None):
         model = get_res50()
     elif modelname.lower() == "resnet50_full":
         model = get_full_res50()
-    elif modelname.lower() == "sam_vit_h":
-        model = get_sam_vit_h(saved_model_path)
-    elif modelname.lower() == "sam_vit_b":
-        model = get_sam_vit_b(saved_model_path)
-    elif modelname.lower() == "sam_vit_l":
-        model = get_sam_vit_l(saved_model_path)
+    # elif modelname.lower() == "sam_vit_h":
+    #     model = get_sam_vit_h(saved_model_path)
+    # elif modelname.lower() == "sam_vit_b":
+    #     model = get_sam_vit_b(saved_model_path)
+    # elif modelname.lower() == "sam_vit_l":
+    #     model = get_sam_vit_l(saved_model_path)
     elif modelname.lower() == "imagebind":
         model = get_imagebind(saved_model_path)
     elif modelname.lower() == "beit_fb":
@@ -113,7 +113,7 @@ def get_dino_finetuned_downloaded(model_path,modelname):
         new_state_dict = {}
         for key, value in pretrained["teacher"].items():
             if "dino_head" in key or "ibot_head" in key:
-                print("not used")
+                pass
             else:
                 new_key = key.replace("backbone.", "")
                 new_state_dict[new_key] = value

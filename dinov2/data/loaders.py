@@ -49,7 +49,9 @@ def _parse_dataset_str(dataset_str: str):
 
     for token in tokens[1:]:
         key, value = token.split("=")
-        assert key in ("root", "extra", "split")
+        assert key in ("root", "extra", "split", "shuffle")
+        if key=="shuffle":
+            value=bool(int(value))
         kwargs[key] = value
 
     if name == "ImageNet":

@@ -8,6 +8,7 @@ import logging
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Tuple, Union
+import random
 
 import numpy as np
 import openslide
@@ -182,6 +183,7 @@ class BalancedPatchDataset(VisionDataset):
         transforms: Optional[Callable] = None,
         transform: Optional[Callable] = None,
         target_transform: Optional[Callable] = None,
+        shuffle: bool = False
     ) -> None:
         super().__init__(root, transforms, transform, target_transform)
         self.patches = []
@@ -193,8 +195,11 @@ class BalancedPatchDataset(VisionDataset):
             print("Loading ", dataset_file)
             with open(dataset_file, 'r') as file:
                 content = file.read()
-            file_list_unsorted = content.splitlines()
-            file_list = arrange_files(file_list_unsorted)
+            file_list = content.splitlines()
+            if shuffle:
+                random.shuffle(file_list)
+            else:
+                file_list = arrange_files(file_list)
             self.patches.append(file_list)
             self.dataset_sizes.append(int(len(file_list)))
 
@@ -256,3 +261,6 @@ class BalancedPatchDataset(VisionDataset):
     def __len__(self) -> int:
         # assert len(entries) == self.split.length
         return int(np.sum(self.dataset_sizes))*10
+    
+
+
