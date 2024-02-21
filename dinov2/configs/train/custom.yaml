@@ -45,10 +45,10 @@ ibot:
   separate_head: true
   # head_n_prototypes: 131072
 train:
-  batch_size_per_gpu: 320
-  num_workers: 26
+  batch_size_per_gpu: 40
+  num_workers: 12
   OFFICIAL_EPOCH_LENGTH: 500  # 1250
-  dataset_path: BalancedPatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/train_lists
+  dataset_path: BalancedPatchDataset:root=/mnt/ceph_vol/features/finetune/patches/2
   centering: sinkhorn_knopp
 
   drop_path_rate: 0.4
@@ -81,13 +81,14 @@ crops:
   local_crops_size: 98
 dino:
   head_bottleneck_dim: 384 
+  smooth_rank_loss_weight: 1.0
 
 # ---------------------------
 # config for vim_tiny
-student:
-  arch: vim_tiny
-  patch_size: 16
-crops:
-  local_crops_size: 96
-dino:
-  head_bottleneck_dim: 256
+#student:
+#  arch: vim_tiny
+#  patch_size: 16
+#crops:
+#  local_crops_size: 96
+#dino:
+#  head_bottleneck_dim: 256

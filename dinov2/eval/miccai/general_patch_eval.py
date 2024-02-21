@@ -28,14 +28,14 @@ os.environ["WANDB__SERVICE_WAIT"] = "300"
 parser.add_argument(
     "--model_name",
     help="name of model",
-    default="dinov2_finetuned",
+    default="dinov2_vits14",
     type=str,
 )
 
 parser.add_argument(
     "--experiment_name",
     help="name of experiment",
-    default="crc_patch",
+    default="matek",
     type=str,
 )
 
@@ -48,7 +48,6 @@ parser.add_argument(
 
 parser.add_argument(
     "--batch_size",
-    help="num workers to load data",
     default=128,
     type=int,
 )
@@ -56,14 +55,15 @@ parser.add_argument(
 parser.add_argument(
     "--dataset_path",
     help="path to datasetfolder",
-    default="",
+    default="/lustre/groups/labs/marr/qscd01/datasets/191024_AML_Matek/AML-Cytomorphology_LMU/",
     type=str,
 )
+
 
 parser.add_argument(
     "--model_path",
     help="path to run directory with models inside",
-    default="/home/icb/valentin.koch/dinov2/debug/eval",
+    default="/home/icb/valentin.koch/dinov2/vits_hema1708438024.080476",
     type=str,
 )
 

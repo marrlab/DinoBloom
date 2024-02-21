@@ -186,15 +186,15 @@ def get_transforms(model_name):
         image_processor = AutoImageProcessor.from_pretrained("owkin/phikon")
         mean, std = image_processor.image_mean, image_processor.image_std
         size = image_processor.size['height']
-    elif model_name.lower() in [
-        "dinov2_vitg14_downloaded",
-        "dinov2_vits14_downloaded",
-        "dinov2_vitb14_downloaded",
-        "dinov2_vitl14_downloaded",
-        "dinov2_vits14_reg_downloaded",
-        "dinov2_vitg14_reg_downloaded",
-    ]:
-        size = 518
+    # elif model_name.lower() in [
+    #     "dinov2_vitg14_downloaded",
+    #     "dinov2_vits14_downloaded",
+    #     "dinov2_vitb14_downloaded",
+    #     "dinov2_vitl14_downloaded",
+    #     "dinov2_vits14_reg_downloaded",
+    #     "dinov2_vitg14_reg_downloaded",
+    # ]:
+    #     size = 518
     elif model_name.lower() == "retccl":
         size = 256
     elif model_name.lower() == "kimianet":
