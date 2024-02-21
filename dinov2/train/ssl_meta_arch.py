@@ -30,6 +30,32 @@ except ImportError:
 
 logger = logging.getLogger("dinov2")
 
+def smooth_rank_loss(embedding_matrix, eps=1e-7):
+    """
+    Compute a loss based on the smooth rank measure of a matrix of embeddings. 
+    This version is adapted for use as a loss function, where lower values are better.
+
+    Args:
+        embedding_matrix (torch.Tensor): Matrix of embeddings (n x m). n: number of patch embeddings, m: embedding dimension.
+
+    Returns:
+        torch.Tensor: A scalar tensor representing the loss.
+    """
+    # Ensure the embeddings are float type for SVD
+    embedding_matrix = embedding_matrix.float()
+
+    # Perform SVD on the embedding matrix
+    _, S, _ = torch.svd(embedding_matrix)
+
+    # Normalize the singular values to sum to 1, add eps to avoid division by zero in log
+    p = S / (torch.norm(S, p=1) + eps)
+    
+    # Compute the negative entropy of the distribution
+    # This encourages the concentration of information (lower entropy is better for loss minimization)
+    neg_entropy = torch.sum(p * torch.log(p + eps))  # Add eps to avoid log(0)
+
+    # Return the negative entropy as the loss
+    return -neg_entropy
 
 def interpolate_pos_encoding(x, w, h):
     N = x.shape[1] - 1
@@ -111,6 +137,8 @@ class SSLMetaArch(nn.Module):
         self.do_dino = cfg.dino.loss_weight > 0
         self.do_koleo = cfg.dino.koleo_loss_weight > 0
         self.do_ibot = cfg.ibot.loss_weight > 0
+
+        self.do_smooth_rank_loss=cfg.dino.smooth_rank_loss_weight>0
         self.ibot_separate_head = cfg.ibot.separate_head
 
         logger.info("OPTIONS -- DINO")
@@ -376,6 +404,13 @@ class SSLMetaArch(nn.Module):
                 loss_dict["koleo_loss"] = (
                     koleo_loss / loss_scales
                 )  # this is to display the same losses as before but we can remove eventually
+
+            if self.do_smooth_rank_loss:
+                smooth_rank_l=smooth_rank_loss(student_cls_tokens)*self.cfg.dino.smooth_rank_loss_weight
+                loss_accumulator += smooth_rank_l
+                loss_dict["smooth_rank_loss"] = (
+                    smooth_rank_l / loss_scales
+                )
 
         if do_ibot:
             # compute loss

@@ -53,30 +53,27 @@ def get_models(modelname, saved_model_path=None):
         model = get_imagebind(saved_model_path)
     elif modelname.lower() == "beit_fb":
         model = BeitModel(device)    
-    elif modelname.lower() == "dinov2_vits14_downloaded":
-        model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
-    elif modelname.lower() == "dinov2_vits14_reg_downloaded":
-        model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14_reg")
-    elif modelname.lower() == "dinov2_vitb14":
-        model = get_dino_vit_b()
-    elif modelname.lower() == "dinov2_vitb14_downloaded":
-        model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitb14")
-    elif modelname.lower() == "dinov2_vitl14":
-        model = get_dino_vit_l(saved_model_path)
-    elif modelname.lower() == "dinov2_vitl14_downloaded":
-        model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitl14")
-    elif modelname.lower() == "dinov2_vitg14":
-        model = get_dino_vit_g(saved_model_path)
+    # elif modelname.lower() == "dinov2_vits14_reg_downloaded":
+    #     model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14_reg")
+    # elif modelname.lower() == "dinov2_vitb14_downloaded":
+    #     model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitb14")
+    # elif modelname.lower() == "dinov2_vitl14":
+    #     model = get_dino_vit_l(saved_model_path)
+    # elif modelname.lower() == "dinov2_vitl14_downloaded":
+    #     model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitl14")
+    # elif modelname.lower() == "dinov2_vitg14":
+    #     model = get_dino_vit_g(saved_model_path)
 
-    elif modelname.lower() == "dinov2_vitg14_downloaded":
-        model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitg14")
+    # elif modelname.lower() == "dinov2_vitg14_downloaded":
+    #     model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitg14")
 
-    elif modelname.lower() == "dinov2_vitg14_reg_downloaded":
-        model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitg14_reg")
+    # elif modelname.lower() == "dinov2_vitg14_reg_downloaded":
+    #     model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitg14_reg")
 
     # --- our finetuned models
-    elif modelname.lower() == "dinov2_finetuned":
-        model = get_dino_finetuned_downloaded(saved_model_path)
+    elif modelname.lower() in ["dinov2_vits14","dinov2_vitb14","dinov2_vitl14","dinov2_vitg14"]:
+        model = get_dino_finetuned_downloaded(saved_model_path,modelname)
+
     elif modelname.lower() == "vim_finetuned":
         model = get_vim_finetuned(saved_model_path)
         
@@ -97,24 +94,6 @@ def get_retCCL(model_path):
     return model
 
 
-# for 224
-def get_dino_finetuned(model_path):
-    vit_kwargs = dict(
-        img_size=224,
-        patch_size=14,
-    )
-    model = vit_small(**vit_kwargs)
-    pretrained = torch.load(model_path)
-    new_state_dict = {}
-
-    for key, value in pretrained["teacher"].items():
-        new_key = key.replace("backbone.", "")
-        new_state_dict[new_key] = value
-
-    model.load_state_dict(new_state_dict, strict=False)
-    return model
-
-
 def get_vim_finetuned(checkpoint=None):
     from models.vim import get_vision_mamba_model
 
@@ -123,9 +102,9 @@ def get_vim_finetuned(checkpoint=None):
 
 
 # for 224
-def get_dino_finetuned_downloaded(model_path):
+def get_dino_finetuned_downloaded(model_path,modelname):
     # pos_embed has wrong shape
-    model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
+    model = torch.hub.load("facebookresearch/dinov2", modelname)
     # model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitg14')
     # load finetuned weights
     if model_path is not None:
@@ -158,77 +137,6 @@ def get_sam_vit_l(model_path):
 def get_sam_vit_b(model_path):
     return build_sam_vit_b(model_path)
 
-
-def get_dino_vit_b():
-    model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitb14")
-    input_tensor = model.pos_embed
-    class_token = input_tensor[:, 0:1, :]
-    rest = input_tensor[:, 1:, :]
-
-    reshaped_tensor = rest.view(1, 37, 37, 768)
-
-    middle = 18
-    middle_start = middle - 8
-    middle_end = middle + 8
-    middle_part = reshaped_tensor[:, middle_start:middle_end, middle_start:middle_end, :]
-    flattened_tensor = middle_part.reshape(1, 256, 768)
-
-    tensor_corr_shape = torch.cat((class_token, flattened_tensor), dim=1)
-
-    pos_embed = nn.Parameter(torch.zeros(1, 257))
-    pos_embed.data = tensor_corr_shape
-
-    model.pos_embed = pos_embed
-
-    return model
-
-
-def get_dino_vit_l():
-    model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitl14")
-    input_tensor = model.pos_embed
-    class_token = input_tensor[:, 0:1, :]
-    rest = input_tensor[:, 1:, :]
-
-    reshaped_tensor = rest.view(1, 37, 37, 1024)
-
-    middle = 18
-    middle_start = middle - 8
-    middle_end = middle + 8
-    middle_part = reshaped_tensor[:, middle_start:middle_end, middle_start:middle_end, :]
-    flattened_tensor = middle_part.reshape(1, 256, 1024)
-
-    tensor_corr_shape = torch.cat((class_token, flattened_tensor), dim=1)
-
-    pos_embed = nn.Parameter(torch.zeros(1, 257))
-    pos_embed.data = tensor_corr_shape
-
-    model.pos_embed = pos_embed
-
-    return model
-
-
-def get_dino_vit_g():
-    model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitg14")
-    input_tensor = model.pos_embed
-    class_token = input_tensor[:, 0:1, :]
-    rest = input_tensor[:, 1:, :]
-
-    reshaped_tensor = rest.view(1, 37, 37, 1536)
-
-    middle = 18
-    middle_start = middle - 8
-    middle_end = middle + 8
-    middle_part = reshaped_tensor[:, middle_start:middle_end, middle_start:middle_end, :]
-    flattened_tensor = middle_part.reshape(1, 256, 1536)
-
-    tensor_corr_shape = torch.cat((class_token, flattened_tensor), dim=1)
-
-    pos_embed = nn.Parameter(torch.zeros(1, 257))
-    pos_embed.data = tensor_corr_shape
-
-    model.pos_embed = pos_embed
-
-    return model
 
 
 def get_ctranspath(model_path):

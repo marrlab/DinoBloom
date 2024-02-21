@@ -206,9 +206,7 @@ class BalancedPatchDataset(VisionDataset):
         index_in_dataset = int(index / self.num_datasets) % self.dataset_sizes[dataset_index]
 
         try:
-
             image , filepath = self.get_image_data(dataset_index, index_in_dataset)
-            print("loaded", filepath)
         except Exception as e:
             print(f"can not read image for sample {index, e,self.patches[dataset_index][index_in_dataset]}")
             return self.__getitem__(index + 1)
@@ -224,7 +222,6 @@ class BalancedPatchDataset(VisionDataset):
 
         # load image from jpeg file
         filepath = self.patches[dataset_index][index_in_dataset]
-        print("trying to load", filepath)
         patch = Image.open(filepath).convert(mode="RGB")
 
         h, w = patch.size

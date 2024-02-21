@@ -30,6 +30,26 @@ def create_label_mapping(df):
 
     return label_to_int
 
+def create_label_mapping_from_paths(image_paths):
+    """
+    Creates a dictionary mapping each unique class label, derived from the parent folder name, to an integer.
+
+    Parameters:
+    - image_paths: List of strings, where each string is the file path of an image.
+
+    Returns:
+    - A dictionary mapping each unique label to an integer, starting from 0.
+    """
+    # Extract class labels from parent folder names
+    labels = [os.path.basename(os.path.dirname(path)) for path in image_paths]
+
+    # Get unique labels and sort them
+    unique_labels = sorted(set(labels))
+
+    # Create mapping
+    label_to_int = {label: index for index, label in enumerate(unique_labels)}
+
+    return label_to_int
 
 class CustomImageDataset(Dataset):
     def __init__(self, df, transform):
@@ -52,6 +72,27 @@ class CustomImageDataset(Dataset):
 
         return image, encoded_label, Path(image_path).stem
 
+class PathImageDataset(Dataset):
+    def __init__(self, images, transform):
+        self.transform = transform
+        self.class_to_label = create_label_mapping_from_paths(images)
+        self.images=images
+        print(self.class_to_label)
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, i):
+        image_path=self.images[i]
+        label = Path(image_path).parent.name
+        image = Image.open(image_path).convert("RGB")
+
+        if self.transform:
+            image = self.transform(image)
+
+        encoded_label = self.class_to_label[label]
+
+        return image, encoded_label, Path(image_path).stem
 
 def bgr_format(xml_string: str):
     """

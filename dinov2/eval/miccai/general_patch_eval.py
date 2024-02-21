@@ -12,12 +12,13 @@ import umap
 from models.return_model import get_models, get_transforms
 from PIL import Image
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, balanced_accuracy_score, classification_report, f1_score, log_loss
+from sklearn.metrics import (accuracy_score, balanced_accuracy_score,
+                             classification_report, f1_score, log_loss)
+from sklearn.model_selection import StratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from utils import CustomImageDataset
-
+from utils import PathImageDataset
 import wandb
 
 parser = argparse.ArgumentParser(description="Feature extraction")
@@ -53,21 +54,14 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--image_path_train",
-    help="path to csv file",
-    default="./dinov2/eval/miccai/nct_crc_train.csv",
+    "--dataset_path",
+    help="path to datasetfolder",
+    default="",
     type=str,
 )
 
 parser.add_argument(
-    "--image_path_test",
-    help="path to csv file",
-    default="./dinov2/eval/miccai/nct_crc_test.csv",
-    type=str,
-)
-
-parser.add_argument(
-    "--run_path",
+    "--model_path",
     help="path to run directory with models inside",
     default="/home/icb/valentin.koch/dinov2/debug/eval",
     type=str,
@@ -103,7 +97,7 @@ parser.add_argument(
 )
 
 
-def save_features_and_labels_individual(feature_extractor, dataloader, save_dir):
+def save_features_and_labels(feature_extractor, dataloader, save_dir):
     print("extracting features..")
     os.makedirs(save_dir, exist_ok=True)
 
@@ -133,32 +127,55 @@ def sort_key(path):
     return number_part
 
 
+def create_stratified_folds(base_path):
+    """
+    Splits the files in subfolders of the given path into 5 stratified folds,
+    returning DataFrames for train and test sets for each fold.
+    
+    Args:
+    - base_path (str): Path to the folder containing subfolders to be used for creating folds.
+    
+    Returns:
+    - A list of tuples, each containing two DataFrames: (train_df, test_df) for each fold.
+    """
+    file_paths = []
+    labels = []
+    
+    # Traverse the directory structure
+    for root, dirs, files in os.walk(base_path):
+        for file in files:
+            if file.endswith(('.tiff', '.jpg', '.png')):  # Add or remove file extensions as needed
+                file_path = os.path.join(root, file)
+                label = os.path.basename(root)
+                file_paths.append(file_path)
+                labels.append(label)
+       
+    # Initialize StratifiedKFold
+    skf = StratifiedKFold(n_splits=5)
+    
+    # Prepare for stratified splitting
+    folds = []
+    for train_index, test_index in skf.split(X=df, y=df['Label']):
+        folds.append((train_index, test_index))
+    
+    return folds
+
 def main(args):
-    image_paths = args.image_path_train
-    image_test_paths = args.image_path_test
+
     model_name = args.model_name
-
-    df = pd.read_csv(image_paths)
-    df_test = pd.read_csv(image_test_paths)
-
     transform = get_transforms(model_name)
 
     # make sure encoding is always the same
 
-    train_dataset = CustomImageDataset(df, transform=transform)
-    test_dataset = CustomImageDataset(df_test, transform=transform)
-
-    # Create data loaders for the  datasets
-    train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
-    test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+    wandb.init(
+    entity="histo-collab",
+    project="dino_eval",
+    name= model_name +"_" +args.experiment_name,
+    config=args
+    )
 
     # If you want to log the results with Weights & Biases (wandb), you can initialize a wandb run:
-    wandb.init(
-        entity="histo-collab",
-        project="dino_eval",
-        name= model_name +"_" +args.experiment_name,
-        config=args
-    )
+
 
     # sorry for the bad naming here, its not yet sorted :)
     
@@ -166,63 +183,76 @@ def main(args):
     if model_name in ["owkin","resnet50","resnet50_full","remedis"]:
         sorted_paths=[None]
     else:
-        sorted_paths = list(Path(args.run_path).rglob("*teacher_checkpoint.pth"))
+        sorted_paths = list(Path(args.model_path).rglob("*teacher_checkpoint.pth"))
 
     if len(sorted_paths)>1:
         sorted_paths = sorted(sorted_paths, key=sort_key)
     if args.evaluate_untrained_baseline:
         sorted_paths.insert(0, None)
 
+    
+
     for checkpoint in sorted_paths:
         if checkpoint is not None:
             parent_dir=checkpoint.parent 
         else:
-            parent_dir = Path(args.run_path) / (model_name+"_baseline")
+            parent_dir = Path(args.model_path) / (model_name+"_baseline")
             
         print("loading checkpoint: ", checkpoint)
         feature_extractor = get_models(model_name, saved_model_path=checkpoint)
-        feature_dir = parent_dir / args.experiment_name
+        feature_dir = parent_dir / args.experiment_name / "features"
+        
+        dataset = PathImageDataset(args.dataset_path, transform=transform)
+        dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
-        train_dir = os.path.join(feature_dir, "train_data")
-        test_dir = os.path.join(feature_dir, "test_data")
+        save_features_and_labels(feature_extractor, dataloader, feature_dir)
+        
+        log_reg_folds=[]
+        knn_folds=[]
 
-        save_features_and_labels_individual(feature_extractor, train_dataloader, train_dir)
-        save_features_and_labels_individual(feature_extractor, test_dataloader, test_dir)
+        all_features=list(feature_dir.glob("*.h5"))
+        folds=create_stratified_folds(args.dataset_path)
 
-        train_data, train_labels, test_data, test_labels = get_data(train_dir, test_dir)
+        for i, (train_indices, test_indices) in enumerate(folds):
+            assert not set(train_indices) & set(test_indices), "There are common indices in train and test lists."
 
-        print("data fully loaded")
-        print("Shape of train_data:", train_data.shape)
-        print("Shape of train_labels:", train_labels.shape)
-        print("Shape of test_data:", test_data.shape)
-        print("Shape of test_labels:", test_labels.shape)
+            # Create data loaders for the  datasets
+            train_data,train_labels=get_data(all_features, train_indices)
+            test_data, test_labels = get_data(all_features, test_indices)
 
-        if args.logistic_regression:
-            logreg_dir = parent_dir/ "log_reg_eval"
-            log_reg = train_and_evaluate_logistic_regression(
-                train_data, train_labels, test_data, test_labels, logreg_dir, max_iter=1000
-            )
-            print("logistic_regression done")
+            print("data fully loaded")
 
-        if args.umap:
-            umap_dir = parent_dir/ "umaps"
-            umap_train = create_umap(train_data, train_labels, umap_dir)
-            umap_test = create_umap(test_data, test_labels, umap_dir, "test")
-            print("umap done")
+            if args.logistic_regression:
+                logreg_dir = parent_dir/ "log_reg_eval"
+                log_reg = train_and_evaluate_logistic_regression(
+                    train_data, train_labels, test_data, test_labels, logreg_dir, max_iter=1000
+                )
 
-        if args.knn:
-            knn_dir = parent_dir / "knn_eval"
-            knn_metrics = perform_knn(train_data, train_labels, test_data, test_labels, knn_dir)
-            print("knn done")
+                log_reg_folds.append(log_reg)
+                print("logistic_regression done")
 
-        if checkpoint is not None and len(sorted_paths)>1:
-            step = int(parent_dir.name.split("_")[1])
-        else: 
-            step=0
+            if args.umap:
+                umap_dir = parent_dir/ "umaps"
+                umap_train = create_umap(train_data, train_labels, umap_dir)
+                umap_test = create_umap(test_data, test_labels, umap_dir, "test")
+                print("umap done")
 
-        wandb.log(knn_metrics, step=step)
+            if args.knn:
+                knn_dir = parent_dir / "knn_eval"
+                knn_metrics = perform_knn(train_data, train_labels, test_data, test_labels, knn_dir)
+                knn_folds.append(knn_metrics)
+                print("knn done")
+
+            if checkpoint is not None and len(sorted_paths)>1:
+                step = int(parent_dir.name.split("_")[1])
+            else: 
+                step=0
+            
+        aggregated_knn=average_dicts(knn_metrics)
+        aggregated_log_reg=average_dicts(log_reg)
+        wandb.log(aggregated_knn, step=step)
         wandb.log(
-            {"log_reg": log_reg, "umap_test": wandb.Image(umap_test), "umap_train": wandb.Image(umap_train)}, step=step
+            {"log_reg": aggregated_log_reg, "umap_test": wandb.Image(umap_test), "umap_train": wandb.Image(umap_train)}, step=step
         )
 
 
@@ -237,45 +267,28 @@ def process_file(file_name):
 # {"Accuracy": accuracy, "Balanced_Acc": balanced_acc, "Weighted_F1": weighted_f1}
 
 
-def get_data(train_dir, test_dir):
+def get_data(all_data, indices):
     # Define the directories for train, validation, and test data and labels
 
     # Load training data into dictionaries
-    train_features, train_labels = [], []
-    test_features, test_labels = [], []
-
-    train_files = list(Path(train_dir).glob("*.h5"))
-    test_files = list(Path(test_dir).glob("*.h5"))
+    features, labels = [], []
+    filtered_files = all_data[indices]
 
     with ThreadPoolExecutor() as executor:
-        futures_train = [executor.submit(process_file, file_name) for file_name in train_files]
+        futures = [executor.submit(process_file, file_name) for file_name in filtered_files]
 
-        for i, future_train in tqdm(enumerate(futures_train), desc="Loading training data"):
-            feature_train, label_train = future_train.result()
-            train_features.append(feature_train)
-            train_labels.append(label_train)
-
-    with ThreadPoolExecutor() as executor:
-        futures_test = [executor.submit(process_file, file_name) for file_name in test_files]
-
-        for i, future in tqdm(enumerate(futures_test), desc="Loading test data"):
-            features, label = future.result()
-            test_features.append(features)
-            test_labels.append(label)
+        for i, future in tqdm(enumerate(futures), desc="Loading data"):
+            feature, label = future.result()
+            features.append(feature)
+            labels.append(label)
 
     # Convert the lists to NumPy arrays
-
-    test_data = np.array(test_features)
-    test_labels = np.array(test_labels).flatten()
+    features = np.array(features)
+    labels = np.array(labels).flatten()
     # Flatten test_data
-    test_data = test_data.reshape(test_data.shape[0], -1)  # Reshape to (n_samples, 384)
+    features = features.reshape(features.shape[0], -1)  # Reshape to (n_samples, 384)
 
-    train_data = np.array(train_features)
-    train_labels = np.array(train_labels).flatten()
-    # Flatten test_data
-    train_data = train_data.reshape(train_data.shape[0], -1)
-
-    return train_data, train_labels, test_data, test_labels
+    return features, labels
 
 
 def perform_knn(train_data, train_labels, test_data, test_labels, save_dir):
@@ -327,6 +340,24 @@ def perform_knn(train_data, train_labels, test_data, test_labels, save_dir):
 
     return metrics_dict
 
+def average_dicts(dict_list):
+    # Initialize a dictionary to hold the sum of values for each key
+    sum_dict = {}
+    
+    # Loop over each dictionary in the list
+    for d in dict_list:
+        # Iterate over key-value pairs in the current dictionary
+        for key, value in d.items():
+            # Add the value to the sum_dict, initializing if necessary
+            if key in sum_dict:
+                sum_dict[key] += value
+            else:
+                sum_dict[key] = value
+    
+    # Calculate the average for each key
+    avg_dict = {key: value / len(dict_list) for key, value in sum_dict.items()}
+    
+    return avg_dict
 
 def create_umap(data, labels, save_dir, filename_addon="train"):
     # Create a UMAP model and fit it to your data
@@ -408,7 +439,7 @@ def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, 
         "Accuracy": accuracy,
         "Balanced_Acc": balanced_acc,
         "Weighted_F1": weighted_f1,
-        "Classification Report": wandb.Table(dataframe=report_df),
+      #  "Classification Report": wandb.Table(dataframe=report_df),
     }
 
 
