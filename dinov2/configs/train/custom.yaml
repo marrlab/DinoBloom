@@ -48,7 +48,7 @@ train:
   batch_size_per_gpu: 40
   num_workers: 12
   OFFICIAL_EPOCH_LENGTH: 500  # 1250
-  dataset_path: BalancedPatchDataset:root=/mnt/ceph_vol/features/finetune/patches/2
+  dataset_path: BalancedPatchDataset:root=/mnt/ceph_vol/features/finetune/patches/2:shuffle=1
   centering: sinkhorn_knopp
 
   drop_path_rate: 0.4
