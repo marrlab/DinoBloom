@@ -49,9 +49,9 @@ def smooth_rank_loss(embedding_matrix, eps=1e-7):
     _, S, _ = torch.svd(embedding_matrix)
 
     # Normalize the singular values to sum to 1, add eps to avoid division by zero in log
-    p = p[: embedding_matrix.shape[1]]
-    p = S / (torch.norm(S, p=1) + eps)
     
+    p = S / (torch.norm(S, p=1) + eps)
+    p = p[: embedding_matrix.shape[1]]
     # Compute the negative entropy of the distribution
     # This encourages the concentration of information (lower entropy is better for loss minimization)
     neg_entropy = -torch.exp(-torch.sum(p * torch.log(p))) # Add eps to avoid log(0)
@@ -144,6 +144,7 @@ class SSLMetaArch(nn.Module):
         self.ibot_separate_head = cfg.ibot.separate_head
 
         logger.info("OPTIONS -- DINO")
+        
         if self.do_dino:
             logger.info(f"OPTIONS -- DINO -- loss_weight: {cfg.dino.loss_weight}")
             logger.info(f"OPTIONS -- DINO -- head_n_prototypes: {cfg.dino.head_n_prototypes}")
