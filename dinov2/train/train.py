@@ -324,6 +324,9 @@ def do_train(cfg, model, resume=False):
             batch_collection.append(class_tokens[:tokens_needed, :])
             total_tokens_collected += tokens_needed
 
+        print("tokens needed", tokens_needed)
+        print("tokens collected", total_tokens_collected)
+
     # Once 1000 tokens are collected, process them
     if total_tokens_collected == 2500:
         embedding_matrix = torch.cat(batch_collection, dim=0)
