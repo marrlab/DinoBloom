@@ -250,8 +250,8 @@ def main(args):
             else: 
                 step=0
             
-        aggregated_knn=average_dicts(knn_metrics)
-        aggregated_log_reg=average_dicts(log_reg)
+        aggregated_knn=average_dicts(knn_folds)
+        aggregated_log_reg=average_dicts(log_reg_folds)
         wandb.log(aggregated_knn, step=step)
         wandb.log(
             {"log_reg": aggregated_log_reg, "umap_test": wandb.Image(umap_test), "umap_train": wandb.Image(umap_train)}, step=step
