@@ -2,6 +2,7 @@ import argparse
 import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
+import glob
 
 import cv2
 import h5py
@@ -74,10 +75,10 @@ class CustomImageDataset(Dataset):
         return image, encoded_label, Path(image_path).stem
 
 class PathImageDataset(Dataset):
-    def __init__(self, images, transform):
+    def __init__(self, image_path, transform):
+        self.images= list(glob.glob(image_path + '/**/*.{jpg,jpeg,png,bmp,tiff}', recursive=True))
         self.transform = transform
-        self.class_to_label = create_label_mapping_from_paths(images)
-        self.images=images
+        self.class_to_label = create_label_mapping_from_paths(self.images)
         print(self.class_to_label)
 
     def __len__(self):
