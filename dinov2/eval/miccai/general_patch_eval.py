@@ -341,24 +341,56 @@ def perform_knn(train_data, train_labels, test_data, test_labels, save_dir):
 
     return metrics_dict
 
-def average_dicts(dict_list):
-    # Initialize a dictionary to hold the sum of values for each key
-    sum_dict = {}
-    
-    # Loop over each dictionary in the list
-    for d in dict_list:
-        # Iterate over key-value pairs in the current dictionary
-        for key, value in d.items():
-            # Add the value to the sum_dict, initializing if necessary
+def merge_sum_dicts(sum_dict, new_dict, count_dict, path=None):
+    """
+    Recursively merges new_dict into sum_dict, summing values for non-dict items
+    and recursively merging dict items. Also, keeps track of counts for averaging.
+    """
+    if path is None:
+        path = []
+    for key, value in new_dict.items():
+        # Construct a new path for nested dictionaries
+        new_path = path + [key]
+        if isinstance(value, dict):
+            # If the value is a dictionary, recurse
+            sum_dict[key] = merge_sum_dicts(sum_dict.get(key, {}), value, count_dict, new_path)
+        else:
+            # Initialize or update the sum and count for non-dictionary values
             if key in sum_dict:
                 sum_dict[key] += value
+                count_dict["/".join(new_path)] += 1  # Use path as key in count_dict
             else:
                 sum_dict[key] = value
-    
-    # Calculate the average for each key
-    avg_dict = {key: value / len(dict_list) for key, value in sum_dict.items()}
-    
-    return avg_dict
+                count_dict["/".join(new_path)] = 1
+    return sum_dict
+
+def average_dicts(dict_list):
+    sum_dict = {}
+    count_dict = {}  # Keep track of counts for averaging
+
+    # Merge all dictionaries, summing values and tracking counts
+    for d in dict_list:
+        merge_sum_dicts(sum_dict, d, count_dict)
+
+    def calculate_average(current_dict, current_path=None):
+        """
+        Recursively calculates averages for sum_dict using counts in count_dict.
+        """
+        if current_path is None:
+            current_path = []
+        avg_dict = {}
+        for key, value in current_dict.items():
+            new_path = current_path + [key]
+            if isinstance(value, dict):
+                # Recursively calculate average for nested dictionaries
+                avg_dict[key] = calculate_average(value, new_path)
+            else:
+                # Calculate average for non-dictionary values using count_dict
+                avg_dict[key] = value / count_dict["/".join(new_path)]
+        return avg_dict
+
+    # Calculate the average for each key, including nested dictionaries
+    return calculate_average(sum_dict)
 
 def create_umap(data, labels, save_dir, filename_addon="train"):
     # Create a UMAP model and fit it to your data
