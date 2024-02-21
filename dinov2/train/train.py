@@ -317,11 +317,11 @@ def do_train(cfg, model, resume=False):
     if tokens_needed > 0 and iteration % 1000 < 15:
         # If the whole batch can be added without exceeding 1000 tokens
         if batch_size <= tokens_needed:
-            batch_collection.append(class_tokens)
+            batch_collection.append(class_tokens.detach())
             total_tokens_collected += batch_size
         else:
             # Add only the required number of tokens from the batch
-            batch_collection.append(class_tokens[:tokens_needed, :])
+            batch_collection.append(class_tokens.detach()[:tokens_needed, :])
             total_tokens_collected += tokens_needed
 
         print("tokens needed", tokens_needed)
