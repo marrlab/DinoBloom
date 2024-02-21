@@ -40,6 +40,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--filetype",
+    help="name of filending",
+    default=".tiff",
+    type=str,
+)
+
+parser.add_argument(
     "--num_workers",
     help="num workers to load data",
     default=16,
@@ -191,7 +198,7 @@ def main(args):
         feature_extractor = get_models(model_name, saved_model_path=checkpoint)
         feature_dir = parent_dir / args.experiment_name / "features"
         
-        dataset = PathImageDataset(args.dataset_path, transform=transform)
+        dataset = PathImageDataset(args.dataset_path, transform=transform, filetype=args.filetype)
         dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
         save_features_and_labels(feature_extractor, dataloader, feature_dir)

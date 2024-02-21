@@ -75,8 +75,8 @@ class CustomImageDataset(Dataset):
         return image, encoded_label, Path(image_path).stem
 
 class PathImageDataset(Dataset):
-    def __init__(self, image_path, transform):
-        self.images= list(glob.glob(image_path + '/**/*.{jpg,jpeg,png,bmp,tiff}', recursive=True))
+    def __init__(self, image_path, transform,filetype=".tiff"):
+        self.images = list(Path(image_path).rglob("*"+filetype))
         self.transform = transform
         self.class_to_label = create_label_mapping_from_paths(self.images)
         print(self.class_to_label)
