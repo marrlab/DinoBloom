@@ -233,6 +233,8 @@ def do_train(cfg, model, resume=False):
     header = "Training"
 
     batch_collection = []
+    total_tokens_collected = 0 
+    
     for data in metric_logger.log_every(
         data_loader,
         10,
@@ -308,13 +310,28 @@ def do_train(cfg, model, resume=False):
 
         # compute smooth rank measure
 
-        if iteration % 1000 < 10:
+
+    tokens_needed = 2500 - total_tokens_collected
+    batch_size = class_tokens.shape[0]  # Current batch size from class_tokens shape
+    
+    if tokens_needed > 0 and iteration % 1000 < 15:
+        # If the whole batch can be added without exceeding 1000 tokens
+        if batch_size <= tokens_needed:
             batch_collection.append(class_tokens)
-        if iteration % 1000 == 10:
-            embedding_matrix = torch.cat(batch_collection, dim=0)
-            smooth_rank = smooth_rank_measure(embedding_matrix)
-            wandb.log({"smooth_rank": smooth_rank})
-            batch_collection = []
+            total_tokens_collected += batch_size
+        else:
+            # Add only the required number of tokens from the batch
+            batch_collection.append(class_tokens[:tokens_needed, :])
+            total_tokens_collected += tokens_needed
+
+    # Once 1000 tokens are collected, process them
+    if total_tokens_collected == 2500:
+        embedding_matrix = torch.cat(batch_collection, dim=0)
+        smooth_rank = smooth_rank_measure(embedding_matrix)  # Assuming this function is defined elsewhere
+        wandb.log({"smooth_rank": smooth_rank})
+        # Reset for the next 1000 tokens
+        batch_collection = []
+        total_tokens_collected = 0
 
         if cfg.evaluation.eval_period_iterations > 0 and (iteration + 1) % cfg.evaluation.eval_period_iterations == 0:
             do_test(cfg, model, f"training_{iteration}")
