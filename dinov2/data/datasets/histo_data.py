@@ -260,7 +260,7 @@ class BalancedPatchDataset(VisionDataset):
 
     def __len__(self) -> int:
         # assert len(entries) == self.split.length
-        return 400000
+        return 4000000
     
 
 
