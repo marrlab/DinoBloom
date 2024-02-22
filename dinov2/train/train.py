@@ -341,7 +341,7 @@ def do_train(cfg, model, resume=False):
             torch.cuda.synchronize()
         periodic_checkpointer.step(iteration)
 
-        iteration = iteration + 1
+    iteration = iteration + 1
     metric_logger.synchronize_between_processes()
     return {k: meter.global_avg for k, meter in metric_logger.meters.items()}
 
