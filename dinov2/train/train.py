@@ -332,7 +332,7 @@ def do_train(cfg, model, resume=False):
             embedding_matrix = torch.cat(batch_collection, dim=0)
             smooth_rank = smooth_rank_measure(embedding_matrix)  # Assuming this function is defined elsewhere
             wandb.log({"smooth_rank": smooth_rank})
-            # Reset for the next 1000 tokens
+            # Reset for the next tokens
             batch_collection = []
             total_tokens_collected = 0
 

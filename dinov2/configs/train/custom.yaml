@@ -48,7 +48,7 @@ train:
   batch_size_per_gpu: 40
   num_workers: 12
   OFFICIAL_EPOCH_LENGTH: 500  # 1250
-  dataset_path: BalancedPatchDataset:root=/mnt/ceph_vol/features/finetune/patches/2:shuffle=1
+  dataset_path: BalancedPatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/train_lists_v2:shuffle=1
   centering: sinkhorn_knopp
 
   drop_path_rate: 0.4
@@ -75,13 +75,13 @@ evaluation:
 # config for vit
 # "dinov2_vits14","dinov2_vitb14","dinov2_vitl14","dinov2_vitg14"
 student:
-  arch: dinov2_vits14
+  arch: dinov2_vitl14
   patch_size: 14
 crops:
   local_crops_size: 98
 dino:
   head_bottleneck_dim: 384 
-  smooth_rank_loss_weight: 1.0
+  smooth_rank_loss_weight: 0.0
 
 # ---------------------------
 # config for vim_tiny

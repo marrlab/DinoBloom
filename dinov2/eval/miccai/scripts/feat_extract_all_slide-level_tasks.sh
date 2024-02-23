@@ -13,7 +13,7 @@
 # --- ctranspath 
 # MODEL="ctranspath"
 # BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/ctranspath"
-# CHECKPOINT="/ltre/groups/shared/users/peng_marr/HistoDINO/logs/ctranspath/eval/pretrained/ctranspath.pth"
+# CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/ctranspath/eval/pretrained/ctranspath.pth"
 
 # --- pretrained dinov2 networks
 # MODEL="dinov2_vits14_downloaded"
@@ -31,11 +31,21 @@
 # CHECKPOINT="resnet50/checkpoint.pth"
 
 # --- vit checkpoints
-MODEL="dinov2_finetuned"
-BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vits"
-CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vits/eval/training_59999/teacher_checkpoint.pth"
+# MODEL="dinov2_vits14"
+# BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vits"
+# CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vits/eval/training_59999/teacher_checkpoint.pth"
 # CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vits/eval/training_14999/teacher_checkpoint.pth"
-
+# BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vits_v2"
+# CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vits_v2/training_99999/teacher_checkpoint.pth"
+# MODEL="dinov2_vitl14"
+# BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vitl"
+# CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vitl/training_99999/teacher_checkpoint.pth"
+MODEL="dinov2_vitb14"
+BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vitb"
+CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vitb/training_99999/teacher_checkpoint.pth"
+# MODEL="dinov2_vits14"
+# BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/merged_models"
+# CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/merged_models/dinov2_finetuned_vits_TCGA_NCT_uniform_soup.pth"
 
 # TRAINING_CONFIG="--model AttentionMIL --model_config={} --lr_scheduler_config={max_lr: 1.0e-04}"
 # TRAINING_CONFIG="--model Transformer --model_config={dropout: 0.2} --lr_scheduler_config={max_lr: 1.0e-05}"
