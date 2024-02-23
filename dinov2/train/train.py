@@ -336,10 +336,10 @@ def do_train(cfg, model, resume=False):
             batch_collection = []
             total_tokens_collected = 0
 
-            if cfg.evaluation.eval_period_iterations > 0 and (iteration + 1) % cfg.evaluation.eval_period_iterations == 0:
-                do_test(cfg, model, f"training_{iteration}")
-                torch.cuda.synchronize()
-            periodic_checkpointer.step(iteration)
+        if cfg.evaluation.eval_period_iterations > 0 and (iteration + 1) % cfg.evaluation.eval_period_iterations == 0:
+            do_test(cfg, model, f"training_{iteration}")
+            torch.cuda.synchronize()
+        periodic_checkpointer.step(iteration)
 
         iteration = iteration + 1
     metric_logger.synchronize_between_processes()
