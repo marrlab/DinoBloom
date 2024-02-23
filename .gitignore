@@ -18,3 +18,4 @@ dinov2/eval/miccai/test_checkpoints.sh
 .logs/*
 debug*
 *.yaml
+dinov2/configs/train/custom.yaml
