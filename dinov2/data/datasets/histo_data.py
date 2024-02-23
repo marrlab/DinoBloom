@@ -129,7 +129,7 @@ class PatchDataset(VisionDataset):
 
         if h < min_dimension or w < min_dimension:
 
-            print("Image had to be resized due to smaller size than 224: ", self.patches[index])
+            #print("Image had to be resized due to smaller size than 224: ", self.patches[index])
 
             if w < h:
                 new_width = min_dimension
@@ -240,7 +240,7 @@ class BalancedPatchDataset(VisionDataset):
 
         if h < min_dimension or w < min_dimension:
 
-            print("Image had to be resized due to smaller size than 224: ", filepath)
+            #print("Image had to be resized due to smaller size than 224: ", filepath)
 
             if w < h:
                 new_width = min_dimension
@@ -260,7 +260,7 @@ class BalancedPatchDataset(VisionDataset):
 
     def __len__(self) -> int:
         # assert len(entries) == self.split.length
-        return 4000000
+        return 40000000
     
 
 

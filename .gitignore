@@ -18,3 +18,8 @@ dinov2/eval/miccai/test_checkpoints.sh
 .logs/*
 debug*
 *.yaml
+vits**
+vitb**
+vitg**
+vitl**
+*/eval/*

@@ -310,11 +310,11 @@ def do_train(cfg, model, resume=False):
 
         # compute smooth rank measure
 
-
-        tokens_needed = 2500 - total_tokens_collected
+        desired_tokens=2500
+        tokens_needed = desired_tokens - total_tokens_collected
         batch_size = class_tokens.shape[0]  # Current batch size from class_tokens shape
         
-        if tokens_needed > 0 and iteration % 1000 < 15:
+        if tokens_needed > 0 and iteration % 1000 < (int(desired_tokens/batch_size)+1):
             # If the whole batch can be added without exceeding 1000 tokens
             if batch_size <= tokens_needed:
                 batch_collection.append(class_tokens.detach())
@@ -327,11 +327,11 @@ def do_train(cfg, model, resume=False):
             print("tokens needed", tokens_needed)
             print("tokens collected", total_tokens_collected)
 
-        # Once 1000 tokens are collected, process them
-        if total_tokens_collected == 2500:
+        # Once desired_tokens are collected, process them
+        if total_tokens_collected == desired_tokens:
             embedding_matrix = torch.cat(batch_collection, dim=0)
             smooth_rank = smooth_rank_measure(embedding_matrix)  # Assuming this function is defined elsewhere
-            wandb.log({"smooth_rank": smooth_rank},step=iteration)
+            wandb.log({"smooth_rank": smooth_rank})
             # Reset for the next 1000 tokens
             batch_collection = []
             total_tokens_collected = 0
