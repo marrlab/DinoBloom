@@ -322,6 +322,10 @@ if __name__ == "__main__":
         "dinov2_vits14_downloaded": 384,
         "resnet50": 1024,
         "resnet50full": 2048,
+        "dinov2_vits14": 384,
+        "dinov2_vitb14": 768,
+        "dinov2_vitl14": 1024,
+        "dinov2_vitg14": 1536,
     }
 
     # retrieve task/dataset from feature directory

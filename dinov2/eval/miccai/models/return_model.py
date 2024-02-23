@@ -72,7 +72,7 @@ def get_models(modelname, saved_model_path=None):
 
     # --- our finetuned models
     elif modelname.lower() in ["dinov2_vits14","dinov2_vitb14","dinov2_vitl14","dinov2_vitg14"]:
-        model = get_dino_finetuned_downloaded(saved_model_path,modelname)
+        model = get_dino_finetuned_downloaded(saved_model_path, modelname)
 
     elif modelname.lower() == "vim_finetuned":
         model = get_vim_finetuned(saved_model_path)
@@ -102,11 +102,11 @@ def get_vim_finetuned(checkpoint=None):
 
 
 # for 224
-def get_dino_finetuned_downloaded(model_path,modelname):
-    # pos_embed has wrong shape
+def get_dino_finetuned_downloaded(model_path, modelname):
     model = torch.hub.load("facebookresearch/dinov2", modelname)
-    # model=torch.hub.load('facebookresearch/dinov2', 'dinov2_vitg14')
     # load finetuned weights
+
+    # pos_embed has wrong shape
     if model_path is not None:
         pretrained = torch.load(model_path, map_location=torch.device("cpu"))
         # make correct state dict for loading
@@ -118,8 +118,13 @@ def get_dino_finetuned_downloaded(model_path,modelname):
                 new_key = key.replace("backbone.", "")
                 new_state_dict[new_key] = value
         # change shape of pos_embed
-        pos_embed = nn.Parameter(torch.zeros(1, 257, 384))
-        # pos_embed = nn.Parameter(torch.zeros(1, 257, 1536))
+        input_dims = {
+            "dinov2_vits14": 384,
+            "dinov2_vitb14": 768,
+            "dinov2_vitl14": 1024,
+            "dinov2_vitg14": 1536,
+        }
+        pos_embed = nn.Parameter(torch.zeros(1, 257, input_dims[modelname]))
         model.pos_embed = pos_embed
         # load state dict
         model.load_state_dict(new_state_dict, strict=True)
