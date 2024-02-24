@@ -46,16 +46,16 @@ ibot:
   # head_n_prototypes: 131072
 train:
   batch_size_per_gpu: 256  # 40 for vitl on 40GB A100, 256 for vits on 80GB A100, 144 for vits on 40GB A100
-  num_workers: 12
-  OFFICIAL_EPOCH_LENGTH: 500  # 1250
-  # dataset_path: BalancedPatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/train_lists:shuffle=1
+  num_workers: 20
+  OFFICIAL_EPOCH_LENGTH: 3125  # 1250 # should be actual dataset size / batch_size_per_gpu / num_gpus
+  # dataset_path: BalancedPatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/train_lists:shuffle=1  # length 10M, OFFICIAL_EPOCH_LENGTH: 8740, epochs: 10
   # dataset_path: PatchDataset
   # finetune on NCT-CRC-100K dataset
-  # dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/NCT-CRC-100K.txt
+  # dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/NCT-CRC-100K.txt:shuffle=1  # length 100K, OFFICIAL_EPOCH_LENGTH: 200, epochs: 25
   # finetune on TCGA-CRC dataset 
-  # dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/TCGA/CRC/patches/512px_crc_wonorm_complete_diag.txt
+  # dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/TCGA/CRC/patches/512px_crc_wonorm_complete_diag.txt:shuffle=1  # length: 1.6M, OFFICIAL_EPOCH_LENGTH: 3125, epochs: 10
   # finetune on TCGA-CRC 1024 patches (diag and frozen)
-  dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/tcga_patches_coad_read.txt
+  dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/tcga_patches_coad_read.txt:shuffle=1 # length: 400K (*4), OFFICIAL_EPOCH_LENGTH: 3125, epochs: 10
 
   centering: sinkhorn_knopp
 
@@ -67,7 +67,7 @@ train:
 teacher:
   momentum_teacher: 0.994
 optim:
-  epochs: 170  # 500
+  epochs: 10  # 500
   weight_decay_end: 0.2
   base_lr: 2.0e-04  # learning rate for a batch size of 1024
   warmup_epochs: 10  # 80
