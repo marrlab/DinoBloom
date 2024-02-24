@@ -27,14 +27,14 @@ os.environ["WANDB__SERVICE_WAIT"] = "300"
 parser.add_argument(
     "--model_name",
     help="name of model",
-    default="dinov2_finetuned",
+    default="dinov2_vits14",
     type=str,
 )
 
 parser.add_argument(
     "--experiment_name",
     help="name of experiment",
-    default="crc_patch",
+    default="nct_crc",
     type=str,
 )
 
@@ -69,7 +69,7 @@ parser.add_argument(
 parser.add_argument(
     "--run_path",
     help="path to run directory with models inside",
-    default="/home/icb/valentin.koch/dinov2/debug/eval",
+    default="/home/icb/valentin.koch/dinov2/vits_fixed1708263536.3059368/eval",
     type=str,
 )
 
@@ -185,17 +185,13 @@ def main(args):
 
         train_dir = os.path.join(feature_dir, "train_data")
         test_dir = os.path.join(feature_dir, "test_data")
-
-        save_features_and_labels_individual(feature_extractor, train_dataloader, train_dir)
-        save_features_and_labels_individual(feature_extractor, test_dataloader, test_dir)
+        if len(list(Path(train_dir).glob("*.h5"))) <100000:
+            save_features_and_labels_individual(feature_extractor, train_dataloader, train_dir)
+        if len(list(Path(test_dir).glob("*.h5"))) <7180:
+            save_features_and_labels_individual(feature_extractor, test_dataloader, test_dir)
 
         train_data, train_labels, test_data, test_labels = get_data(train_dir, test_dir)
-
         print("data fully loaded")
-        print("Shape of train_data:", train_data.shape)
-        print("Shape of train_labels:", train_labels.shape)
-        print("Shape of test_data:", test_data.shape)
-        print("Shape of test_labels:", test_labels.shape)
 
         if args.logistic_regression:
             logreg_dir = parent_dir/ "log_reg_eval"

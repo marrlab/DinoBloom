@@ -129,7 +129,7 @@ class PatchDataset(VisionDataset):
 
         if h < min_dimension or w < min_dimension:
 
-            print("Image had to be resized due to smaller size than 224: ", self.patches[index])
+            #print("Image had to be resized due to smaller size than 224: ", self.patches[index])
 
             if w < h:
                 new_width = min_dimension
@@ -151,7 +151,7 @@ class PatchDataset(VisionDataset):
         return patch
 
     def __len__(self) -> int:
-        return len(self.patches)
+        return 120000000
 
     def get_target(self, index: int) -> torch.Tensor:
         # labels are not used for training
@@ -240,7 +240,7 @@ class BalancedPatchDataset(VisionDataset):
 
         if h < min_dimension or w < min_dimension:
 
-            print("Image had to be resized due to smaller size than 224: ", filepath)
+            #print("Image had to be resized due to smaller size than 224: ", filepath)
 
             if w < h:
                 new_width = min_dimension
@@ -260,7 +260,94 @@ class BalancedPatchDataset(VisionDataset):
 
     def __len__(self) -> int:
         # assert len(entries) == self.split.length
-        return 4000000
+        return 120000000
     
 
 
+class HemaPatchDataset(VisionDataset):
+    def __init__(
+        self,
+        *,
+        root: str = "",
+        transforms: Optional[Callable] = None,
+        transform: Optional[Callable] = None,
+        target_transform: Optional[Callable] = None,
+        shuffle: bool = False
+    ) -> None:
+        super().__init__(root, transforms, transform, target_transform)
+        self.patches = []
+        self.dataset_sizes = []
+
+        all_dataset_files = Path(root).glob("*.txt")
+
+        for dataset_file in all_dataset_files:
+            print("Loading ", dataset_file)
+            with open(dataset_file, 'r') as file:
+                content = file.read()
+            file_list = content.splitlines()
+            if shuffle:
+                random.shuffle(file_list)
+            else:
+                file_list = arrange_files(file_list)
+            self.patches.append(file_list)
+            self.dataset_sizes.append(int(len(file_list)))
+
+        self.num_datasets = len(self.patches)
+
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
+
+        dataset_index = index % self.num_datasets
+        index_in_dataset = int(index / self.num_datasets) % self.dataset_sizes[dataset_index]
+
+        try:
+            image , filepath = self.get_image_data(dataset_index, index_in_dataset)
+        except Exception as e:
+            print(f"can not read image for sample {index, e,self.patches[dataset_index][index_in_dataset]}")
+            return self.__getitem__(index + 1)
+
+        target = self.get_target(index)
+
+        if self.transforms is not None:
+            image, target = self.transforms(image, target)
+
+        return image, target, filepath
+
+    def get_image_data(self, dataset_index: int, index_in_dataset: int, min_dimension=300) -> Image:
+
+        # load image from jpeg file
+        filepath = self.patches[dataset_index][index_in_dataset]
+        patch = Image.open(filepath).convert(mode="RGB")
+
+        h, w = patch.size
+
+        # random crop to (300, 300)
+        crop_size = 300
+        if h > crop_size and w > crop_size:
+            i = torch.randint(0, h - crop_size + 1, size=(1,)).item()
+            j = torch.randint(0, w - crop_size + 1, size=(1,)).item()
+            patch = transforms.functional.crop(patch, i, j, crop_size, crop_size)
+
+        if h < min_dimension or w < min_dimension:
+
+            #print("Image had to be resized due to smaller size than 224: ", filepath)
+
+            if w < h:
+                new_width = min_dimension
+                new_height = int((min_dimension / w) * h)
+
+            else:
+                new_height = min_dimension
+                new_width = int((min_dimension / h) * w)
+
+            patch = patch.resize((new_width, new_height), Image.Resampling.NEAREST)
+
+        return patch, filepath
+
+    def get_target(self, index: int) -> torch.Tensor:
+        # labels are not used for training
+        return torch.zeros((1,))
+
+    def __len__(self) -> int:
+        # assert len(entries) == self.split.length
+        return 120000000
+    

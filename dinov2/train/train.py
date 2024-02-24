@@ -326,19 +326,19 @@ def do_train(cfg, model, resume=False):
 
             print(f"{tokens_needed} tokens needed, {total_tokens_collected }tokens collected")
 
-        # Once 1000 tokens are collected, process them
+        # Once desired_tokens are collected, process them
         if total_tokens_collected == desired_tokens:
             embedding_matrix = torch.cat(batch_collection, dim=0)
             smooth_rank = smooth_rank_measure(embedding_matrix)  # Assuming this function is defined elsewhere
             wandb.log({"smooth_rank": smooth_rank})
-            # Reset for the next 1000 tokens
+            # Reset for the next tokens
             batch_collection = []
             total_tokens_collected = 0
 
-            if cfg.evaluation.eval_period_iterations > 0 and (iteration + 1) % cfg.evaluation.eval_period_iterations == 0:
-                do_test(cfg, model, f"training_{iteration}")
-                torch.cuda.synchronize()
-            periodic_checkpointer.step(iteration)
+        if cfg.evaluation.eval_period_iterations > 0 and (iteration + 1) % cfg.evaluation.eval_period_iterations == 0:
+            do_test(cfg, model, f"training_{iteration}")
+            torch.cuda.synchronize()
+        periodic_checkpointer.step(iteration)
 
         iteration = iteration + 1
     metric_logger.synchronize_between_processes()
