@@ -122,16 +122,16 @@ class DataAugmentationDINO(object):
                     p=0.8,  # original p=0.8
                 ),
                 # additional histopathology-specific augmentations (don't use grayscale)
-                transforms.RandomGrayscale(p=0.05),  # original p=0.2
+                transforms.RandomGrayscale(p=0.2),  # original p=0.2, changed
             ]
         )
 
-        global_transfo1_extra = GaussianBlur(p=0.1) # original p=1., changed
+        global_transfo1_extra = GaussianBlur(p=1.) # original p=1., changed
 
         global_transfo2_extra = transforms.Compose(
             [
                 GaussianBlur(p=0.1),
-                # transforms.RandomSolarize(threshold=128, p=0.2),  # changed
+                transforms.RandomSolarize(threshold=128, p=0.2),  # changed
             ]
         )
 

@@ -129,8 +129,6 @@ class PatchDataset(VisionDataset):
 
         if h < min_dimension or w < min_dimension:
 
-            #print("Image had to be resized due to smaller size than 224: ", self.patches[index])
-
             if w < h:
                 new_width = min_dimension
                 new_height = int((min_dimension / w) * h)
