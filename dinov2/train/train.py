@@ -242,7 +242,7 @@ def do_train(cfg, model, resume=False):
         max_iter,
         start_iter,
     ):
-        current_batch_size = data["collated_global_crops"].shape[0] / 2
+        current_batch_size = (data["collated_global_crops"].shape[0] / 2) * torch.cuda.device_count()
         if iteration > max_iter:
             return
 
