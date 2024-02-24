@@ -324,8 +324,7 @@ def do_train(cfg, model, resume=False):
                 batch_collection.append(class_tokens.detach()[:tokens_needed, :])
                 total_tokens_collected += tokens_needed
 
-            print("tokens needed", tokens_needed)
-            print("tokens collected", total_tokens_collected)
+            print(f"{tokens_needed} tokens needed, {total_tokens_collected }tokens collected")
 
         # Once 1000 tokens are collected, process them
         if total_tokens_collected == desired_tokens:

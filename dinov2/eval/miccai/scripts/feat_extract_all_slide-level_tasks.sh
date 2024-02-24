@@ -6,9 +6,10 @@
 # CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vim_balanced_data/eval/training_99999/teacher_checkpoint.pth"
 
 # --- vit checkpoints (Benedikt)
-# MODEL="dinov2_finetuned"
+MODEL="dinov2_vits14"
 # BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/DINOv2_finetuned"
-# CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/DINOv2_finetuned/dinov2_vits_TCGA_training_29999_teacher_checkpoint.pth"
+BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/DINOv2_NCT_100K_finetuned"
+CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/DINOv2_finetuned/dinov2_vits_NCT_10k_training_1999_teacher_checkpoint.pth"
 
 # --- ctranspath 
 # MODEL="ctranspath"
@@ -40,9 +41,9 @@
 # MODEL="dinov2_vitl14"
 # BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vitl"
 # CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vitl/training_99999/teacher_checkpoint.pth"
-MODEL="dinov2_vitb14"
-BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vitb"
-CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vitb/training_99999/teacher_checkpoint.pth"
+# MODEL="dinov2_vitb14"
+# BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vitb"
+# CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vitb/training_99999/teacher_checkpoint.pth"
 # MODEL="dinov2_vits14"
 # BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/merged_models"
 # CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/merged_models/dinov2_finetuned_vits_TCGA_NCT_uniform_soup.pth"
