@@ -6,13 +6,11 @@
 import logging
 from typing import Callable
 
-from torchvision import transforms
-
-# from skimage.util import dtype, dtype_limits
-from PIL import Image
-
 # from skimage.exposure import rescale_intensity
 import numpy as np
+# from skimage.util import dtype, dtype_limits
+from PIL import Image
+from torchvision import transforms
 
 from .transforms import GaussianBlur, make_normalize_transform
 
@@ -124,16 +122,16 @@ class DataAugmentationDINO(object):
                     p=0.8,  # original p=0.8
                 ),
                 # additional histopathology-specific augmentations (don't use grayscale)
-                transforms.RandomGrayscale(p=0.05),
+                transforms.RandomGrayscale(p=0.05),  # original p=0.2
             ]
         )
 
-        global_transfo1_extra = GaussianBlur(p=0.1)
+        global_transfo1_extra = GaussianBlur(p=0.1) # original p=1., changed
 
         global_transfo2_extra = transforms.Compose(
             [
                 GaussianBlur(p=0.1),
-                # transforms.RandomSolarize(threshold=128, p=0.2),
+                # transforms.RandomSolarize(threshold=128, p=0.2),  # changed
             ]
         )
 
