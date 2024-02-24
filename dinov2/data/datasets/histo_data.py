@@ -120,8 +120,8 @@ class PatchDataset(VisionDataset):
 
         h, w = patch.size
 
-        # random crop to (300, 300)
-        crop_size = 300
+        # random crop to (512, 512)
+        crop_size = 512
         if h > crop_size and w > crop_size:
             i = torch.randint(0, h - crop_size + 1, size=(1,)).item()
             j = torch.randint(0, w - crop_size + 1, size=(1,)).item()
