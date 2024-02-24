@@ -10,9 +10,12 @@ from typing import Optional
 import torch
 import torch.nn as nn
 from dinov2.models.vision_mamba_rope import *
-from mamba_ssm.modules.mamba_simple import Mamba
-from mamba_ssm.utils.generation import GenerationMixin
-from mamba_ssm.utils.hf import load_config_hf, load_state_dict_hf
+try: 
+    from mamba_ssm.modules.mamba_simple import Mamba
+    from mamba_ssm.utils.generation import GenerationMixin
+    from mamba_ssm.utils.hf import load_config_hf, load_state_dict_hf
+except ModuleNotFoundError:
+    pass
 from timm.models.layers import DropPath, PatchEmbed, trunc_normal_
 from timm.models.registry import register_model
 from timm.models.vision_transformer import VisionTransformer, _cfg, _load_weights
