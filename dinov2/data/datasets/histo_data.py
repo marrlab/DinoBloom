@@ -310,36 +310,60 @@ class HemaPatchDataset(VisionDataset):
 
         return image, target, filepath
 
-    def get_image_data(self, dataset_index: int, index_in_dataset: int, min_dimension=300) -> Image:
 
-        # load image from jpeg file
+
+    def get_image_data(self, dataset_index: int, index_in_dataset: int, dimension=280) -> Image:
+        # Load image from jpeg file
         filepath = self.patches[dataset_index][index_in_dataset]
         patch = Image.open(filepath).convert(mode="RGB")
 
-        h, w = patch.size
+        # Resize the image so that the largest dimension equals the specified dimension
+        w, h = patch.size
+        if h > w:
+            new_h = dimension
+            new_w = int(new_h * w / h)
+        else:
+            new_w = dimension
+            new_h = int(new_w * h / w)
+        patch = patch.resize((new_w, new_h), Image.ANTIALIAS)
 
-        # random crop to (300, 300)
-        crop_size = 300
-        if h > crop_size and w > crop_size:
-            i = torch.randint(0, h - crop_size + 1, size=(1,)).item()
-            j = torch.randint(0, w - crop_size + 1, size=(1,)).item()
-            patch = transforms.functional.crop(patch, i, j, crop_size, crop_size)
+        # Check if the image is not square and adjust accordingly
+        if new_w != new_h:
+            # Determine the side to be filled
+            fill_size = dimension - min(new_w, new_h)
 
-        if h < min_dimension or w < min_dimension:
-
-            #print("Image had to be resized due to smaller size than 224: ", filepath)
-
-            if w < h:
-                new_width = min_dimension
-                new_height = int((min_dimension / w) * h)
-
+            # Create a new image with the desired dimension and black background
+            new_image = Image.new("RGB", (dimension, dimension), (0, 0, 0))
+            
+            # Decide whether to repeat rows or pad with black
+            if random.random() < 0.5:
+                # Repeat first or last row/column
+                if new_w < new_h:  # Image is taller than it is wide
+                    repeated_row = patch.crop((0, 0, new_w, 1)) if random.random() < 0.5 else patch.crop((0, new_h-1, new_w, new_h))
+                    for i in range(fill_size):
+                        position = 0 if random.random() < 0.5 else dimension - new_w
+                        new_image.paste(repeated_row, (position+i, 0))
+                else:  # Image is wider than it is tall
+                    repeated_column = patch.crop((0, 0, 1, new_h)) if random.random() < 0.5 else patch.crop((new_w-1, 0, new_w, new_h))
+                    for i in range(fill_size):
+                        position = 0 if random.random() < 0.5 else dimension - new_h
+                        new_image.paste(repeated_column, (0, position+i))
             else:
-                new_height = min_dimension
-                new_width = int((min_dimension / h) * w)
+                # Pad with black, decide the position based on randomness
+                if new_w < new_h:  # Image is taller
+                    position = 0 if random.random() < 0.5 else dimension - new_w
+                    new_image.paste(patch, (position, 0))
+                else:  # Image is wider
+                    position = 0 if random.random() < 0.5 else dimension - new_h
+                    new_image.paste(patch, (0, position))
 
-            patch = patch.resize((new_width, new_height), Image.Resampling.NEAREST)
+            patch = new_image
+        else:
+            # Image is already square, just ensure it's the right size
+            patch = patch.resize((dimension, dimension), Image.ANTIALIAS)
 
         return patch, filepath
+
 
     def get_target(self, index: int) -> torch.Tensor:
         # labels are not used for training
