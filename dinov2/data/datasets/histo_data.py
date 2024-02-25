@@ -327,40 +327,19 @@ class HemaPatchDataset(VisionDataset):
             new_h = int(new_w * h / w)
         patch = patch.resize((new_w, new_h), Image.ANTIALIAS)
 
-        # Check if the image is not square and adjust accordingly
-        if new_w != new_h:
-            # Determine the side to be filled
-            fill_size = dimension - min(new_w, new_h)
 
-            # Create a new image with the desired dimension and black background
-            new_image = Image.new("RGB", (dimension, dimension), (0, 0, 0))
-            
-            # Decide whether to repeat rows or pad with black
-            if random.random() < 0.5:
-                # Repeat first or last row/column
-                if new_w < new_h:  # Image is taller than it is wide
-                    repeated_row = patch.crop((0, 0, new_w, 1)) if random.random() < 0.5 else patch.crop((0, new_h-1, new_w, new_h))
-                    for i in range(fill_size):
-                        position = 0 if random.random() < 0.5 else dimension - new_w
-                        new_image.paste(repeated_row, (position+i, 0))
-                else:  # Image is wider than it is tall
-                    repeated_column = patch.crop((0, 0, 1, new_h)) if random.random() < 0.5 else patch.crop((new_w-1, 0, new_w, new_h))
-                    for i in range(fill_size):
-                        position = 0 if random.random() < 0.5 else dimension - new_h
-                        new_image.paste(repeated_column, (0, position+i))
+            # Perform a random crop if needed
+        if new_w > dimension or new_h > dimension:
+            if new_w > dimension:
+                left = random.randint(0, new_w - dimension)
             else:
-                # Pad with black, decide the position based on randomness
-                if new_w < new_h:  # Image is taller
-                    position = 0 if random.random() < 0.5 else dimension - new_w
-                    new_image.paste(patch, (position, 0))
-                else:  # Image is wider
-                    position = 0 if random.random() < 0.5 else dimension - new_h
-                    new_image.paste(patch, (0, position))
+                left = 0
+            if new_h > dimension:
+                top = random.randint(0, new_h - dimension)
+            else:
+                top = 0
 
-            patch = new_image
-        else:
-            # Image is already square, just ensure it's the right size
-            patch = patch.resize((dimension, dimension), Image.ANTIALIAS)
+            patch = patch.crop((left, top, left + dimension, top + dimension))
 
         return patch, filepath
 
