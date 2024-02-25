@@ -325,7 +325,7 @@ class HemaPatchDataset(VisionDataset):
         else:
             new_w = dimension
             new_h = int(new_w * h / w)
-        patch = patch.resize((new_w, new_h), Image.ANTIALIAS)
+        patch = patch.resize((new_w, new_h), Image.Resampling.LANCZOS)
 
 
             # Perform a random crop if needed
