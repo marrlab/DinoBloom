@@ -35,14 +35,14 @@ parser.add_argument(
 parser.add_argument(
     "--experiment_name",
     help="name of experiment",
-    default="matek",
+    default="acevedo_rankloss",
     type=str,
 )
 
 parser.add_argument(
     "--filetype",
     help="name of filending",
-    default=".tiff",
+    default=".jpg",
     type=str,
 )
 
@@ -55,22 +55,23 @@ parser.add_argument(
 
 parser.add_argument(
     "--batch_size",
-    default=128,
+    default=64,
     type=int,
 )
 
+# acevedo: /lustre/groups/labs/marr/qscd01/datasets/Acevedo_20/PBC_dataset_normal_DIB/
+#matek: /lustre/groups/labs/marr/qscd01/datasets/191024_AML_Matek/AML-Cytomorphology_LMU/
 parser.add_argument(
     "--dataset_path",
     help="path to datasetfolder",
-    default="/lustre/groups/labs/marr/qscd01/datasets/191024_AML_Matek/AML-Cytomorphology_LMU/",
+    default="/lustre/groups/labs/marr/qscd01/datasets/Acevedo_20/PBC_dataset_normal_DIB/",
     type=str,
 )
-
 
 parser.add_argument(
     "--model_path",
     help="path to run directory with models inside",
-    default="/home/icb/valentin.koch/dinov2/vits_hema1708438024.080476",
+    default="/home/icb/valentin.koch/dinov2/vits_hema_v2_rankloss_1708872068.641858/eval",
     type=str,
 )
 
@@ -176,7 +177,7 @@ def main(args):
     # sorry for the bad naming here, its not yet sorted :)
     
 
-    if model_name in ["owkin","resnet50","resnet50_full","remedis"]:
+    if model_name in ["owkin","resnet50","resnet50_full","remedis","retccl","ctranspath"]:
         sorted_paths=[None]
     else:
         sorted_paths = list(Path(args.model_path).rglob("*teacher_checkpoint.pth"))

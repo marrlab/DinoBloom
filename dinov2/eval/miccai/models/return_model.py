@@ -31,8 +31,8 @@ def get_models(modelname, saved_model_path=None):
     # --- histology-pretrained models
     if modelname.lower() == "ctranspath":
         model = get_ctranspath(saved_model_path)
-    # elif modelname.lower() == 'remedis':
-    #    model = hub.load('cxr-52x2-remedis-m')
+    elif modelname.lower() == 'remedis':
+        model = hub.load('cxr-52x2-remedis-m')
     elif modelname.lower() == "retccl":
         model = get_retCCL(saved_model_path)
     elif modelname.lower() == "owkin":

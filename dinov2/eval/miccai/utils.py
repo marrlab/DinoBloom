@@ -75,10 +75,11 @@ class CustomImageDataset(Dataset):
         return image, encoded_label, Path(image_path).stem
 
 class PathImageDataset(Dataset):
-    def __init__(self, image_path, transform,filetype=".tiff"):
+    def __init__(self, image_path, transform,filetype=".tiff",img_size=(224,224)):
         self.images = list(Path(image_path).rglob("*"+filetype))
         self.transform = transform
         self.class_to_label = create_label_mapping_from_paths(self.images)
+        self.img_size=img_size
         print(self.class_to_label)
 
     def __len__(self):
@@ -86,13 +87,20 @@ class PathImageDataset(Dataset):
 
     def __getitem__(self, i):
         image_path=self.images[i]
-        label = Path(image_path).parent.name
-        image = Image.open(image_path).convert("RGB")
+        try:
+            
+            label = Path(image_path).parent.name
+            image = Image.open(image_path).convert("RGB").resize(self.img_size)
 
-        if self.transform:
-            image = self.transform(image)
+            if self.transform:
+                image = self.transform(image)
 
-        encoded_label = self.class_to_label[label]
+            encoded_label = self.class_to_label[label]
+            
+        except Exception as e:  # Using a more general exception class here
+            print(f"An error occurred at {image_path}: {e}")
+            return self.__getitem__(i+1)
+
 
         return image, encoded_label, Path(image_path).stem
 
