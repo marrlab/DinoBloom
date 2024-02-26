@@ -6,10 +6,10 @@
 # CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vim_balanced_data/eval/training_99999/teacher_checkpoint.pth"
 
 # --- vit checkpoints (Benedikt)
-MODEL="dinov2_vits14"
+# MODEL="dinov2_vits14"
 # BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/DINOv2_finetuned"
-BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/DINOv2_NCT_100K_finetuned"
-CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/DINOv2_finetuned/dinov2_vits_NCT_10k_training_1999_teacher_checkpoint.pth"
+# BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/DINOv2_NCT_100K_finetuned"
+# CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/DINOv2_finetuned/dinov2_vits_NCT_10k_training_1999_teacher_checkpoint.pth"
 
 # --- ctranspath 
 # MODEL="ctranspath"
@@ -32,7 +32,7 @@ CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/DINOv2_finetune
 # CHECKPOINT="resnet50/checkpoint.pth"
 
 # --- vit checkpoints
-# MODEL="dinov2_vits14"
+MODEL="dinov2_vits14"
 # BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vits"
 # CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vits/eval/training_59999/teacher_checkpoint.pth"
 # CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vits/eval/training_14999/teacher_checkpoint.pth"
@@ -47,6 +47,14 @@ CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/DINOv2_finetune
 # MODEL="dinov2_vits14"
 # BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/merged_models"
 # CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/merged_models/dinov2_finetuned_vits_TCGA_NCT_uniform_soup.pth"
+# BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vits14_brca"
+# CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/vits14_brca/training_29999/teacher_checkpoint.pth"
+# CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/vits14_brca/training_74999/teacher_checkpoint.pth"
+# BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/vits14_nsclc"
+# CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/vits14_nsclc/training_29999/teacher_checkpoint.pth"
+# CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/vits14_nsclc/training_74999/teacher_checkpoint.pth"
+BASE_DIR="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/merged_models_brca-nsclc"
+CHECKPOINT="/lustre/groups/shared/users/peng_marr/HistoDINO/logs/merged_models/dinov2_finetuned_vits14_TCGA-BRCA-NSCLC_uniform_soup.pth"
 
 # TRAINING_CONFIG="--model AttentionMIL --model_config={} --lr_scheduler_config={max_lr: 1.0e-04}"
 # TRAINING_CONFIG="--model Transformer --model_config={dropout: 0.2} --lr_scheduler_config={max_lr: 1.0e-05}"
