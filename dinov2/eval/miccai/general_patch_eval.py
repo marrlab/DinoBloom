@@ -177,8 +177,10 @@ def main(args):
     # sorry for the bad naming here, its not yet sorted :)
     
 
-    if model_name in ["owkin","resnet50","resnet50_full","remedis","retccl","ctranspath"]:
+    if model_name in ["owkin","resnet50","resnet50_full","remedis"]:
         sorted_paths=[None]
+    if model_name in ["retccl","ctranspath"]:
+        sorted_paths=[args.model_path]
     else:
         sorted_paths = list(Path(args.model_path).rglob("*teacher_checkpoint.pth"))
 
