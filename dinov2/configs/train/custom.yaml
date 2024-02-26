@@ -45,17 +45,17 @@ ibot:
   separate_head: true
   # head_n_prototypes: 131072
 train:
-  batch_size_per_gpu: 256  # 40 for vitl on 40GB A100, 256 for vits on 80GB A100, 144 for vits on 40GB A100
+  batch_size_per_gpu: 144  # 40 for vitl on 40GB A100, 256 for vits on 80GB A100, 144 for vits on 40GB A100
   num_workers: 20
-  OFFICIAL_EPOCH_LENGTH: 3125  # 1250 # should be actual dataset size / batch_size_per_gpu / num_gpus
-  # dataset_path: BalancedPatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/train_lists:shuffle=1  # length 10M, OFFICIAL_EPOCH_LENGTH: 8740, epochs: 10
+  OFFICIAL_EPOCH_LENGTH: 8740  # 1250 # should be actual dataset size / batch_size_per_gpu / num_gpus
+  dataset_path: BalancedPatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/train_lists:shuffle=1  # length 10M, OFFICIAL_EPOCH_LENGTH: 8740, epochs: 10, warmup_epochs: 0.5
   # dataset_path: PatchDataset
   # finetune on NCT-CRC-100K dataset
-  # dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/NCT-CRC-100K.txt:shuffle=1  # length 100K, OFFICIAL_EPOCH_LENGTH: 200, epochs: 25
+  # dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/NCT-CRC-100K.txt  # length 100K, OFFICIAL_EPOCH_LENGTH: 195, epochs: 10, warmup_epochs: 0.5
   # finetune on TCGA-CRC dataset 
-  # dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/TCGA/CRC/patches/512px_crc_wonorm_complete_diag.txt:shuffle=1  # length: 1.6M, OFFICIAL_EPOCH_LENGTH: 3125, epochs: 10
+  # dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/TCGA/CRC/patches/512px_crc_wonorm_complete_diag.txt  # length: 1652722, OFFICIAL_EPOCH_LENGTH: 3227, epochs: 10, warmup_epochs: 0.5
   # finetune on TCGA-CRC 1024 patches (diag and frozen)
-  dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/tcga_patches_coad_read.txt:shuffle=1 # length: 400K (*4), OFFICIAL_EPOCH_LENGTH: 3125, epochs: 10
+  # dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/tcga_patches_coad_read.txt # length: 401477 (*4), OFFICIAL_EPOCH_LENGTH: 3136, epochs: 40, warmup_epochs: 2
 
   centering: sinkhorn_knopp
 
@@ -70,7 +70,7 @@ optim:
   epochs: 10  # 500
   weight_decay_end: 0.2
   base_lr: 2.0e-04  # learning rate for a batch size of 1024
-  warmup_epochs: 10  # 80
+  warmup_epochs: 0.5 # original: 10  # 80
   layerwise_decay: 1.0
 
 

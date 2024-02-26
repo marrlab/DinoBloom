@@ -149,7 +149,7 @@ class PatchDataset(VisionDataset):
         return patch
 
     def __len__(self) -> int:
-        return 120000000
+        return len(self.patches)
 
     def get_target(self, index: int) -> torch.Tensor:
         # labels are not used for training
