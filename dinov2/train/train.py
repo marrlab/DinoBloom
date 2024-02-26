@@ -215,10 +215,10 @@ def do_train(cfg, model, resume=False):
         dataset=dataset,
         batch_size=cfg.train.batch_size_per_gpu,
         num_workers=cfg.train.num_workers,
-        shuffle=False,
+        shuffle=True,
         seed=start_iter,  # TODO: Fix this -- cfg.train.seed
         sampler_type=sampler_type,
-        sampler_advance=0,  # TODO(qas): fix this -- start_iter * cfg.train.batch_size_per_gpu,
+        sampler_advance=0,  # TODO (qas): fix this -- start_iter * cfg.train.batch_size_per_gpu,
         drop_last=True,
         collate_fn=collate_fn,
     )
@@ -373,7 +373,7 @@ def main(args):
 
 if __name__ == "__main__":
     args = get_args_parser(add_help=True).parse_args()
-    name = args.name + str(time.time())
+    name = args.name + str(time.time()).split(".")[0]
     args.output_dir = os.path.join(args.output_dir, name)
     wandb.init(entity="histo-collab", project="dinov2", name=name, mode="online", config=args)
     main(args)
