@@ -373,7 +373,7 @@ def main(args):
 
 if __name__ == "__main__":
     args = get_args_parser(add_help=True).parse_args()
-    name = args.name + str(time.time()).split(".")[0]
+    name = args.name + str(time.time()).split(".")[0] if name != "debug" else args.name
     args.output_dir = os.path.join(args.output_dir, name)
     wandb.init(entity="histo-collab", project="dinov2", name=name, mode="online", config=args)
     main(args)
