@@ -177,7 +177,7 @@ def main(args):
     # sorry for the bad naming here, its not yet sorted :)
     
 
-    if model_name in ["owkin","resnet50","resnet50_full","remedis"]:
+    if model_name in ["owkin","resnet50","resnet50_full","remedis","imagebind"]:
         sorted_paths=[None]
     elif model_name in ["retccl","ctranspath"]:
         sorted_paths=[Path(args.model_path)]
