@@ -364,7 +364,7 @@ class SSLMetaArch(nn.Module):
         if do_ibot and not self.ibot_separate_head:
             student_global_masked_patch_tokens_after_head = outputs_list.pop(0).squeeze(0)[:n_masked_patches]
 
-        if n_local_crops > 0:
+        if n_local_crops > 1:
             dino_local_crops_loss = self.dino_loss(
                 student_output_list=student_local_cls_tokens_after_head.chunk(n_local_crops),
                 teacher_out_softmaxed_centered_list=teacher_dino_softmaxed_centered_list,
