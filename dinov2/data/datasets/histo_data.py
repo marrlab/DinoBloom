@@ -271,7 +271,7 @@ class HemaPatchDataset(VisionDataset):
         transforms: Optional[Callable] = None,
         transform: Optional[Callable] = None,
         target_transform: Optional[Callable] = None,
-        shuffle: bool = False
+        shuffle: bool = False,
     ) -> None:
         super().__init__(root, transforms, transform, target_transform)
         self.patches = []
@@ -312,7 +312,6 @@ class HemaPatchDataset(VisionDataset):
         return image, target, filepath
 
 
-
     def get_image_data(self, dataset_index: int, index_in_dataset: int, dimension=280) -> Image:
         # Load image from jpeg file
         filepath = self.patches[dataset_index][index_in_dataset]
@@ -342,6 +341,62 @@ class HemaPatchDataset(VisionDataset):
 
             patch = patch.crop((left, top, left + dimension, top + dimension))
 
+        return patch, filepath
+
+
+    def get_target(self, index: int) -> torch.Tensor:
+        # labels are not used for training
+        return torch.zeros((1,))
+
+    def __len__(self) -> int:
+        # assert len(entries) == self.split.length
+        return 120000000
+    
+
+
+class HemaStandardDataset(VisionDataset):
+    def __init__(
+        self,
+        *,
+        root: str = "",
+        transforms: Optional[Callable] = None,
+        transform: Optional[Callable] = None,
+        target_transform: Optional[Callable] = None,
+        shuffle: bool = False,
+    ) -> None:
+        super().__init__(root, transforms, transform, target_transform)
+        self.patches = []
+
+        all_dataset_files = Path(root).glob("*.txt")
+
+        for dataset_file in all_dataset_files:
+            print("Loading ", dataset_file)
+            with open(dataset_file, 'r') as file:
+                content = file.read()
+            file_list = content.splitlines()
+            self.patches.extend(file_list)
+
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
+
+        try:
+            image , filepath = self.get_image_data(index)
+        except Exception as e:
+            print(f"can not read image for sample {index, e,self.patches[index]}")
+            return self.__getitem__(index + 1)
+
+        target = self.get_target(index)
+
+        if self.transforms is not None:
+            image, target = self.transforms(image, target)
+
+        return image, target, filepath
+
+
+
+    def get_image_data(self, index: int, dimension=224) -> Image:
+        # Load image from jpeg file
+        filepath = self.patches[index]
+        patch = Image.open(filepath).convert(mode="RGB").resize((dimension,dimension),Image.Resampling.LANCZOS)
         return patch, filepath
 
 
