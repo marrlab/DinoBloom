@@ -263,7 +263,6 @@ def main(args):
 
 def process_file(file_name):
     with h5py.File(file_name, "r") as hf:
-        # hf.visititems(print)
         features = torch.tensor(hf["features"][:]).tolist()
         label = int(hf["labels"][()])
     return features, label
@@ -319,7 +318,9 @@ def perform_knn(train_data, train_labels, test_data, test_labels, save_dir):
         weighted_f1 = f1_score(test_labels, test_predictions, average="weighted")
 
         print(f"n_neighbors = {n_neighbors}")
-        print(f"Accuracy: {accuracy}")
+        print(f"balanced accuracy: {balanced_acc}")
+        print(f"accuracy: {accuracy}")
+        print(f"weighted f1: {weighted_f1}")
 
         ## Calculate the classification report
         report = classification_report(test_labels, test_predictions, output_dict=True)
@@ -465,7 +466,9 @@ def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, 
 
     # some prints
     print(f"Final Loss: {loss}")
-    print(f"Accuracy: {accuracy}")
+    print(f"balanced accuracy: {balanced_acc}")
+    print(f"accuracy: {accuracy}")
+    print(f"weighted f1: {weighted_f1}")
     print(report)
 
     # Log the final loss, accuracy, and classification report using wandb.log
