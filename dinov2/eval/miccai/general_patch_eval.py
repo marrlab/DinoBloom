@@ -104,6 +104,15 @@ parser.add_argument(
     type=bool,
 )
 
+parser.add_argument(
+    "--wandb_project",
+    "--wandb-project",
+    "--wandb",
+    help="name of wandb project",
+    default="dino_eval",
+    type=str,
+)
+
 
 def save_features_and_labels(feature_extractor, dataloader, save_dir):
     print("extracting features..")
@@ -166,7 +175,7 @@ def main(args):
 
     wandb.init(
     entity="histo-collab",
-    project="dino_eval",
+    project=args.wandb_project,
     name= model_name +"_" +args.experiment_name,
     config=args
     )
