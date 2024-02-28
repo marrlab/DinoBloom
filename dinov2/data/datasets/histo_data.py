@@ -89,6 +89,7 @@ class PatchDataset(VisionDataset):
         transforms: Optional[Callable] = None,
         transform: Optional[Callable] = None,
         target_transform: Optional[Callable] = None,
+        shuffle: bool = False
     ) -> None:
         super().__init__(root, transforms, transform, target_transform)
 
