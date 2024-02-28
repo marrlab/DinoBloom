@@ -18,6 +18,7 @@ import torch
 import wandb
 from dinov2.data import (
     DataAugmentationDINO,
+    DataAugmentationHEMA,
     MaskingGenerator,
     SamplerType,
     collate_data_and_cast,
@@ -38,7 +39,7 @@ logger = logging.getLogger("dinov2")
 def get_args_parser(add_help: bool = True):
     parser = argparse.ArgumentParser("DINOv2 training", add_help=add_help)
     parser.add_argument(
-        "--config-file", default="./dinov2/configs/train/custom.yaml", metavar="FILE", help="path to config file"
+        "--config-file", default="./dinov2/configs/train/custom_8.yaml", metavar="FILE", help="path to config file"
     )
     parser.add_argument(
         "--no-resume",
@@ -183,14 +184,23 @@ def do_train(cfg, model, resume=False):
         input_size=(img_size // patch_size, img_size // patch_size),
         max_num_patches=0.5 * img_size // patch_size * img_size // patch_size,
     )
+    if cfg.data_transform=="default":
+        data_transform = DataAugmentationDINO(
+            cfg.crops.global_crops_scale,
+            cfg.crops.local_crops_scale,
+            cfg.crops.local_crops_number,
+            global_crops_size=cfg.crops.global_crops_size,
+            local_crops_size=cfg.crops.local_crops_size,
+        )
+    elif cfg.data_transform=="hema":
+            data_transform = DataAugmentationHEMA(
+            cfg.crops.global_crops_scale,
+            cfg.crops.local_crops_scale,
+            cfg.crops.local_crops_number,
+            global_crops_size=cfg.crops.global_crops_size,
+            local_crops_size=cfg.crops.local_crops_size,
+        )
 
-    data_transform = DataAugmentationDINO(
-        cfg.crops.global_crops_scale,
-        cfg.crops.local_crops_scale,
-        cfg.crops.local_crops_number,
-        global_crops_size=cfg.crops.global_crops_size,
-        local_crops_size=cfg.crops.local_crops_size,
-    )
 
     collate_fn = partial(
         collate_data_and_cast,
