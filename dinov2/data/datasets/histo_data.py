@@ -381,7 +381,9 @@ class HemaStandardDataset(VisionDataset):
         try:
             image , filepath = self.get_image_data(index)
         except Exception as e:
-            print(f"can not read image for sample {index, e,self.patches[index]}")
+            adjusted_index=index%self.true_len
+            filepath = self.patches[adjusted_index]
+            print(f"can not read image for sample {index, e,filepath}")
             return self.__getitem__(index + 1)
 
         target = self.get_target(index)
