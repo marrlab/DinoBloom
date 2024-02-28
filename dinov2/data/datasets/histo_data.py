@@ -375,7 +375,7 @@ class HemaStandardDataset(VisionDataset):
                 content = file.read()
             file_list = content.splitlines()
             self.patches.extend(file_list)
-
+        self.true_len=len(self.patches)
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
 
         try:
@@ -395,7 +395,8 @@ class HemaStandardDataset(VisionDataset):
 
     def get_image_data(self, index: int, dimension=224) -> Image:
         # Load image from jpeg file
-        filepath = self.patches[index]
+        adjusted_index=index%self.true_len
+        filepath = self.patches[adjusted_index]
         patch = Image.open(filepath).convert(mode="RGB").resize((dimension,dimension),Image.Resampling.LANCZOS)
         return patch, filepath
 
