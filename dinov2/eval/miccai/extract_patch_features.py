@@ -8,6 +8,8 @@ import torch
 import tqdm
 from models.return_model import get_models, get_transforms
 from torch.utils.data import DataLoader
+from torch.utils.data import Dataset
+from PIL import Image
 
 parser = argparse.ArgumentParser(description="Feature extraction")
 
@@ -24,17 +26,12 @@ parser.add_argument(
     type=str,
 )
 parser.add_argument(
-    "--image_path_train",
-    help="path to csv file",
-    default="./dinov2/eval/miccai/bild_pfade_with_label.csv",
+    "--image_path",
+    help="path to folder with images",
+    default="",
     type=str,
 )
-parser.add_argument(
-    "--image_path_test",
-    help="path to csv file",
-    default="./dinov2/eval/miccai/bild_pfade_with_label_test.csv",
-    type=str,
-)
+
 parser.add_argument(
     "--checkpoint",
     help="path to checkpoint",
@@ -96,11 +93,10 @@ def save_features_and_labels_individual(feature_extractor, dataloader, save_dir)
 
 
 def main(args):
-    image_paths = args.image_path_train
     image_test_paths = args.image_path_test
     model_name = args.model_name
     transform = get_transforms(model_name)
-    dataset = CustomImageDataset(df_test, transform=transform, class_to_label=class_to_label)
+    dataset = CustomImageDataset( transform=transform)
 
     # Create data loaders for the three datasets
     dataloader = DataLoader(dataset, batch_size=256, shuffle=False, num_workers=16)
@@ -110,7 +106,7 @@ def main(args):
         model_name = f"{model_name}_{Path(args.checkpoint).parent.name}_{Path(args.checkpoint).stem}"
     args.save_dir = Path(args.save_dir) / args.dataset / model_name
 
-    save_features_and_labels_individual(feature_extractor, train_dataloader, os.path.join(args.save_dir, "features"))
+    save_features_and_labels_individual(feature_extractor, dataloader, os.path.join(args.save_dir, "features"))
 
 
 
