@@ -8,7 +8,6 @@ import torch
 import tqdm
 from models.return_model import get_models, get_transforms
 from torch.utils.data import DataLoader
-from utils import CustomImageDataset, create_datasets
 
 parser = argparse.ArgumentParser(description="Feature extraction")
 
@@ -21,7 +20,7 @@ parser.add_argument(
 parser.add_argument(
     "--dataset",
     help="name of dataset",
-    default="NCT-CRC-100k-nonorm",
+    default="MIL-MLL",
     type=str,
 )
 parser.add_argument(
@@ -57,14 +56,26 @@ parser.add_argument(
     type=str,
 )
 
+class CustomImageDataset(Dataset):
+    def __init__(self, images, transform):
+        self.transform = transform
+        self.images=images
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, idx):
+        image_path = self.images[idx]
+
+        image = Image.open(image_path).convert("RGB").resize((224,224),Image.Resampling.LANCZOS)
+
+        if self.transform:
+            image = self.transform(image)
+        return image, Path(image_path).name
 
 def save_features_and_labels_individual(feature_extractor, dataloader, save_dir):
 
     os.makedirs(save_dir, exist_ok=True)
-    if os.listdir(save_dir):
-        print(f"Directory {save_dir} is not empty. Aborting.")
-        return
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     with torch.no_grad():
@@ -88,32 +99,19 @@ def main(args):
     image_paths = args.image_path_train
     image_test_paths = args.image_path_test
     model_name = args.model_name
-    df = pd.read_csv(image_paths)
-    df_test = pd.read_csv(image_test_paths)
-
     transform = get_transforms(model_name)
-
-    # make sure encoding is always the same
-    class_to_label = {"ADI": 0, "BACK": 1, "DEB": 2, "LYM": 3, "MUC": 4, "MUS": 5, "NORM": 6, "STR": 7, "TUM": 8}
-
-    train_dataset, val_dataset = create_datasets(df, transform, class_to_label=class_to_label)
-    test_dataset = CustomImageDataset(df_test, transform=transform, class_to_label=class_to_label)
+    dataset = CustomImageDataset(df_test, transform=transform, class_to_label=class_to_label)
 
     # Create data loaders for the three datasets
-    train_dataloader = DataLoader(train_dataset, batch_size=256, shuffle=False, num_workers=5)
-
-    val_dataloader = DataLoader(val_dataset, batch_size=256, shuffle=False, num_workers=5)
-
-    test_dataloader = DataLoader(test_dataset, batch_size=256, shuffle=False, num_workers=5)
-
+    dataloader = DataLoader(dataset, batch_size=256, shuffle=False, num_workers=16)
     feature_extractor = get_models(model_name, saved_model_path=args.checkpoint)
+
     if args.checkpoint is not None:
         model_name = f"{model_name}_{Path(args.checkpoint).parent.name}_{Path(args.checkpoint).stem}"
     args.save_dir = Path(args.save_dir) / args.dataset / model_name
 
-    save_features_and_labels_individual(feature_extractor, train_dataloader, os.path.join(args.save_dir, "train_data"))
-    save_features_and_labels_individual(feature_extractor, val_dataloader, os.path.join(args.save_dir, "val_data"))
-    save_features_and_labels_individual(feature_extractor, test_dataloader, os.path.join(args.save_dir, "test_data"))
+    save_features_and_labels_individual(feature_extractor, train_dataloader, os.path.join(args.save_dir, "features"))
+
 
 
 if __name__ == "__main__":

@@ -68,8 +68,16 @@ parser.add_argument(
 
 parser.add_argument(
     "--run_path",
+    "--model_path",
     help="path to run directory with models inside",
     default="/home/icb/valentin.koch/dinov2/vits_fixed1708263536.3059368/eval",
+    type=str,
+)
+
+parser.add_argument(
+    "--run_name",
+    help="name of wandb run",
+    default="debug",
     type=str,
 )
 
@@ -155,16 +163,15 @@ def main(args):
     # If you want to log the results with Weights & Biases (wandb), you can initialize a wandb run:
     wandb.init(
         entity="histo-collab",
-        project="dino_eval_crc",
-        name= model_name +"_" +args.experiment_name,
+        project= args.run_name ,
+        name=args.experiment_name ,
         config=args
     )
 
-    # sorry for the bad naming here, its not yet sorted :)
-    
-
-    if model_name in ["owkin","resnet50","resnet50_full","remedis"]:
+    if model_name in ["owkin","resnet50","resnet50_full","remedis","imagebind"]:
         sorted_paths=[None]
+    elif model_name in ["retccl","ctranspath"]:
+        sorted_paths=[Path(args.model_path)]
     else:
         sorted_paths = list(Path(args.run_path).rglob("*teacher_checkpoint.pth"))
 
@@ -185,10 +192,8 @@ def main(args):
 
         train_dir = os.path.join(feature_dir, "train_data")
         test_dir = os.path.join(feature_dir, "test_data")
-        if len(list(Path(train_dir).glob("*.h5"))) <100000:
-            save_features_and_labels_individual(feature_extractor, train_dataloader, train_dir)
-        if len(list(Path(test_dir).glob("*.h5"))) <7180:
-            save_features_and_labels_individual(feature_extractor, test_dataloader, test_dir)
+        save_features_and_labels_individual(feature_extractor, train_dataloader, train_dir)
+        save_features_and_labels_individual(feature_extractor, test_dataloader, test_dir)
 
         train_data, train_labels, test_data, test_labels = get_data(train_dir, test_dir)
         print("data fully loaded")
