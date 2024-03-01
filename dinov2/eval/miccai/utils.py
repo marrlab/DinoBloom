@@ -65,8 +65,13 @@ class CustomImageDataset(Dataset):
 
     def __getitem__(self, idx):
         image_path, label = self.df.iloc[idx]
+        try:
+            image = Image.open(image_path).convert("RGB")
+        except Exception as e:
+            print(e)
+            print(image_path)
+            return self.__getitem__(idx+1)
 
-        image = Image.open(image_path).convert("RGB")
         if self.transform:
             image = self.transform(image)
 
