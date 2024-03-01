@@ -112,7 +112,7 @@ parser.add_argument(
 
 
 def save_features_and_labels_individual(feature_extractor, dataloader, save_dir):
-    
+
     if len(dataloader)==len(Path(save_dir).glob("*.h5")):
         print("features already extracted, skipping")
         return
@@ -193,7 +193,7 @@ def main(args):
             
         print("loading checkpoint: ", checkpoint)
         feature_extractor = get_models(model_name, saved_model_path=checkpoint)
-        feature_dir = parent_dir / args.experiment_name
+        feature_dir = parent_dir / args.run_name
 
         train_dir = os.path.join(feature_dir, "train_data")
         test_dir = os.path.join(feature_dir, "test_data")

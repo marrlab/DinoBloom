@@ -84,6 +84,7 @@ parser.add_argument(
 
 parser.add_argument(
     "--evaluate_untrained_baseline",
+    "--baseline",
     help="Set to true if original dino should be tested.",
     action='store_true',
 )
@@ -237,7 +238,7 @@ def main(args):
             print("data fully loaded")
 
             if args.logistic_regression:
-                logreg_dir = parent_dir/ "log_reg_eval"
+                logreg_dir = parent_dir/ (args.wandb_project+"log_reg_eval")
                 log_reg = train_and_evaluate_logistic_regression(
                     train_data, train_labels, test_data, test_labels, logreg_dir, max_iter=1000
                 )
@@ -246,13 +247,13 @@ def main(args):
                 print("logistic_regression done")
 
             if args.umap:
-                umap_dir = parent_dir/ "umaps"
+                umap_dir = parent_dir/ (args.wandb_project+"umaps")
                 umap_train = create_umap(train_data, train_labels, umap_dir)
                 umap_test = create_umap(test_data, test_labels, umap_dir, "test")
                 print("umap done")
 
             if args.knn:
-                knn_dir = parent_dir / "knn_eval"
+                knn_dir = parent_dir / (args.wandb_project+"knn_eval")
                 knn_metrics = perform_knn(train_data, train_labels, test_data, test_labels, knn_dir)
                 knn_folds.append(knn_metrics)
                 print("knn done")
