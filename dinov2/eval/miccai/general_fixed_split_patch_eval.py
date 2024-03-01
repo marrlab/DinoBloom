@@ -112,6 +112,11 @@ parser.add_argument(
 
 
 def save_features_and_labels_individual(feature_extractor, dataloader, save_dir):
+    
+    if len(dataloader)==len(Path(save_dir).glob("*.h5")):
+        print("features already extracted, skipping")
+        return
+    
     print("extracting features..")
     os.makedirs(save_dir, exist_ok=True)
 
@@ -402,7 +407,6 @@ def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, 
     print(f"Accuracy: {accuracy}")
     print(f"balanced accuracy: {balanced_acc}")
     print(f"weighted_f1: {weighted_f1}")
-    print("Final Loss:", final_loss,)
     print(report)
 
     # Log the final loss, accuracy, and classification report using wandb.log
