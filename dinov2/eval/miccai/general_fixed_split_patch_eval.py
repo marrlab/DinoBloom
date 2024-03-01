@@ -111,10 +111,10 @@ parser.add_argument(
 )
 
 
-def save_features_and_labels_individual(feature_extractor, dataloader, save_dir):
+def save_features_and_labels_individual(feature_extractor, dataloader, save_dir,dataset):
 
-    if len(dataloader)==len(Path(save_dir).glob("*.h5")):
-        print("features already extracted, skipping")
+    if len(dataset)==len(Path(save_dir).glob("*.h5")):
+        print("features already extracted")
         return
     
     print("extracting features..")
@@ -197,8 +197,9 @@ def main(args):
 
         train_dir = os.path.join(feature_dir, "train_data")
         test_dir = os.path.join(feature_dir, "test_data")
-        save_features_and_labels_individual(feature_extractor, train_dataloader, train_dir)
-        save_features_and_labels_individual(feature_extractor, test_dataloader, test_dir)
+        
+        save_features_and_labels_individual(feature_extractor, train_dataloader, train_dir,train_dataset)
+        save_features_and_labels_individual(feature_extractor, test_dataloader, test_dir,test_dataset)
 
         train_data, train_labels, test_data, test_labels = get_data(train_dir, test_dir)
         print("data fully loaded")
