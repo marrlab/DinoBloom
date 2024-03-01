@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 from models.ctran import ctranspath
-from models.dinov2 import vit_base, vit_giant2, vit_large, vit_small
 from models.imagebind import imagebind_huge
 from models.resnet_retccl import resnet50 as retccl_res50
 from models.sam import build_sam_vit_b, build_sam_vit_h, build_sam_vit_l
@@ -43,32 +42,11 @@ def get_models(modelname, saved_model_path=None):
         model = get_res50()
     elif modelname.lower() == "resnet50_full":
         model = get_full_res50()
-    # elif modelname.lower() == "sam_vit_h":
-    #     model = get_sam_vit_h(saved_model_path)
-    # elif modelname.lower() == "sam_vit_b":
-    #     model = get_sam_vit_b(saved_model_path)
-    # elif modelname.lower() == "sam_vit_l":
-    #     model = get_sam_vit_l(saved_model_path)
+
     elif modelname.lower() == "imagebind":
         model = get_imagebind(saved_model_path)
     elif modelname.lower() == "beit_fb":
         model = BeitModel(device)    
-    # elif modelname.lower() == "dinov2_vits14_reg_downloaded":
-    #     model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14_reg")
-    # elif modelname.lower() == "dinov2_vitb14_downloaded":
-    #     model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitb14")
-    # elif modelname.lower() == "dinov2_vitl14":
-    #     model = get_dino_vit_l(saved_model_path)
-    # elif modelname.lower() == "dinov2_vitl14_downloaded":
-    #     model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitl14")
-    # elif modelname.lower() == "dinov2_vitg14":
-    #     model = get_dino_vit_g(saved_model_path)
-
-    # elif modelname.lower() == "dinov2_vitg14_downloaded":
-    #     model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitg14")
-
-    # elif modelname.lower() == "dinov2_vitg14_reg_downloaded":
-    #     model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitg14_reg")
 
     # --- our finetuned models
     elif modelname.lower() in ["dinov2_vits14","dinov2_vitb14","dinov2_vitl14","dinov2_vitg14"]:
@@ -99,7 +77,6 @@ def get_vim_finetuned(checkpoint=None):
 
     model = get_vision_mamba_model(checkpoint=checkpoint)
     return model
-
 
 # for 224
 def get_dino_finetuned_downloaded(model_path, modelname):

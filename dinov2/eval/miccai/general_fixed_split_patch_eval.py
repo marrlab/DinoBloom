@@ -303,7 +303,7 @@ def perform_knn(train_data, train_labels, test_data, test_labels, save_dir):
         weighted_f1 = f1_score(test_labels, test_predictions, average="weighted")
 
         print(f"n_neighbors = {n_neighbors}")
-        print(f"Accuracy: {accuracy}")
+
 
         ## Calculate the classification report
         report = classification_report(test_labels, test_predictions, output_dict=True)
@@ -311,7 +311,7 @@ def perform_knn(train_data, train_labels, test_data, test_labels, save_dir):
         print(f"report: {report}")
 
         current_metrics = {"accuracy": accuracy, "balanced_accuracy": balanced_acc, "weighted_f1": weighted_f1}
-
+        print(current_metrics)
         # Store the metrics dictionary in the metrics_dict with a key indicating the number of neighbors
         metrics_dict[f"knn_{n_neighbors}"] = current_metrics
         # Convert the report to a Pandas DataFrame for logging
@@ -400,10 +400,14 @@ def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, 
     # some prints
     print(f"Final Loss: {loss}")
     print(f"Accuracy: {accuracy}")
+    print(f"balanced accuracy: {balanced_acc}")
+    print(f"weighted_f1: {weighted_f1}")
+    print("Final Loss:", final_loss,)
     print(report)
 
     # Log the final loss, accuracy, and classification report using wandb.log
     final_loss = loss
+    
     return {
         "Final Loss": final_loss,
         "Accuracy": accuracy,
