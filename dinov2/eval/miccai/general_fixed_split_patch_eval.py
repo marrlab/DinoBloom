@@ -171,7 +171,7 @@ def main(args):
     if model_name in ["owkin","resnet50","resnet50_full","remedis","imagebind"]:
         sorted_paths=[None]
     elif model_name in ["retccl","ctranspath"]:
-        sorted_paths=[Path(args.model_path)]
+        sorted_paths=[Path(args.run_path)]
     else:
         sorted_paths = list(Path(args.run_path).rglob("*teacher_checkpoint.pth"))
 
@@ -407,7 +407,7 @@ def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, 
 
     # Log the final loss, accuracy, and classification report using wandb.log
     final_loss = loss
-    
+
     return {
         "Final Loss": final_loss,
         "Accuracy": accuracy,
