@@ -113,7 +113,7 @@ parser.add_argument(
 
 def save_features_and_labels_individual(feature_extractor, dataloader, save_dir,dataset):
 
-    if len(dataset)==len(Path(save_dir).glob("*.h5")):
+    if len(dataset)==len(list(Path(save_dir).glob("*.h5"))):
         print("features already extracted")
         return
     
