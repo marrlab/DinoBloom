@@ -16,26 +16,26 @@ parser = argparse.ArgumentParser(description="Feature extraction")
 parser.add_argument(
     "--model_name",
     help="name of model",
-    default="dinov2_finetuned",
+    default="dinov2_vitb14", # ctranspath, resnet50, resnet50_full, owkin, dinov2_vits14
     type=str,
 )
 parser.add_argument(
     "--dataset",
     help="name of dataset",
-    default="MIL-MLL",
+    default="wbc_mil_Dataset",
     type=str,
 )
 parser.add_argument(
     "--image_path",
     help="path to folder with images",
-    default="",
+    default="/lustre/groups/labs/marr/qscd01/datasets/210526_mll_mil_pseudonymized/splitted_data/test",
     type=str,
 )
 
 parser.add_argument(
     "--checkpoint",
     help="path to checkpoint",
-    default=None,
+    default="/lustre/groups/shared/users/peng_marr/HistoDINO/models/vitb_hema_16999.pth", #"/lustre/groups/shared/users/peng_marr/pretrained_models/owkin.pth", None
     type=str,
 )
 parser.add_argument(
@@ -43,13 +43,13 @@ parser.add_argument(
     "--save-dir",
     "-s",
     help="path save directory",
-    default="/lustre/groups/shared/users/peng_marr/HistoDINO/features",
+    default="/lustre/groups/labs/marr/qscd01/datasets/210526_mll_mil_pseudonymized/splitted_extracted_features/dinov2_vitb14/test",
     type=str,
 )
 parser.add_argument(
     "--model_path",
     help="path of model checkpoint",
-    default="/lustre/groups/shared/histology_data/models/benedikt_nct_baseline_vits.pth",
+    default=None,
     type=str,
 )
 
@@ -69,6 +69,35 @@ class CustomImageDataset(Dataset):
         if self.transform:
             image = self.transform(image)
         return image, Path(image_path).name
+    
+
+class wbc_mil_Dataset(Dataset):
+    def __init__(self, data_path, transform):
+        self.transform = transform
+        self.images = []
+        
+        clses = os.listdir(data_path)
+        for cls in clses:
+            patients = os.listdir(os.path.join(data_path, cls))
+            for patient in patients:
+                cells = os.listdir(os.path.join(data_path, cls, patient))
+                for cell in cells:
+                    if cell.lower().endswith('.tif'):
+                        cell_path = os.path.join(data_path, cls, patient, cell)
+                        self.images.append(cell_path)
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, idx):
+        image_path = self.images[idx]
+        image = Image.open(image_path).convert("RGB")
+
+        if self.transform:
+            image = self.transform(image)
+
+        return image, image_path
+    
 
 def save_features_and_labels_individual(feature_extractor, dataloader, save_dir):
 
@@ -78,25 +107,25 @@ def save_features_and_labels_individual(feature_extractor, dataloader, save_dir)
     with torch.no_grad():
         feature_extractor.eval()
 
-        for images, labels, names in tqdm.tqdm(dataloader):
+        for images, image_paths in tqdm.tqdm(dataloader):
             images = images.to(device)
             batch_features = feature_extractor(images)
 
-            labels_np = labels.numpy()
+            for img_name, img_features in zip(image_paths, batch_features):
+                img_name = img_name.replace('/splitted_data/', '/splitted_extracted_features/dinov2_vitb14/')
+                h5_filename = f"{img_name.split('.')[0]}.h5"
 
-            for img_name, img_features, img_label in zip(names, batch_features, labels_np):
-                h5_filename = os.path.join(save_dir, f"{img_name}.h5")
+                os.makedirs(os.path.dirname(h5_filename), exist_ok=True)
 
                 with h5py.File(h5_filename, "w") as hf:
                     hf.create_dataset("features", data=img_features.cpu().numpy())
-                    hf.create_dataset("labels", data=img_label)
 
 
 def main(args):
-    image_test_paths = args.image_path_test
+    image_paths = args.image_path
     model_name = args.model_name
     transform = get_transforms(model_name)
-    dataset = CustomImageDataset( transform=transform)
+    dataset = wbc_mil_Dataset(transform=transform, data_path=image_paths)
 
     # Create data loaders for the three datasets
     dataloader = DataLoader(dataset, batch_size=256, shuffle=False, num_workers=16)
@@ -104,9 +133,9 @@ def main(args):
 
     if args.checkpoint is not None:
         model_name = f"{model_name}_{Path(args.checkpoint).parent.name}_{Path(args.checkpoint).stem}"
-    args.save_dir = Path(args.save_dir) / args.dataset / model_name
+    args.save_dir = Path(args.save_dir)
 
-    save_features_and_labels_individual(feature_extractor, dataloader, os.path.join(args.save_dir, "features"))
+    save_features_and_labels_individual(feature_extractor, dataloader, os.path.join(args.save_dir))
 
 
 
