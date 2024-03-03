@@ -111,8 +111,7 @@ parser.add_argument(
 parser.add_argument(
     "--umap",
     help="perform umap or not",
-    default=True,
-    type=bool,
+    action='store_true',
 )
 
 parser.add_argument(
