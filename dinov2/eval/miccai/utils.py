@@ -80,10 +80,14 @@ class CustomImageDataset(Dataset):
         return image, encoded_label, Path(image_path).stem
 
 class PathImageDataset(Dataset):
-    def __init__(self, image_path, transform,filetype=".tiff",img_size=(224,224)):
+    def __init__(self, image_path, transform,class_to_label=None,filetype=".tiff",img_size=(224,224)):
         self.images = list(Path(image_path).rglob("*"+filetype))
         self.transform = transform
-        self.class_to_label = create_label_mapping_from_paths(self.images)
+        
+        if class_to_label is None:
+            class_to_label=create_label_mapping_from_paths(self.images)
+
+        self.class_to_label = class_to_label
         self.img_size=img_size
         print(self.class_to_label)
 

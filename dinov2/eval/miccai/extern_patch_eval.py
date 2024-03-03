@@ -18,7 +18,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from utils import PathImageDataset
+from utils import PathImageDataset,create_label_mapping_from_paths
 import wandb
 
 parser = argparse.ArgumentParser(description="Feature extraction")
@@ -41,9 +41,10 @@ parser.add_argument(
 
 parser.add_argument(
     "--filetype",
-    help="name of filending",
-    default=".jpg",
+    help="name of file endings, matek=.tiff, acevedo .jpg, mll .TIF",
+    default=[".jpg",".tiff",".TIF"],  # Set the default as a list with a single item
     type=str,
+    nargs='*',  # This allows multiple values for --filetype
 )
 
 parser.add_argument(
@@ -62,10 +63,19 @@ parser.add_argument(
 # acevedo: /lustre/groups/labs/marr/qscd01/datasets/Acevedo_20/PBC_dataset_normal_DIB/
 #matek: /lustre/groups/labs/marr/qscd01/datasets/191024_AML_Matek/AML-Cytomorphology_LMU/
 parser.add_argument(
-    "--dataset_path",
+    "--train_dataset",
     help="path to datasetfolder",
-    default="/lustre/groups/labs/marr/qscd01/datasets/Acevedo_20/PBC_dataset_normal_DIB/",
+    default="/lustre/groups/labs/marr/qscd01/datasets/armingruber/_Domains/Acevedo_cropped",
     type=str,
+)
+
+parser.add_argument(
+    "--test_datasets",
+    help="path to datasetfolder",
+    default=["/lustre/groups/labs/marr/qscd01/datasets/armingruber/_Domains/Matek_cropped/",
+             "/lustre/groups/labs/marr/qscd01/datasets/armingruber/_Domains/MLL_20221220/"],
+    type=str,
+    nargs='*',
 )
 
 parser.add_argument(
@@ -217,11 +227,13 @@ def main(args):
         all_dataset_features=[]
         all_dataset_labels=[]
 
-        for dataset_path in dataset_paths:
+        create_label_mapping_from_paths(Path(args.train_dataset).glob("*"+args.filetype[0]))
+
+        for i,dataset_path in enumerate(dataset_paths):
             dataset_name=dataset_path.stem
             feature_dir = parent_dir / args.experiment_name / (dataset_name+"_features")
             
-            dataset = PathImageDataset(dataset_path, transform=transform, filetype=args.filetype)
+            dataset = PathImageDataset(dataset_path, transform=transform, filetype=args.filetype[i])
             dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
             save_features_and_labels(feature_extractor, dataloader, feature_dir, len(dataset))
