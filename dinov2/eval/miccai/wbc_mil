@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH -o ./out/out_dinov2_vitb_orig_test.txt
-#SBATCH -e ./out/error_dinov2_vitb_orig_test.txt
+#SBATCH -o ./out/out_out_dinov2_vits_orig.txt
+#SBATCH -e ./out/error_out_dinov2_vits_orig.txt
 
 #SBATCH -J feat_ex_dino
 #SBATCH -p gpu_p
@@ -18,4 +18,4 @@ conda activate dinov2
 
 export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH
 
-python extract_patch_features.py
+python wbc_mil.py

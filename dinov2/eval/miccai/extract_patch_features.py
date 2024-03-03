@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser(description="Feature extraction")
 parser.add_argument(
     "--model_name",
     help="name of model",
-    default="dinov2_vitb14", # ctranspath, resnet50, resnet50_full, owkin, dinov2_vits14
+    default="dinov2_vitb14", # ctranspath, resnet50, resnet50_full, owkin, dinov2_vits14, dinov2_vitb14
     type=str,
 )
 parser.add_argument(
@@ -35,7 +35,7 @@ parser.add_argument(
 parser.add_argument(
     "--checkpoint",
     help="path to checkpoint",
-    default="/lustre/groups/shared/users/peng_marr/HistoDINO/models/vitb_hema_16999.pth", #"/lustre/groups/shared/users/peng_marr/pretrained_models/owkin.pth", None
+    default=None, #"/lustre/groups/shared/users/peng_marr/pretrained_models/owkin.pth", None
     type=str,
 )
 parser.add_argument(
@@ -43,7 +43,7 @@ parser.add_argument(
     "--save-dir",
     "-s",
     help="path save directory",
-    default="/lustre/groups/labs/marr/qscd01/datasets/210526_mll_mil_pseudonymized/splitted_extracted_features/dinov2_vitb14/test",
+    default="/lustre/groups/labs/marr/qscd01/datasets/210526_mll_mil_pseudonymized/splitted_extracted_features/dinov2_vitb_orig/test",
     type=str,
 )
 parser.add_argument(
@@ -112,7 +112,7 @@ def save_features_and_labels_individual(feature_extractor, dataloader, save_dir)
             batch_features = feature_extractor(images)
 
             for img_name, img_features in zip(image_paths, batch_features):
-                img_name = img_name.replace('/splitted_data/', '/splitted_extracted_features/dinov2_vitb14/')
+                img_name = img_name.replace('/splitted_data/', '/splitted_extracted_features/dinov2_vitb_orig/')
                 h5_filename = f"{img_name.split('.')[0]}.h5"
 
                 os.makedirs(os.path.dirname(h5_filename), exist_ok=True)
