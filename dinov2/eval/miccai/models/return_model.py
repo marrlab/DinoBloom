@@ -204,7 +204,9 @@ def get_transforms(model_name):
         std = (58.395, 57.12, 57.375)
     else:
         raise ValueError("Model name not found")
-
+    
+    size=(size,size)
+    
     transforms_list = [transforms.Resize(size), transforms.ToTensor(), transforms.Normalize(mean=mean, std=std)]
 
     if "beit_fb" in model_name.lower():
