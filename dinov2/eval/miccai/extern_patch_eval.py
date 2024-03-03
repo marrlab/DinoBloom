@@ -18,7 +18,8 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from utils import PathImageDataset,create_label_mapping_from_paths
+from utils import PathImageDataset, create_label_mapping_from_paths
+
 import wandb
 
 parser = argparse.ArgumentParser(description="Feature extraction")
@@ -230,7 +231,7 @@ def main(args):
         create_label_mapping_from_paths(Path(args.train_dataset).glob("*"+args.filetype[0]))
 
         for i,dataset_path in enumerate(dataset_paths):
-            dataset_name=dataset_path.stem
+            dataset_name=Path(dataset_path).stem
             feature_dir = parent_dir / args.experiment_name / (dataset_name+"_features")
             
             dataset = PathImageDataset(dataset_path, transform=transform, filetype=args.filetype[i])
