@@ -256,8 +256,8 @@ def main(args):
         for i, (train_indices, test_indices) in enumerate(folds):
             assert not set(train_indices) & set(test_indices), "There are common indices in train and test lists."
 
-            train_data=train_dataset_labels[train_indices]
-            train_labels=train_dataset_features[train_indices]
+            train_data= train_dataset_features[train_indices]
+            train_labels=train_dataset_labels[train_indices]
 
             test_data_in_domain=train_dataset_features[test_indices]
             test_labels_in_domain=train_dataset_labels[test_indices]
