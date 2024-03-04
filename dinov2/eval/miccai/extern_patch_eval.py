@@ -292,9 +292,15 @@ def main(args):
                 step = int(parent_dir.name.split("_")[1])
             else: 
                 step=0
-            
+
+        print("-----------------------------------")
+        print("knn1: ")
         aggregated_knn_1=average_dicts(knn_folds_1)
+        print("-----------------------------------")
+        print("knn20: ")
         aggregated_knn_20=average_dicts(knn_folds_20)
+        print("-----------------------------------")
+        print("logreg: ")
         aggregated_log_reg=average_dicts(log_reg_folds)
 
         wandb.log({"knn1": aggregated_knn_1,"knn20": aggregated_knn_20,"log_reg": aggregated_log_reg,}, step=step)
@@ -302,13 +308,12 @@ def main(args):
 
 def average_dicts(fold_dicts):
     #shape of fold_dicts: (5,n)
-    print(fold_dicts)
-    print("-----------------------------------")
-    aggregated={}
+
+    all_aggregated={}
     for i in range(len(fold_dicts[0])): #loop over evaluated datasets
         filtered_dicts=[fold_dict[i] for fold_dict in fold_dicts]
-        print(filtered_dicts)
-        print("-----------------------------------")
+
+        aggregated={}
         for key in filtered_dicts[0]:
             print(key)
             # Extract the list of values for the current key from all dictionaries
@@ -322,9 +327,11 @@ def average_dicts(fold_dicts):
             aggregated[key] = avg
             aggregated[key+"_std"]=std_dev
 
-    print("-----------------------------------")
-    print(aggregated)
-
+        all_aggregated[str(i)]=aggregated
+        print("------------")
+        print("aggregated dataset ", i)
+        print(aggregated)
+    return all_aggregated
 
 
 def process_file(file_name):
