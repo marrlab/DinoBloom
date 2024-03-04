@@ -305,7 +305,7 @@ def main(args):
 def average_dicts(fold_dicts):
     #shape of fold_dicts: (5,n)
     aggregated={}
-    for i in range(fold_dicts[0]): #loop over evaluated datasets
+    for i in range(len(fold_dicts[0])): #loop over evaluated datasets
         filtered_dicts=[fold_dict[i] for fold_dict in fold_dicts]
         for key in filtered_dicts[0]:
             # Extract the list of values for the current key from all dictionaries
