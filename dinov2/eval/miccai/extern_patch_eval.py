@@ -297,17 +297,20 @@ def main(args):
         aggregated_knn_20=average_dicts(knn_folds_20)
         aggregated_log_reg=average_dicts(log_reg_folds)
 
-        wandb.log({"knn1": aggregated_knn_1,"knn20": aggregated_knn_20}, step=step)
-        wandb.log(
-            {"log_reg": aggregated_log_reg, "umap_test": wandb.Image(umap_test), "umap_train": wandb.Image(umap_train)}, step=step
-        )
+        wandb.log({"knn1": aggregated_knn_1,"knn20": aggregated_knn_20,"log_reg": aggregated_log_reg,}, step=step)
+
 
 def average_dicts(fold_dicts):
     #shape of fold_dicts: (5,n)
+    print(fold_dicts)
+    print("-----------------------------------")
     aggregated={}
     for i in range(len(fold_dicts[0])): #loop over evaluated datasets
         filtered_dicts=[fold_dict[i] for fold_dict in fold_dicts]
+        print(filtered_dicts)
+        print("-----------------------------------")
         for key in filtered_dicts[0]:
+            print(key)
             # Extract the list of values for the current key from all dictionaries
             values = [d[key] for d in filtered_dicts]
             
@@ -321,7 +324,7 @@ def average_dicts(fold_dicts):
 
     print("-----------------------------------")
     print(aggregated)
-    print("-----------------------------------")
+
 
 
 def process_file(file_name):
