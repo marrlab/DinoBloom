@@ -1,0 +1,22 @@
+#!/bin/bash
+
+#SBATCH -o ./out/out_owkin.txt
+#SBATCH -e ./out/error_owkin.txt
+
+#SBATCH -J owkin
+#SBATCH -p gpu_p
+#SBATCH -c 28
+#SBATCH --mem=240G
+#SBATCH -q gpu_long
+#SBATCH --time=96:00:00
+#SBATCH --nice=10000
+#SBATCH --gres=gpu:1
+#SBATCH -C a100_40gb
+# Environment setup
+
+source /home/aih/${USER}/.bashrc
+conda activate dinov2
+
+export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH
+
+python ../wbc_mil.py --data_path owkin --wandb_name wbc_mil_owkin
