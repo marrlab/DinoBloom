@@ -319,6 +319,9 @@ def average_dicts(fold_dicts):
             aggregated[key] = avg
             aggregated[key+"_std"]=std_dev
 
+    print("-----------------------------------")
+    print(aggregated)
+    print("-----------------------------------")
 
 
 def process_file(file_name):
@@ -354,7 +357,7 @@ def get_data(all_data):
     return features, labels
 
 
-def perform_knn(train_data, train_labels, test_data, test_labels, save_dir,n_neighbors):
+def perform_knn(train_data, train_labels, all_test_data, all_test_labels, save_dir,n_neighbors):
     # Define a range of values for n_neighbors to search
 
     os.makedirs(save_dir, exist_ok=True)
@@ -364,29 +367,31 @@ def perform_knn(train_data, train_labels, test_data, test_labels, save_dir,n_nei
 
     # Fit the KNN classifier to the training data
     knn.fit(train_data, train_labels)
-
+    performance_dicts=[]
+    for test_features,test_labels in zip(all_test_data,all_test_labels):
     # Predict labels for the test data
-    test_predictions = knn.predict(test_data)
+        test_predictions = knn.predict(test_features)
 
-    # Evaluate the classifier
-    accuracy = accuracy_score(test_labels, test_predictions)
-    balanced_acc = balanced_accuracy_score(test_labels, test_predictions)
-    weighted_f1 = f1_score(test_labels, test_predictions, average="weighted")
+        # Evaluate the classifier
+        accuracy = accuracy_score(test_labels, test_predictions)
+        balanced_acc = balanced_accuracy_score(test_labels, test_predictions)
+        weighted_f1 = f1_score(test_labels, test_predictions, average="weighted")
 
-    print(f"n_neighbors = {n_neighbors}")
-    print(f"balanced accuracy: {balanced_acc}")
-    print(f"accuracy: {accuracy}")
-    print(f"weighted f1: {weighted_f1}")
+        print(f"n_neighbors = {n_neighbors}")
+        print(f"balanced accuracy: {balanced_acc}")
+        print(f"accuracy: {accuracy}")
+        print(f"weighted f1: {weighted_f1}")
 
-    metrics = {"accuracy": accuracy, "balanced_accuracy": balanced_acc, "weighted_f1": weighted_f1}
+        metrics = {"accuracy": accuracy, "balanced_accuracy": balanced_acc, "weighted_f1": weighted_f1}
+        performance_dict={
+            "Accuracy": accuracy,
+            "Balanced_Acc": balanced_acc,
+            "Weighted_F1": weighted_f1,
+        }
+        print(performance_dict)
+        performance_dicts.append(performance_dict)
 
-    df_labels_to_save = pd.DataFrame({"True Labels": test_labels, "Predicted Labels": test_predictions})
-    filename = f"{Path(save_dir).name}_labels_and_predictions.csv"
-    file_path = os.path.join(save_dir, filename)
-    # Speichern des DataFrames in der CSV-Datei
-    df_labels_to_save.to_csv(file_path, index=False)
-
-    return metrics
+    return performance_dicts
 
 
 def create_umap(data, labels, save_dir, filename_addon="train"):
