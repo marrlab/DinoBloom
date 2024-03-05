@@ -26,3 +26,4 @@ __MACOSX/blood_sampels/*
 dinov2/data/blood_sampels/*
 *.png
 dinov2/data/acevedo samples/*
+figures/**
