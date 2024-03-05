@@ -60,7 +60,7 @@ parser.add_argument(
     default=64,
     type=int,
 )
-
+# vits_f1/eval/training_4999/
 # acevedo: /lustre/groups/labs/marr/qscd01/datasets/Acevedo_20/PBC_dataset_normal_DIB/
 #matek: /lustre/groups/labs/marr/qscd01/datasets/191024_AML_Matek/AML-Cytomorphology_LMU/
 parser.add_argument(
@@ -82,7 +82,7 @@ parser.add_argument(
 parser.add_argument(
     "--model_path",
     help="path to run directory with models inside",
-    default="/home/icb/valentin.koch/dinov2/vits_hema_v2_rankloss_1708872068.641858/eval",
+    default="/home/icb/valentin.koch/dinov2/vits_f1/eval/training_4999/",
     type=str,
 )
 
@@ -199,7 +199,7 @@ def main(args):
             
         print("loading checkpoint: ", checkpoint)
         feature_extractor = get_models(model_name, saved_model_path=checkpoint)
-        dataset_paths=[*args.train_datasets,args.test_datasets]
+        dataset_paths=[*args.train_datasets,args.test_dataset]
 
         all_dataset_features=[]
         all_dataset_labels=[]
