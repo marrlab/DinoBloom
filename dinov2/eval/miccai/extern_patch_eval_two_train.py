@@ -18,7 +18,8 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from utils import PathImageDataset
+from utils import PathImageDataset, create_label_mapping_from_paths
+
 import wandb
 
 parser = argparse.ArgumentParser(description="Feature extraction")
@@ -41,9 +42,10 @@ parser.add_argument(
 
 parser.add_argument(
     "--filetype",
-    help="name of filending",
-    default=".jpg",
+    help="name of file endings, matek=.tiff, acevedo .jpg, mll .TIF",
+    default=[".jpg",".tiff",".TIF"],  # Set the default as a list with a single item
     type=str,
+    nargs='*',  # This allows multiple values for --filetype
 )
 
 parser.add_argument(
@@ -62,10 +64,19 @@ parser.add_argument(
 # acevedo: /lustre/groups/labs/marr/qscd01/datasets/Acevedo_20/PBC_dataset_normal_DIB/
 #matek: /lustre/groups/labs/marr/qscd01/datasets/191024_AML_Matek/AML-Cytomorphology_LMU/
 parser.add_argument(
-    "--dataset_path",
+    "--train_dataset",
     help="path to datasetfolder",
-    default="/lustre/groups/labs/marr/qscd01/datasets/Acevedo_20/PBC_dataset_normal_DIB/",
+    default="/lustre/groups/labs/marr/qscd01/datasets/armingruber/_Domains/Acevedo_cropped",
     type=str,
+)
+
+parser.add_argument(
+    "--test_datasets",
+    help="path to datasetfolder",
+    default=["/lustre/groups/labs/marr/qscd01/datasets/armingruber/_Domains/Matek_cropped/",
+             "/lustre/groups/labs/marr/qscd01/datasets/armingruber/_Domains/MLL_20221220/"],
+    type=str,
+    nargs='*',
 )
 
 parser.add_argument(
@@ -84,7 +95,6 @@ parser.add_argument(
 
 parser.add_argument(
     "--evaluate_untrained_baseline",
-    "--baseline",
     help="Set to true if original dino should be tested.",
     action='store_true',
 )
@@ -101,8 +111,7 @@ parser.add_argument(
 parser.add_argument(
     "--umap",
     help="perform umap or not",
-    default=True,
-    type=bool,
+    action='store_true',
 )
 
 parser.add_argument(
@@ -117,6 +126,9 @@ parser.add_argument(
 
 def save_features_and_labels(feature_extractor, dataloader, save_dir,dataset_len):
 
+    if dataset_len==len(list(Path(save_dir).glob("*.h5"))):
+        print("features already extracted")
+        return
     print("extracting features..")
     os.makedirs(save_dir, exist_ok=True)
 
@@ -210,66 +222,116 @@ def main(args):
             
         print("loading checkpoint: ", checkpoint)
         feature_extractor = get_models(model_name, saved_model_path=checkpoint)
-        feature_dir = parent_dir / args.experiment_name / "features"
-        
-        dataset = PathImageDataset(args.dataset_path, transform=transform, filetype=args.filetype)
-        dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+        dataset_paths=[args.train_dataset,*args.test_datasets]
 
-        save_features_and_labels(feature_extractor, dataloader, feature_dir,len(dataset))
-        
+        all_dataset_features=[]
+        all_dataset_labels=[]
+
+        create_label_mapping_from_paths(Path(args.train_dataset).glob("*"+args.filetype[0]))
+
+        for i,dataset_path in enumerate(dataset_paths):
+            dataset_name=Path(dataset_path).stem
+            feature_dir = parent_dir / args.experiment_name / (dataset_name+"_features")
+            
+            dataset = PathImageDataset(dataset_path, transform=transform, filetype=args.filetype[i])
+            dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+
+            save_features_and_labels(feature_extractor, dataloader, feature_dir, len(dataset))
+    
+            all_features=list(feature_dir.glob("*.h5"))
+            features,labels=get_data(all_features)
+            all_dataset_features.append(features)
+            all_dataset_labels.append(labels)
+
         log_reg_folds=[]
-        knn_folds=[]
+        knn_folds_1=[]
+        knn_folds_20=[]
 
-        all_features=list(feature_dir.glob("*.h5"))
-        
-        data,labels=get_data(all_features)
-        folds=create_stratified_folds(labels)
+        train_dataset_labels=all_dataset_labels[0]
+        train_dataset_features=all_dataset_features[0]
+
+        folds=create_stratified_folds(train_dataset_labels)
 
         for i, (train_indices, test_indices) in enumerate(folds):
             assert not set(train_indices) & set(test_indices), "There are common indices in train and test lists."
 
-            train_data=data[train_indices]
-            train_labels=labels[train_indices]
+            train_data= train_dataset_features[train_indices]
+            train_labels=train_dataset_labels[train_indices]
 
-            test_data=data[test_indices]
-            test_labels=labels[test_indices]
+            test_data_in_domain=train_dataset_features[test_indices]
+            test_labels_in_domain=train_dataset_labels[test_indices]
             # Create data loaders for the  datasets
 
-
             print("data fully loaded")
-
+            joined_test_data=[test_data_in_domain,*all_dataset_features[1:]]
+            joined_test_labels=[test_labels_in_domain,*all_dataset_labels[1:]]
             if args.logistic_regression:
-                logreg_dir = parent_dir/ (args.wandb_project+"log_reg_eval")
+                logreg_dir = parent_dir/ "log_reg_eval"
                 log_reg = train_and_evaluate_logistic_regression(
-                    train_data, train_labels, test_data, test_labels, logreg_dir, max_iter=1000
+                    train_data, train_labels, joined_test_data,joined_test_labels, logreg_dir, max_iter=1000
                 )
 
                 log_reg_folds.append(log_reg)
                 print("logistic_regression done")
 
             if args.umap:
-                umap_dir = parent_dir/ (args.wandb_project+"umaps")
+                umap_dir = parent_dir/ "umaps"
                 umap_train = create_umap(train_data, train_labels, umap_dir)
-                umap_test = create_umap(test_data, test_labels, umap_dir, "test")
+                umap_test = create_umap(joined_test_data, joined_test_labels, umap_dir, "test")
                 print("umap done")
 
             if args.knn:
-                knn_dir = parent_dir / (args.wandb_project+"knn_eval")
-                knn_metrics = perform_knn(train_data, train_labels, test_data, test_labels, knn_dir)
-                knn_folds.append(knn_metrics)
+                knn_dir = parent_dir / "knn_eval"
+                knn_metrics_1 = perform_knn(train_data, train_labels, joined_test_data, joined_test_labels, knn_dir,1)
+                knn_folds_1.append(knn_metrics_1)
+                knn_metrics_20 = perform_knn(train_data, train_labels, joined_test_data, joined_test_labels, knn_dir,20)
+                knn_folds_20.append(knn_metrics_20)
                 print("knn done")
 
             if checkpoint is not None and len(sorted_paths)>1:
                 step = int(parent_dir.name.split("_")[1])
             else: 
                 step=0
-            
-        aggregated_knn=average_dicts(knn_folds)
+
+        print("-----------------------------------")
+        print("knn1: ")
+        aggregated_knn_1=average_dicts(knn_folds_1)
+        print("-----------------------------------")
+        print("knn20: ")
+        aggregated_knn_20=average_dicts(knn_folds_20)
+        print("-----------------------------------")
+        print("logreg: ")
         aggregated_log_reg=average_dicts(log_reg_folds)
-        wandb.log(aggregated_knn, step=step)
-        wandb.log(
-            {"log_reg": aggregated_log_reg, "umap_test": wandb.Image(umap_test), "umap_train": wandb.Image(umap_train)}, step=step
-        )
+
+        wandb.log({"knn1": aggregated_knn_1,"knn20": aggregated_knn_20,"log_reg": aggregated_log_reg,}, step=step)
+
+
+def average_dicts(fold_dicts):
+    #shape of fold_dicts: (5,n)
+
+    all_aggregated={}
+    for i in range(len(fold_dicts[0])): #loop over evaluated datasets
+        filtered_dicts=[fold_dict[i] for fold_dict in fold_dicts]
+
+        aggregated={}
+        for key in filtered_dicts[0]:
+            print(key)
+            # Extract the list of values for the current key from all dictionaries
+            values = [d[key] for d in filtered_dicts]
+            
+            # Calculate the average and standard deviation
+            avg = np.mean(values)
+            std_dev = np.std(values)
+            
+            # Store the results
+            aggregated[key] = avg
+            aggregated[key+"_std"]=std_dev
+
+        all_aggregated[str(i)]=aggregated
+        print("------------")
+        print("aggregated dataset ", i)
+        print(aggregated)
+    return all_aggregated
 
 
 def process_file(file_name):
@@ -305,23 +367,20 @@ def get_data(all_data):
     return features, labels
 
 
-def perform_knn(train_data, train_labels, test_data, test_labels, save_dir):
+def perform_knn(train_data, train_labels, all_test_data, all_test_labels, save_dir,n_neighbors):
     # Define a range of values for n_neighbors to search
-    n_neighbors_values = [1, 20]
-    # n_neighbors_values = [1, 2, 5, 10, 20, 50, 100, 500]
-    # n_neighbors_values = [1, 2, 3, 4, 5] # -> for testing
-    metrics_dict = {}
+
     os.makedirs(save_dir, exist_ok=True)
 
-    for n_neighbors in n_neighbors_values:
-        # Initialize a KNeighborsClassifier with the current n_neighbors
-        knn = KNeighborsClassifier(n_neighbors=n_neighbors)
+    # Initialize a KNeighborsClassifier with the current n_neighbors
+    knn = KNeighborsClassifier(n_neighbors=n_neighbors)
 
-        # Fit the KNN classifier to the training data
-        knn.fit(train_data, train_labels)
-
-        # Predict labels for the test data
-        test_predictions = knn.predict(test_data)
+    # Fit the KNN classifier to the training data
+    knn.fit(train_data, train_labels)
+    performance_dicts=[]
+    for test_features,test_labels in zip(all_test_data,all_test_labels):
+    # Predict labels for the test data
+        test_predictions = knn.predict(test_features)
 
         # Evaluate the classifier
         accuracy = accuracy_score(test_labels, test_predictions)
@@ -333,79 +392,17 @@ def perform_knn(train_data, train_labels, test_data, test_labels, save_dir):
         print(f"accuracy: {accuracy}")
         print(f"weighted f1: {weighted_f1}")
 
-        ## Calculate the classification report
-        report = classification_report(test_labels, test_predictions, output_dict=True)
+        metrics = {"accuracy": accuracy, "balanced_accuracy": balanced_acc, "weighted_f1": weighted_f1}
+        performance_dict={
+            "Accuracy": accuracy,
+            "Balanced_Acc": balanced_acc,
+            "Weighted_F1": weighted_f1,
+        }
+        print(performance_dict)
+        performance_dicts.append(performance_dict)
 
-        print(f"report: {report}")
+    return performance_dicts
 
-        current_metrics = {"accuracy": accuracy, "balanced_accuracy": balanced_acc, "weighted_f1": weighted_f1}
-
-        # Store the metrics dictionary in the metrics_dict with a key indicating the number of neighbors
-        metrics_dict[f"knn_{n_neighbors}"] = current_metrics
-        # Convert the report to a Pandas DataFrame for logging
-        # report_df = pd.DataFrame(report).transpose()
-
-        # Log the final loss, accuracy, and classification report using wandb.log
-        # wandb.log({"Classification Report": wandb.Table(dataframe=report_df)})
-
-        df_labels_to_save = pd.DataFrame({"True Labels": test_labels, "Predicted Labels": test_predictions})
-        filename = f"{Path(save_dir).name}_labels_and_predictions.csv"
-        file_path = os.path.join(save_dir, filename)
-        # Speichern des DataFrames in der CSV-Datei
-        df_labels_to_save.to_csv(file_path, index=False)
-
-    return metrics_dict
-
-def merge_sum_dicts(sum_dict, new_dict, count_dict, path=None):
-    """
-    Recursively merges new_dict into sum_dict, summing values for non-dict items
-    and recursively merging dict items. Also, keeps track of counts for averaging.
-    """
-    if path is None:
-        path = []
-    for key, value in new_dict.items():
-        # Construct a new path for nested dictionaries
-        new_path = path + [key]
-        if isinstance(value, dict):
-            # If the value is a dictionary, recurse
-            sum_dict[key] = merge_sum_dicts(sum_dict.get(key, {}), value, count_dict, new_path)
-        else:
-            # Initialize or update the sum and count for non-dictionary values
-            if key in sum_dict:
-                sum_dict[key] += value
-                count_dict["/".join(new_path)] += 1  # Use path as key in count_dict
-            else:
-                sum_dict[key] = value
-                count_dict["/".join(new_path)] = 1
-    return sum_dict
-
-def average_dicts(dict_list):
-    sum_dict = {}
-    count_dict = {}  # Keep track of counts for averaging
-
-    # Merge all dictionaries, summing values and tracking counts
-    for d in dict_list:
-        merge_sum_dicts(sum_dict, d, count_dict)
-
-    def calculate_average(current_dict, current_path=None):
-        """
-        Recursively calculates averages for sum_dict using counts in count_dict.
-        """
-        if current_path is None:
-            current_path = []
-        avg_dict = {}
-        for key, value in current_dict.items():
-            new_path = current_path + [key]
-            if isinstance(value, dict):
-                # Recursively calculate average for nested dictionaries
-                avg_dict[key] = calculate_average(value, new_path)
-            else:
-                # Calculate average for non-dictionary values using count_dict
-                avg_dict[key] = value / count_dict["/".join(new_path)]
-        return avg_dict
-
-    # Calculate the average for each key, including nested dictionaries
-    return calculate_average(sum_dict)
 
 def create_umap(data, labels, save_dir, filename_addon="train"):
     # Create a UMAP model and fit it to your data
@@ -436,7 +433,7 @@ def create_umap(data, labels, save_dir, filename_addon="train"):
     return im
 
 
-def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, test_labels, save_dir, max_iter=1000):
+def train_and_evaluate_logistic_regression(train_data, train_labels, all_test_data, all_test_labels, save_dir, max_iter=1000):
     # Initialize wandb
 
     M = train_data.shape[1]
@@ -447,50 +444,59 @@ def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, 
     logistic_reg = LogisticRegression(C=1 / l2_reg_coef, max_iter=max_iter, multi_class="multinomial", solver="lbfgs")
 
     logistic_reg.fit(train_data, train_labels)
-
-    # Evaluate the model on the test data
-    test_predictions = logistic_reg.predict(test_data)
     predicted_probabilities = logistic_reg.predict_proba(train_data)
     loss = log_loss(train_labels, predicted_probabilities)
-    accuracy = accuracy_score(test_labels, test_predictions)
-    balanced_acc = balanced_accuracy_score(test_labels, test_predictions)
-    weighted_f1 = f1_score(test_labels, test_predictions, average="weighted")
-    # auroc = roc_auc_score(test_labels, test_predictions, multi_class='ovr', average='weighted')
-    report = classification_report(test_labels, test_predictions, output_dict=True)
 
-    df_labels_to_save = pd.DataFrame({"True Labels": test_labels, "Predicted Labels": test_predictions})
-    filename = f"{Path(save_dir).name}_labels_and_predictions.csv"
-    os.makedirs(save_dir, exist_ok=True)
-    file_path = os.path.join(save_dir, filename)
-    # Speichern des DataFrames in der CSV-Datei
-    df_labels_to_save.to_csv(file_path, index=False)
+    performance_dicts=[]
 
-    predicted_probabilities_df = pd.DataFrame(
-        predicted_probabilities, columns=[f"Probability Class {i}" for i in range(predicted_probabilities.shape[1])]
-    )
-    predicted_probabilities_filename = f"{Path(save_dir).name}_predicted_probabilities_test.csv"
-    predicted_probabilities_file_path = os.path.join(save_dir, predicted_probabilities_filename)
-    predicted_probabilities_df.to_csv(predicted_probabilities_file_path, index=False)
+    for test_features,test_labels in zip(all_test_data,all_test_labels):
+    # Evaluate the model on the test data
+        test_predictions = logistic_reg.predict(test_features)
 
-    # Convert the report to a Pandas DataFrame for logging
-    report_df = pd.DataFrame(report).transpose()
+        accuracy = accuracy_score(test_labels, test_predictions)
+        balanced_acc = balanced_accuracy_score(test_labels, test_predictions)
+        weighted_f1 = f1_score(test_labels, test_predictions, average="weighted")
+        # auroc = roc_auc_score(test_labels, test_predictions, multi_class='ovr', average='weighted')
+        report = classification_report(test_labels, test_predictions, output_dict=True)
 
-    # some prints
-    print(f"Final Loss: {loss}")
-    print(f"balanced accuracy: {balanced_acc}")
-    print(f"accuracy: {accuracy}")
-    print(f"weighted f1: {weighted_f1}")
-    print(report)
+        df_labels_to_save = pd.DataFrame({"True Labels": test_labels, "Predicted Labels": test_predictions})
+        filename = f"{Path(save_dir).name}_labels_and_predictions.csv"
+        os.makedirs(save_dir, exist_ok=True)
+        file_path = os.path.join(save_dir, filename)
+        # Speichern des DataFrames in der CSV-Datei
+        df_labels_to_save.to_csv(file_path, index=False)
 
-    # Log the final loss, accuracy, and classification report using wandb.log
-    final_loss = loss
-    return {
-        "Final Loss": final_loss,
-        "Accuracy": accuracy,
-        "Balanced_Acc": balanced_acc,
-        "Weighted_F1": weighted_f1,
-      #  "Classification Report": wandb.Table(dataframe=report_df),
-    }
+        predicted_probabilities_df = pd.DataFrame(
+            predicted_probabilities, columns=[f"Probability Class {i}" for i in range(predicted_probabilities.shape[1])]
+        )
+        predicted_probabilities_filename = f"{Path(save_dir).name}_predicted_probabilities_test.csv"
+        predicted_probabilities_file_path = os.path.join(save_dir, predicted_probabilities_filename)
+        predicted_probabilities_df.to_csv(predicted_probabilities_file_path, index=False)
+
+        # Convert the report to a Pandas DataFrame for logging
+        report_df = pd.DataFrame(report).transpose()
+
+        # some prints
+        print(f"Final Loss: {loss}")
+        print(f"balanced accuracy: {balanced_acc}")
+        print(f"accuracy: {accuracy}")
+        print(f"weighted f1: {weighted_f1}")
+        print(report)
+
+        # Log the final loss, accuracy, and classification report using wandb.log
+        final_loss = loss
+        performance_dict={
+            "Final Loss": final_loss,
+            "Accuracy": accuracy,
+            "Balanced_Acc": balanced_acc,
+            "Weighted_F1": weighted_f1,
+        #  "Classification Report": wandb.Table(dataframe=report_df),
+        }
+        print(performance_dict)
+        performance_dicts.append(performance_dict)
+
+    return performance_dicts
+    
 
 
 if __name__ == "__main__":
