@@ -13,18 +13,7 @@ from PIL import Image
 
 parser = argparse.ArgumentParser(description="Feature extraction")
 
-parser.add_argument(
-    "--model_name",
-    help="name of model",
-    default="dinov2_vitb14", # ctranspath, resnet50, resnet50_full, owkin, dinov2_vits14, dinov2_vitb14
-    type=str,
-)
-parser.add_argument(
-    "--dataset",
-    help="name of dataset",
-    default="wbc_mil_Dataset",
-    type=str,
-)
+
 parser.add_argument(
     "--image_path",
     help="path to folder with images",
@@ -33,80 +22,19 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--checkpoint",
-parser = argparse.ArgumentParser(description="Feature extraction")
-
-parser.add_argument(
     "--model_name",
     help="name of model",
     default="dinov2_vitb14", # ctranspath, resnet50, resnet50_full, owkin, dinov2_vits14, dinov2_vitb14
     type=str,
 )
+
 parser.add_argument(
     "--dataset",
     help="name of dataset",
     default="wbc_mil_Dataset",
     type=str,
 )
-parser.add_argument(
-    "--image_path",
-    help="path to folder with images",
-    default="/lustre/groups/labs/marr/qscd01/datasets/210526_mll_mil_pseudonymized/splitted_data/test",
-    type=str,
-)
 
-parser.add_argument(
-    "--checkpoint",
-parser = argparse.ArgumentParser(description="Feature extraction")
-
-parser.add_argument(
-    "--model_name",
-    help="name of model",
-    default="dinov2_vitb14", # ctranspath, resnet50, resnet50_full, owkin, dinov2_vits14, dinov2_vitb14
-    type=str,
-)
-parser.add_argument(
-    "--dataset",
-    help="name of dataset",
-    default="wbc_mil_Dataset",
-    type=str,
-)
-parser.add_argument(
-    "--image_path",
-    help="path to folder with images",
-    default="/lustre/groups/labs/marr/qscd01/datasets/210526_mll_mil_pseudonymized/splitted_data/test",
-    type=str,
-)
-
-parser.add_argument(
-    "--checkpoint",
-parser = argparse.ArgumentParser(description="Feature extraction")
-
-parser.add_argument(
-    "--model_name",
-    help="name of model",
-    default="dinov2_vitb14", # ctranspath, resnet50, resnet50_full, owkin, dinov2_vits14, dinov2_vitb14
-    type=str,
-)
-parser.add_argument(
-    "--dataset",
-    help="name of dataset",
-    default="wbc_mil_Dataset",
-    type=str,
-)
-parser.add_argument(
-    "--image_path",
-    help="path to folder with images",
-    default="/lustre/groups/labs/marr/qscd01/datasets/210526_mll_mil_pseudonymized/splitted_data/test",
-    type=str,
-)
-
-parser.add_argument(
-    "--checkpoint",
-    help="path to checkpoint",
-    default=None, #"/lustre/groups/shared/users/peng_marr/pretrained_models/owkin.pth", None
-    type=str,
-)
 parser.add_argument(
     "--save_dir",
     "--save-dir",
@@ -115,6 +43,7 @@ parser.add_argument(
     default="/lustre/groups/shared/users/peng_marr/HistoDINO/test",
     type=str,
 )
+
 parser.add_argument(
     "--model_path",
     help="path of model checkpoint",
@@ -159,6 +88,8 @@ def preprocess_for_eval(image, height, width, crop=True):
     image = tf.reshape(image, [height, width, 3])
     image = tf.clip_by_value(image, 0., 1.)
     return image
+
+
 class WBCMILDataset(tf.keras.utils.Sequence):
     def __init__(self, data_path, transform):
         self.transform = transform
