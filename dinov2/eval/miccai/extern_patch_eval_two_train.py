@@ -43,7 +43,7 @@ parser.add_argument(
 parser.add_argument(
     "--filetype",
     help="name of file endings, matek=.tiff, acevedo .jpg, mll .TIF",
-    default=[".jpg",".tiff",".TIF"],  # Set the default as a list with a single item
+    default=[".tiff",".TIF",".jpg"],  # Set the default as a list with a single item
     type=str,
     nargs='*',  # This allows multiple values for --filetype
 )
@@ -64,14 +64,14 @@ parser.add_argument(
 # acevedo: /lustre/groups/labs/marr/qscd01/datasets/Acevedo_20/PBC_dataset_normal_DIB/
 #matek: /lustre/groups/labs/marr/qscd01/datasets/191024_AML_Matek/AML-Cytomorphology_LMU/
 parser.add_argument(
-    "--train_dataset",
+    "--test_dataset",
     help="path to datasetfolder",
     default="/lustre/groups/labs/marr/qscd01/datasets/armingruber/_Domains/Acevedo_cropped",
     type=str,
 )
 
 parser.add_argument(
-    "--test_datasets",
+    "--train_datasets",
     help="path to datasetfolder",
     default=["/lustre/groups/labs/marr/qscd01/datasets/armingruber/_Domains/Matek_cropped/",
              "/lustre/groups/labs/marr/qscd01/datasets/armingruber/_Domains/MLL_20221220/"],
@@ -157,29 +157,6 @@ def sort_key(path):
     number_part = int(path.parts[-2].split("_")[1])
     return number_part
 
-
-def create_stratified_folds(labels):
-    """
-    Splits indices into 5 stratified folds based on the provided labels,
-    returning indices for train and test sets for each fold.
-    
-    Args:
-    - labels (array-like): Array or list of labels to be used for creating stratified folds.
-    
-    Returns:
-    - A list of tuples, each containing two arrays: (train_indices, test_indices) for each fold.
-    """
-    
-    # Initialize StratifiedKFold
-    skf = StratifiedKFold(n_splits=5)
-    
-    # Prepare for stratified splitting
-    folds = []
-    for train_index, test_index in skf.split(X=np.arange(len(labels)), y=labels):
-        folds.append((train_index, test_index))
-    
-    return folds
-
 def main(args):
 
     model_name = args.model_name
@@ -222,12 +199,12 @@ def main(args):
             
         print("loading checkpoint: ", checkpoint)
         feature_extractor = get_models(model_name, saved_model_path=checkpoint)
-        dataset_paths=[args.train_dataset,*args.test_datasets]
+        dataset_paths=[*args.train_datasets,args.test_datasets]
 
         all_dataset_features=[]
         all_dataset_labels=[]
-
-        create_label_mapping_from_paths(Path(args.train_dataset).glob("*"+args.filetype[0]))
+        all_train_images=list(Path(args.train_datasets[0]).glob("*"+args.filetype[0]))+list(Path(args.train_datasets[1]).glob("*"+args.filetype[1]))
+        create_label_mapping_from_paths(all_train_images)
 
         for i,dataset_path in enumerate(dataset_paths):
             dataset_name=Path(dataset_path).stem
@@ -247,63 +224,43 @@ def main(args):
         knn_folds_1=[]
         knn_folds_20=[]
 
-        train_dataset_labels=all_dataset_labels[0]
-        train_dataset_features=all_dataset_features[0]
+        train_data=all_dataset_labels[:1]
+        train_labels=all_dataset_features[:1]
 
-        folds=create_stratified_folds(train_dataset_labels)
+        test_data=all_dataset_labels[2]
+        test_labels=all_dataset_features[2]
 
-        for i, (train_indices, test_indices) in enumerate(folds):
-            assert not set(train_indices) & set(test_indices), "There are common indices in train and test lists."
+        if args.logistic_regression:
+            logreg_dir = parent_dir/ "log_reg_eval"
+            log_reg = train_and_evaluate_logistic_regression(
+                train_data, train_labels, test_data,test_labels, logreg_dir, max_iter=1000
+            )
 
-            train_data= train_dataset_features[train_indices]
-            train_labels=train_dataset_labels[train_indices]
+            log_reg_folds.append(log_reg)
+            print("logistic_regression done")
 
-            test_data_in_domain=train_dataset_features[test_indices]
-            test_labels_in_domain=train_dataset_labels[test_indices]
-            # Create data loaders for the  datasets
+        if args.umap:
+            umap_dir = parent_dir/ "umaps"
+            umap_train = create_umap(train_data, train_labels, umap_dir)
+            umap_test = create_umap(test_data, test_labels, umap_dir, "test")
+            print("umap done")
 
-            print("data fully loaded")
-            joined_test_data=[test_data_in_domain,*all_dataset_features[1:]]
-            joined_test_labels=[test_labels_in_domain,*all_dataset_labels[1:]]
-            if args.logistic_regression:
-                logreg_dir = parent_dir/ "log_reg_eval"
-                log_reg = train_and_evaluate_logistic_regression(
-                    train_data, train_labels, joined_test_data,joined_test_labels, logreg_dir, max_iter=1000
-                )
+        if args.knn:
+            knn_dir = parent_dir / "knn_eval"
+            knn_metrics_1 = perform_knn(train_data, train_labels, test_data, test_labels, knn_dir,1)
+            knn_folds_1.append(knn_metrics_1)
+            knn_metrics_20 = perform_knn(train_data, train_labels, test_data, test_labels, knn_dir,20)
+            knn_folds_20.append(knn_metrics_20)
+            print("knn done")
 
-                log_reg_folds.append(log_reg)
-                print("logistic_regression done")
+        if checkpoint is not None and len(sorted_paths)>1:
+            step = int(parent_dir.name.split("_")[1])
+        else: 
+            step=0
 
-            if args.umap:
-                umap_dir = parent_dir/ "umaps"
-                umap_train = create_umap(train_data, train_labels, umap_dir)
-                umap_test = create_umap(joined_test_data, joined_test_labels, umap_dir, "test")
-                print("umap done")
 
-            if args.knn:
-                knn_dir = parent_dir / "knn_eval"
-                knn_metrics_1 = perform_knn(train_data, train_labels, joined_test_data, joined_test_labels, knn_dir,1)
-                knn_folds_1.append(knn_metrics_1)
-                knn_metrics_20 = perform_knn(train_data, train_labels, joined_test_data, joined_test_labels, knn_dir,20)
-                knn_folds_20.append(knn_metrics_20)
-                print("knn done")
 
-            if checkpoint is not None and len(sorted_paths)>1:
-                step = int(parent_dir.name.split("_")[1])
-            else: 
-                step=0
-
-        print("-----------------------------------")
-        print("knn1: ")
-        aggregated_knn_1=average_dicts(knn_folds_1)
-        print("-----------------------------------")
-        print("knn20: ")
-        aggregated_knn_20=average_dicts(knn_folds_20)
-        print("-----------------------------------")
-        print("logreg: ")
-        aggregated_log_reg=average_dicts(log_reg_folds)
-
-        wandb.log({"knn1": aggregated_knn_1,"knn20": aggregated_knn_20,"log_reg": aggregated_log_reg,}, step=step)
+        #wandb.log({"knn1": aggregated_knn_1,"knn20": aggregated_knn_20,"log_reg": aggregated_log_reg,}, step=step)
 
 
 def average_dicts(fold_dicts):
@@ -367,7 +324,7 @@ def get_data(all_data):
     return features, labels
 
 
-def perform_knn(train_data, train_labels, all_test_data, all_test_labels, save_dir,n_neighbors):
+def perform_knn(train_data, train_labels, test_features, test_labels, save_dir,n_neighbors):
     # Define a range of values for n_neighbors to search
 
     os.makedirs(save_dir, exist_ok=True)
@@ -377,31 +334,24 @@ def perform_knn(train_data, train_labels, all_test_data, all_test_labels, save_d
 
     # Fit the KNN classifier to the training data
     knn.fit(train_data, train_labels)
-    performance_dicts=[]
-    for test_features,test_labels in zip(all_test_data,all_test_labels):
+
     # Predict labels for the test data
-        test_predictions = knn.predict(test_features)
+    test_predictions = knn.predict(test_features)
 
-        # Evaluate the classifier
-        accuracy = accuracy_score(test_labels, test_predictions)
-        balanced_acc = balanced_accuracy_score(test_labels, test_predictions)
-        weighted_f1 = f1_score(test_labels, test_predictions, average="weighted")
+    # Evaluate the classifier
+    accuracy = accuracy_score(test_labels, test_predictions)
+    balanced_acc = balanced_accuracy_score(test_labels, test_predictions)
+    weighted_f1 = f1_score(test_labels, test_predictions, average="weighted")
 
-        print(f"n_neighbors = {n_neighbors}")
-        print(f"balanced accuracy: {balanced_acc}")
-        print(f"accuracy: {accuracy}")
-        print(f"weighted f1: {weighted_f1}")
+    print(f"n_neighbors = {n_neighbors}")
+    print(f"balanced accuracy: {balanced_acc}")
+    print(f"accuracy: {accuracy}")
+    print(f"weighted f1: {weighted_f1}")
 
-        metrics = {"accuracy": accuracy, "balanced_accuracy": balanced_acc, "weighted_f1": weighted_f1}
-        performance_dict={
-            "Accuracy": accuracy,
-            "Balanced_Acc": balanced_acc,
-            "Weighted_F1": weighted_f1,
-        }
-        print(performance_dict)
-        performance_dicts.append(performance_dict)
+    metrics = {"accuracy": accuracy, "balanced_accuracy": balanced_acc, "weighted_f1": weighted_f1}
+    print(metrics)
 
-    return performance_dicts
+    return metrics
 
 
 def create_umap(data, labels, save_dir, filename_addon="train"):

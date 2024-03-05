@@ -52,8 +52,7 @@ parser.add_argument(
 )
  
  # remedis transforms
-def preprocess_image(image, height, width, is_training=False,
-                     color_distort=True, test_crop=True):
+def preprocess_image(image, height, width):
     """Preprocesses the given image.
     Args:
         image: `Tensor` representing an image of arbitrary size.
@@ -67,23 +66,6 @@ def preprocess_image(image, height, width, is_training=False,
         A preprocessed image `Tensor` of range [0, 1].
     """
     image = tf.image.convert_image_dtype(image, dtype=tf.float32)
-    if is_training:
-        return preprocess_for_train(image, height, width, color_distort)
-    else:
-        return preprocess_for_eval(image, height, width, test_crop)
-
-def preprocess_for_eval(image, height, width, crop=True):
-    """Preprocesses the given image for evaluation.
-    Args:
-        image: `Tensor` representing an image of arbitrary size.
-        height: Height of output image.
-        width: Width of output image.
-        crop: Whether or not to (center) crop the test images.
-    Returns:
-        A preprocessed image `Tensor`.
-    """
-    if crop:
-        image = center_crop(image, height, width, crop_proportion=CROP_PROPORTION)
     image = tf.image.resize(image, [height, width])  # added by sophia
     image = tf.reshape(image, [height, width, 3])
     image = tf.clip_by_value(image, 0., 1.)
