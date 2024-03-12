@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#SBATCH -o ./out/out_dinov2_vitb_orig.txt
-#SBATCH -e ./out/error_dinov2_vitb_orig.txt
+#SBATCH -o ./out/mil/out_dinov2_vits_orig.txt
+#SBATCH -e ./out/mil/error_dinov2_vits_orig.txt
 
-#SBATCH -J vitb_orig
+#SBATCH -J vits_orig
 #SBATCH -p gpu_p
 #SBATCH -c 28
 #SBATCH --mem=240G
@@ -11,7 +11,7 @@
 #SBATCH --time=96:00:00
 #SBATCH --nice=10000
 #SBATCH --gres=gpu:1
-#SBATCH -C a100_40gb
+##SBATCH -C a100_40gb
 # Environment setup
 
 source /home/aih/${USER}/.bashrc
@@ -19,4 +19,4 @@ conda activate dinov2
 
 export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH
 
-python ../wbc_mil.py --data_path dinov2_vitb_orig --wandb_name wbc_mil_dinov2_vitb14
+python ../wbc_mil.py --data_path dinov2_vits14 --wandb_name wbc_mil_dinov2_vits14

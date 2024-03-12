@@ -6,6 +6,9 @@ from torch.utils.data import DataLoader, Dataset, Subset
 import torch.optim as optim
 from sklearn.model_selection import KFold, train_test_split, StratifiedShuffleSplit
 from sklearn.metrics import balanced_accuracy_score, precision_recall_fscore_support
+from torch.optim.lr_scheduler import CosineAnnealingLR
+import argparse
+
 
 import random
 import os
@@ -69,30 +72,43 @@ class wbc_mil(nn.Module):
     def __init__(self, class_count, multi_attention, latent_dim) -> None:
         super(wbc_mil, self).__init__()
 
-        self.latent_dim = latent_dim
+        
         self.attention_latent_dim = 128
         self.class_count = class_count
-        
-        # self.feature_extractor = ViTModel.from_pretrained("google/vit-base-patch16-224-in21k")
         self.multi_attention = multi_attention
+        # self.latent_dim = latent_dim
+        # self.mil_latent_dim = 500
+        self.mil_latent_dim = latent_dim
+
+        # # MIL encoder
+        # self.mil_encoder = nn.Sequential(
+        #     nn.Conv1d(in_channels=self.latent_dim, out_channels=int(self.latent_dim * 1.5), kernel_size=3, padding=1),
+        #     nn.ReLU(),
+        #     nn.Conv1d(in_channels=int(self.latent_dim * 1.5), out_channels=int(self.latent_dim * 2), kernel_size=3, padding=1),
+        #     nn.ReLU(),
+        #     nn.AdaptiveMaxPool1d(output_size=1),
+        #     nn.Flatten(),
+        #     nn.Linear(int(self.latent_dim * 2), self.mil_latent_dim),
+        #     nn.ReLU(),
+        # )
         
         # single attention network
         self.attention = nn.Sequential(
-            nn.Linear(self.latent_dim,self.attention_latent_dim),
+            nn.Linear(self.mil_latent_dim, self.attention_latent_dim),
             nn.Tanh(),
             nn.Linear(self.attention_latent_dim, 1)
         )
 
         # multi attention network
         self.attention_multi_column = nn.Sequential(
-            nn.Linear(self.latent_dim,self.attention_latent_dim),
+            nn.Linear(self.mil_latent_dim, self.attention_latent_dim),
             nn.Tanh(),
             nn.Linear(self.attention_latent_dim, self.class_count),
         )
 
         # single head classifier
         self.classifier = nn.Sequential(
-            nn.Linear(self.latent_dim, 64),
+            nn.Linear(self.mil_latent_dim, 64),
             nn.ReLU(),
             nn.Linear(64, self.class_count)
         )
@@ -101,7 +117,7 @@ class wbc_mil(nn.Module):
         self.classifier_multi_column = nn.ModuleList()
         for a in range(self.class_count):
             self.classifier_multi_column.append(nn.Sequential(
-                nn.Linear(self.latent_dim, 64),
+                nn.Linear(self.mil_latent_dim, 64),
                 nn.ReLU(),
                 nn.Linear(64, 1)
             ))
@@ -111,15 +127,15 @@ class wbc_mil(nn.Module):
         prediction = []
         bag_feature_stack = []
 
-        # features = self.feature_extractor(x).last_hidden_state
+        # features = self.mil_encoder(x.squeeze().unsqueeze(dim=2))
         features = x
         attention = torch.transpose(self.attention_multi_column(features), 1, 0)
         
         if self.multi_attention:
             for cls in range(self.class_count):
                 # multi head aggregation
-                att_softmax = F.softmax(attention[..., cls], dim=1)
-                bag_features = torch.mm(att_softmax.T, features.squeeze())
+                att_softmax = F.softmax(attention.T[cls,...]) # F.softmax(attention[cls,...])
+                bag_features = torch.mm(att_softmax, features.squeeze()) # torch.mm(att_softmax.unsqueeze(dim=0), features.squeeze())
                 bag_feature_stack.append(bag_features)
                 
                 # classification
@@ -142,25 +158,48 @@ class wbc_mil(nn.Module):
             return {"prediction": prediction, "attention": attention, "att_softmax": att_softmax, "bag_features": bag_features}
 
 
+class EarlyStopping:
+    def __init__(self, patience=20, min_delta=0):
+        """
+        Args:
+            patience (int): How many epochs to wait after last time validation loss improved.
+                            Default: 5
+            min_delta (float): Minimum change in the monitored quantity to qualify as an improvement.
+                               Default: 0
+        """
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.best_loss = np.Inf
+        self.early_stop = False
+
+    def __call__(self, val_loss):
+        if self.best_loss - val_loss > self.min_delta:
+            self.best_loss = val_loss
+            self.counter = 0
+        else:
+            self.counter += 1
+            # print(f"EarlyStopping counter: {self.counter} out of {self.patience}")
+            if self.counter >= self.patience:
+                self.early_stop = True
+
+
 class run_wbc_mil:
     def __init__(self, 
-                 device,
-                 criterion, 
+                 device, 
                  num_epochs,
                  dataset_train_val, dataset_test, batch_size,
-                 model, class_count, multi_attention, optimizer, latent_dim):
+                 class_count, multi_attention,latent_dim):
         
         self.dataset_train_val = dataset_train_val
         self.dataset_test = dataset_test
         self.batch_size = batch_size
         self.latent_dim=latent_dim
 
-        self.model = model
         self.class_count = class_count
         self.multi_attention = multi_attention
 
-        self.criterion = criterion
-        self.optimizer = optimizer
+        self.criterion = nn.CrossEntropyLoss()
         self.device = device
         self.num_epochs = num_epochs
 
@@ -184,7 +223,10 @@ class run_wbc_mil:
             input_ex, _ = dataset_train_val[0]
             latent_dim = input_ex.shape[1]
 
-            self.model = wbc_mil(class_count=self.class_count, multi_attention=self.multi_attention, self.latent_dim)
+            self.model = wbc_mil(class_count=self.class_count, multi_attention=self.multi_attention, latent_dim=self.latent_dim)
+
+            self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9, nesterov=True)
+            self.scheduler = CosineAnnealingLR(self.optimizer, T_max=num_epochs)
             
             best_model = self.train_fold(fold, train_loader, val_loader)
 
@@ -203,21 +245,32 @@ class run_wbc_mil:
         self.model.to(self.device)
         best_loss = float('inf')
 
+        early_stopping = EarlyStopping(patience=20, min_delta=0.0)
+
         for epoch in range(self.num_epochs):
-            self.model.train()
 
             train_loss, train_accuracy, train_f1 = self.run_epoch(loader=train_loader, phase="train", batch_size=self.batch_size, epoch=epoch)
             print("fold ", fold, "epoch ", epoch, " > train loss: ", train_loss, ", train accuracy: ", train_accuracy)
             val_loss, val_accuracy, val_f1 = self.run_epoch(loader=val_loader, phase="val", batch_size=1, epoch=epoch)
-            print("fold ", fold, "epoch ", epoch, " > val loss: ", val_loss, ", val accuracy: ", val_accuracy)
+            print("fold ", fold, "epoch ", epoch, " > val loss: ", val_loss, ", val accuracy: ", val_accuracy, "val_f1", val_f1)
 
             if val_loss < best_loss:
                 best_loss = val_loss    
                 best_model = self.model.state_dict()
 
+            early_stopping(val_loss)
+            if early_stopping.early_stop:
+                print("Early stopping triggered.")
+                break
+
         return best_model
 
     def run_epoch(self, loader, phase, epoch, batch_size=1):
+        if phase == 'train':
+            self.model.train()
+        else:
+            self.model.eval()
+
         total_loss = 0.0
         all_preds = []
         all_labels = []
@@ -237,8 +290,9 @@ class run_wbc_mil:
 
             if phase=="train" and ((counter+1)%batch_size==0 or (counter+1)==len(loader)):
                 self.optimizer.step()
+                self.scheduler.step()
 
-            wandb.log({f"{phase}_loss": loss.item(), "epoch": epoch})
+            # wandb.log({f"{phase}_loss": loss.item(), "epoch": epoch})
 
             _, preds = torch.max(outputs["prediction"], 1)
             all_preds.extend(preds.cpu().numpy())
@@ -251,55 +305,51 @@ class run_wbc_mil:
         avg_loss = total_loss / len(loader)
 
         # Log epoch metrics
-        wandb.log({
-            f"{phase}_avg_loss": total_loss / len(loader), 
-            f"{phase}_balanced_accuracy": balanced_acc, 
-            f"{phase}_f1_weighted": f1_weighted, 
-            "epoch": epoch
-        })
+        # wandb.log({
+        #     f"{phase}_avg_loss": total_loss / len(loader), 
+        #     f"{phase}_balanced_accuracy": balanced_acc, 
+        #     f"{phase}_f1_weighted": f1_weighted, 
+        #     "epoch": epoch
+        # })
 
         return avg_loss, balanced_acc, f1_weighted
 
 
-def example_data():
-    B = 100  # Total number of bags
-    D = 768  # Dimensionality of each instance's feature vector
-    class_count = 5  # Number of classes
-    min_instances = 5  # Minimum number of instances per bag
-    max_instances = 15  # Maximum number of instances per bag
-
-    # Initialize lists to hold the features and labels
-    features = []
-    labels = torch.randint(0, class_count, (B,))  # Random labels for each bag
-
-    for _ in range(B):
-        N = random.randint(min_instances, max_instances)
-        bag_features = torch.randn(N, D)
-        features.append(bag_features)
-
-    return features, labels
-
 if __name__ == "__main__":
-    wandb.init(project="histo-collab", entity="s-kazeminia-90", name="wbc_mil_dinov2_vits14") 
+    parser = argparse.ArgumentParser(description='Train a WBC MIL model.')
+    parser.add_argument('--data_path', 
+                        type=str, 
+                        required=True, 
+                        help='Path to the training data directory',
+                        default='dinov2_vits_orig')
+    parser.add_argument('--wandb_name', 
+                        type=str, 
+                        help='Name of the run in wandb',
+                        default='wbc_mil_dinov2_vits14')
+
+    args = parser.parse_args()
+
+    # wandb.init(project="histo-collab", entity="s-kazeminia-90", name=args.wandb_name) 
     
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-    criterion = nn.CrossEntropyLoss()
+    
     num_epochs = 150
 
     class_count = 5
     multi_attention = True
     batch_size = 1
 
-    wandb.config = {
-        "learning_rate": 0.001,
-        "epochs": num_epochs,
-        "batch_size": batch_size,
-        "class_count": class_count,
-        "multi_attention": multi_attention,
-        }
+    # wandb.config = {
+    #     "learning_rate": 0.001,
+    #     "epochs": num_epochs,
+    #     "batch_size": batch_size,
+    #     "class_count": class_count,
+    #     "multi_attention": multi_attention,
+    #     }
 
-    data_path_train = '/lustre/groups/labs/marr/qscd01/datasets/210526_mll_mil_pseudonymized/splitted_extracted_features/dinov2_vits_orig/train'
-    data_path_test = '/lustre/groups/labs/marr/qscd01/datasets/210526_mll_mil_pseudonymized/splitted_extracted_features/dinov2_vits_orig/test'
+    root_features_path = '/lustre/groups/labs/marr/qscd01/datasets/210526_mll_mil_pseudonymized/splitted_extracted_features/'
+    data_path_train = os.path.join(root_features_path, args.data_path, 'test')
+    data_path_test = os.path.join(root_features_path, args.data_path, 'test')
 
     # Initialize dataset and dataloader
     dataset_train_val = WbcMilFeatureDataset(data_path_train)
@@ -307,27 +357,22 @@ if __name__ == "__main__":
 
     input_ex, _ = dataset_train_val[0]
     latent_dim = input_ex.shape[1]
-
-    # Initialize the model & optimizer
-    model = wbc_mil(class_count=class_count, multi_attention=multi_attention, latent_dim=latent_dim)
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
     
     accuracies = []
     f1s = []
 
     for run in range(5):
         obj = run_wbc_mil(device,
-                    criterion,
                     num_epochs,
                     dataset_train_val, datset_test, batch_size,
-                    model, class_count, multi_attention, optimizer, latent_dim)
+                    class_count, multi_attention, latent_dim)
         model, acc, f1 = obj.forward()
         accuracies.append(acc)
         f1s.append(f1)
     print("Accuracy_average: ", np.mean(accuracies), " std: ", np.std(accuracies))
     print("f1_average: ", np.mean(f1s), " std: ", np.std(f1s))
 
-    wandb.finish()
+    # wandb.finish()
 
 
     
