@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH -o ./out/out_dinov2_vits_bloom.txt
-#SBATCH -e ./out/error_dinov2_vits_bloom.txt
+#SBATCH -o ./out/mil/out_dinov2_vits_bloom.txt
+#SBATCH -e ./out/mil/error_dinov2_vits_bloom.txt
 
 #SBATCH -J vits_bloom
 #SBATCH -p gpu_p
@@ -10,7 +10,7 @@
 #SBATCH -q gpu_long
 #SBATCH --time=96:00:00
 #SBATCH --nice=10000
-#SBATCH -C a100_40gb
+##SBATCH -C a100_40gb
 #SBATCH --gres=gpu:1
 # Environment setup
 
@@ -19,4 +19,4 @@ conda activate dinov2
 
 export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH
 
-python ../wbc_mil.py --data_path dinov2_vits14 --wandb_name wbc_mil_dinov2_vits14_bloom
+python ../wbc_mil.py --data_path dinov2_vits14_bloom --wandb_name wbc_mil_dinov2_vits14_bloom

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH -o ./out/out_resnet50_full.txt
-#SBATCH -e ./out/error_resnet50_full.txt
+#SBATCH -o ./out/mil/out_resnet50_full.txt
+#SBATCH -e ./out/mil/error_resnet50_full.txt
 
 #SBATCH -J resnet50_full
 #SBATCH -p gpu_p
@@ -11,7 +11,7 @@
 #SBATCH --time=96:00:00
 #SBATCH --nice=10000
 #SBATCH --gres=gpu:1
-#SBATCH -C a100_40gb
+##SBATCH -C a100_40gb
 # Environment setup
 
 source /home/aih/${USER}/.bashrc

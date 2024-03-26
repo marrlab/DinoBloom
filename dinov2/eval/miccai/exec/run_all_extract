@@ -1,0 +1,23 @@
+# sbatch extract_features_ctranspath
+
+# sbatch extract_features_dinov2vitb14
+
+# sbatch extract_features_dinov2vitb14_bloom
+
+sbatch extract_features_dinov2vitg14
+
+# sbatch extract_features_dinov2vitg14_bloom
+
+sbatch extract_features_dinov2vitl14
+
+# sbatch extract_features_dinov2vitl14_bloom
+
+# sbatch extract_features_dinov2vits14
+
+# sbatch extract_features_dinov2vits14_bloom
+
+# sbatch extract_features_owkin
+
+# sbatch extract_features_resnet50
+
+# sbatch extract_features_resnet50_full

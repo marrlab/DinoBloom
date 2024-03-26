@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#SBATCH -o ./out/mil/out_resnet50.txt
-#SBATCH -e ./out/mil/error_resnet50.txt
+#SBATCH -o ./out/ex/out_resf.txt
+#SBATCH -e ./out/ex/error_resf.txt
 
-#SBATCH -J resnet50
+#SBATCH -J ft_ex_resf
 #SBATCH -p gpu_p
 #SBATCH -c 28
 #SBATCH --mem=240G
@@ -11,7 +11,6 @@
 #SBATCH --time=96:00:00
 #SBATCH --nice=10000
 #SBATCH --gres=gpu:1
-##SBATCH -C a100_40gb
 # Environment setup
 
 source /home/aih/${USER}/.bashrc
@@ -19,4 +18,4 @@ conda activate dinov2
 
 export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH
 
-python ../wbc_mil.py --data_path resnet50 --wandb_name wbc_mil_resnet50
+python ../extract_patch_features.py --save_dir "/lustre/groups/labs/marr/qscd01/datasets/210526_mll_mil_pseudonymized/splitted_extracted_features/resnet50_full" --model_name "resnet50_full" 
