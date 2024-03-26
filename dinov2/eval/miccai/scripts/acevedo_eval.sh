@@ -21,6 +21,6 @@ cd /home/icb/valentin.koch/dinov2
 conda activate feature_ex
 
 # set checkpoint to evaluate as input 
-python dinov2/eval/miccai/general_patch_eval.py --model_path "/home/icb/valentin.koch/dinov2/vits_8nodes_hema_no_local_new_aug/eval" --dataset_path /lustre/groups/labs/marr/qscd01/datasets/armingruber/_Domains/Acevedo_cropped/ --model_name dinov2_vits14 --experiment_name real_acevedo_vits14_no_local_crops_new_aug --num_workers 16
+python dinov2/eval/miccai/general_patch_eval.py --model_path "/home/icb/valentin.koch/dinov2/vits_f1/eval" --dataset_path /lustre/groups/labs/marr/qscd01/datasets/armingruber/_Domains/Acevedo_cropped/ --model_name dinov2_vits14 --experiment_name acevedo_vits_f1
 
 

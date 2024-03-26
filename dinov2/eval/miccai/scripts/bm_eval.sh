@@ -1,14 +1,14 @@
 #!/bin/bash
 
-#SBATCH -o slurm_outputs/eval_log.txt
-#SBATCH -e slurm_outputs/eval_error.txt
-#SBATCH -J feature_ex
+#SBATCH -o slurm_outputs/bm_log.txt
+#SBATCH -e slurm_outputs/bm_error.txt
+#SBATCH -J bm_ctrans
 #SBATCH -p gpu_p
 #SBATCH -c 18
-#SBATCH --mem=150G
+#SBATCH --mem=160G
 #SBATCH -q gpu_normal
-#SBATCH --time=5:00:00
-#SBATCH --nice=10000
+#SBATCH --time=8:00:00
+#SBATCH --nice=1
 #SBATCH --gres=gpu:1
 
 # Environment setup
@@ -21,6 +21,6 @@ cd /home/icb/valentin.koch/dinov2
 conda activate feature_ex
 
 # set checkpoint to evaluate as input 
-python dinov2/eval/miccai/general_patch_eval.py --model_path "/home/icb/valentin.koch/dinov2/vits_8nodes_hema_no_local_new_aug/eval" --dataset_path /lustre/groups/shared/histology_data/BM_cytomorphology_data --model_name dinov2_vits14 --experiment_name real_acevedo_vits14_no_local_crops_new_aug --num_workers 16
+python dinov2/eval/miccai/general_fixed_split_patch_eval.py --model_path "/home/icb/valentin.koch/dinov2/vitl+cerv/eval/training_4999/" --model_name dinov2_vitl14 --experiment_name vitl_cerv --run_name bonemarrow --image_path_train /home/icb/valentin.koch/dinov2/dinov2/eval/miccai/splits/bm_train.csv --image_path_test /home/icb/valentin.koch/dinov2/dinov2/eval/miccai/splits/bm_test.csv
 
 
