@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 
 import h5py
-import pandas as pd
 import torch
 import tqdm
 from models.return_model import get_models, get_transforms

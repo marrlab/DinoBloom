@@ -14,13 +14,10 @@
 # Environment setup
 source $HOME/.bashrc
 
-# choose the right directory (Valentin: /home/icb/valentin.koch/dinov2, Sophia: /home/haicu/sophia.wagner/projects/dinov2)    
-cd /home/icb/valentin.koch/dinov2
-
-# activate your own conda environment (Valentin: feature_ex, Sophia: vim)
+# activate your own conda environment
 conda activate feature_ex
 
 # set checkpoint to evaluate as input 
-python dinov2/eval/miccai/general_patch_eval.py --model_path "/lustre/groups/shared/users/peng_marr/DinoBloomv2/SCL_MLP/eval" --dataset_path /lustre/groups/labs/marr/qscd01/datasets/armingruber/_Domains/Acevedo_cropped/ --model_name dinov2_vits14 --experiment_name acevedo_scp_mlp
+python dinov2/eval/miccai/general_patch_eval.py --model_name dinov2_vits14 --experiment_name acevedo
 
 
