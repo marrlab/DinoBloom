@@ -21,6 +21,6 @@ cd /home/icb/valentin.koch/dinov2
 conda activate feature_ex
 
 # set checkpoint to evaluate as input 
-python dinov2/eval/miccai/general_fixed_split_patch_eval.py --model_path "/home/icb/valentin.koch/dinov2/vitl+cerv/eval/training_4999/" --model_name dinov2_vitl14 --experiment_name vitl_cerv --run_name bonemarrow --image_path_train /home/icb/valentin.koch/dinov2/dinov2/eval/miccai/splits/bm_train.csv --image_path_test /home/icb/valentin.koch/dinov2/dinov2/eval/miccai/splits/bm_test.csv
+python dinov2/eval/miccai/general_fixed_split_patch_eval.py --model_path "" --model_name dinov2_vitl14 --experiment_name vitl_cerv --run_name bonemarrow --image_path_train /home/icb/valentin.koch/dinov2/dinov2/eval/miccai/splits/bm_train.csv --image_path_test /home/icb/valentin.koch/dinov2/dinov2/eval/miccai/splits/bm_test.csv
 
 

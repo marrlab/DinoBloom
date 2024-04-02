@@ -21,6 +21,6 @@ cd /home/icb/valentin.koch/dinov2
 conda activate feature_ex
 
 # set checkpoint to evaluate as input 
-python dinov2/eval/miccai/general_patch_eval.py --model_path "/home/icb/valentin.koch/dinov2/vits_f1/eval" --dataset_path /lustre/groups/labs/marr/qscd01/datasets/armingruber/_Domains/Acevedo_cropped/ --model_name dinov2_vits14 --experiment_name acevedo_vits_f1
+python dinov2/eval/miccai/general_patch_eval.py --model_path "/lustre/groups/shared/users/peng_marr/DinoBloomv2/SCL_MLP/eval" --dataset_path /lustre/groups/labs/marr/qscd01/datasets/armingruber/_Domains/Acevedo_cropped/ --model_name dinov2_vits14 --experiment_name acevedo_scp_mlp
 
 

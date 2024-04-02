@@ -21,6 +21,6 @@ cd /home/icb/valentin.koch/dinov2
 conda activate feature_ex
 
 # set checkpoint to evaluate as input 
-python dinov2/eval/miccai/extern_patch_eval.py --model_path "/home/icb/valentin.koch/dinov2/vits+mat/eval" --model_name dinov2_vits14 --experiment_name acevedo_cv --wandb_project domain_adapt
+python dinov2/eval/miccai/extern_patch_eval.py --model_path "/lustre/groups/shared/users/peng_marr/DinoBloomv2/vits_beluga/eval" --model_name dinov2_vits14 --experiment_name acevedo_cv_beluga --wandb_project domain_adapt
 
 
