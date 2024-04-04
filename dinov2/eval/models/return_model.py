@@ -1,25 +1,10 @@
 import torch
 import torch.nn as nn
 from models.ctran import ctranspath
-from models.imagebind import imagebind_huge
 from models.resnet_retccl import resnet50 as retccl_res50
-from models.sam import build_sam_vit_b, build_sam_vit_h, build_sam_vit_l
 from torchvision import transforms
 from torchvision.models import resnet
 from transformers import AutoImageProcessor, BeitFeatureExtractor, Data2VecVisionModel, ViTModel
-
-# RETCCL_PATH = '/lustre/groups/shared/users/peng_marr/pretrained_models/retccl.pth'
-# CTRANSPATH_PATH = '/lustre/groups/shared/users/peng_marr/pretrained_models/ctranspath.pth'
-# SAM_VIT_H_PATH='/lustre/groups/shared/users/peng_marr/pretrained_models/sam_vit_h.pth'
-# SAM_VIT_L_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/sam_vit_l.pth"
-# SAM_VIT_B_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/sam_vit_b_01ec64.pth"
-# DINO_VIT_S_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/dinov2_vits14_pretrain.pth"
-# DINO_VIT_B_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/dinov2_vitb14_pretrain.pth"
-# DINO_VIT_L_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/dinov2_vitl14_pretrain.pth"
-# DINO_VIT_G_PATH="/lustre/groups/shared/users/peng_marr/pretrained_models/dinov2_vitg14_pretrain.pth"
-# DINO_VIT_S_PATH_FINETUNED="/home/icb/valentin.koch/dinov2/debug/eval/training_12499/teacher_checkpoint_mlp.pth"
-# DINO_VIT_S_PATH_FINETUNED_DOWNLOADED="/lustre/scratch/users/benedikt.roth/dinov2_vits_interpolated_224_NCT-CRC_downloaded_model_finetuned_10000k_iterations/eval/training_2699/teacher_checkpoint.pth"
-# DINO_VIT_S_PATH_FINETUNED_DOWNLOADED="/lustre/scratch/users/benedikt.roth/dinov2_vitg_interpolated_224_NCT-CRC_downloaded_model_finetuned/eval/training_119999/teacher_checkpoint.pth"
 
 
 def get_models(modelname, saved_model_path=None):
@@ -29,8 +14,6 @@ def get_models(modelname, saved_model_path=None):
     # --- histology-pretrained models
     if modelname.lower() == "ctranspath":
         model = get_ctranspath(saved_model_path)
-    elif modelname.lower() == "remedis":
-        model = hub.load("cxr-52x2-remedis-m")
     elif modelname.lower() == "retccl":
         model = get_retCCL(saved_model_path)
     elif modelname.lower() == "owkin":
@@ -41,18 +24,12 @@ def get_models(modelname, saved_model_path=None):
         model = get_res50()
     elif modelname.lower() == "resnet50_full":
         model = get_full_res50()
-
-    elif modelname.lower() == "imagebind":
-        model = get_imagebind(saved_model_path)
     elif modelname.lower() == "beit_fb":
         model = BeitModel(device)
 
     # --- our finetuned models
     elif modelname.lower() in ["dinov2_vits14", "dinov2_vitb14", "dinov2_vitl14", "dinov2_vitg14"]:
         model = get_dino_finetuned_downloaded(saved_model_path, modelname)
-
-    elif modelname.lower() == "vim_finetuned":
-        model = get_vim_finetuned(saved_model_path)
 
     else:
         raise ValueError(f"Model {modelname} not found")
@@ -101,18 +78,6 @@ def get_dino_finetuned_downloaded(model_path, modelname):
     return model
 
 
-def get_sam_vit_h(model_path):
-    return build_sam_vit_h(model_path)
-
-
-def get_sam_vit_l(model_path):
-    return build_sam_vit_l(model_path)
-
-
-def get_sam_vit_b(model_path):
-    return build_sam_vit_b(model_path)
-
-
 def get_ctranspath(model_path):
     model = ctranspath()
     model.head = nn.Identity()
@@ -139,36 +104,17 @@ def get_full_res50():
     model = resnet.resnet50(weights="ResNet50_Weights.DEFAULT")
     return model
 
-
-def get_imagebind(pretrained=True):
-    model = imagebind_huge(pretrained=pretrained)
-    return model
-
-
-def multiply_by_255(img):
-    return img * 255
-
-
 def get_transforms(model_name):
     # from imagenet, leave as is
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
 
-    if model_name.lower() in ["ctranspath", "resnet50", "simclr_lung", "beit_fb", "resnet50_full"]:
+    if model_name.lower() in ["ctranspath", "resnet50", "beit_fb", "resnet50_full"]:
         size = 224
     elif model_name.lower() == "owkin":
         image_processor = AutoImageProcessor.from_pretrained("owkin/phikon")
         mean, std = image_processor.image_mean, image_processor.image_std
         size = image_processor.size["height"]
-    # elif model_name.lower() in [
-    #     "dinov2_vitg14_downloaded",
-    #     "dinov2_vits14_downloaded",
-    #     "dinov2_vitb14_downloaded",
-    #     "dinov2_vitl14_downloaded",
-    #     "dinov2_vits14_reg_downloaded",
-    #     "dinov2_vitg14_reg_downloaded",
-    # ]:
-    #     size = 518
     elif model_name.lower() == "retccl":
         size = 256
     elif model_name.lower() == "kimianet":
@@ -190,10 +136,6 @@ def get_transforms(model_name):
         "vim_finetuned",
     ]:
         size = 224
-    elif "sam" in model_name.lower():
-        size = 1024
-        mean = (123.675, 116.28, 103.53)
-        std = (58.395, 57.12, 57.375)
     else:
         raise ValueError("Model name not found")
 
@@ -205,15 +147,6 @@ def get_transforms(model_name):
         transforms_list = [
             transforms.Resize(size),
             transforms.ToTensor(),
-        ]
-
-    elif "sam" in model_name.lower():
-        # multiply image by 255 for "sam" model
-        transforms_list = [
-            transforms.Resize(size),
-            transforms.ToTensor(),
-            transforms.Lambda(multiply_by_255),
-            transforms.Normalize(mean=mean, std=std),
         ]
 
     preprocess_transforms = transforms.Compose(transforms_list)
@@ -241,7 +174,6 @@ class BeitModel(torch.nn.Module):
         features = self.avg_pooling(features)
 
         return features.squeeze(dim=2)
-
 
 class Phikon(nn.Module):
     def __init__(self):

@@ -4,5 +4,4 @@
 # found in the LICENSE file in the root directory of this source tree.
 
 from .hema_data import HemaStandardDataset
-from .image_net import ImageNet
-from .image_net_22k import ImageNet22k
+

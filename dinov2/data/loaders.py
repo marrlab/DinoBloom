@@ -11,13 +11,7 @@ import torch
 from torch.utils.data import Sampler
 
 from .datasets import (
-    BalancedPatchDataset,
-    HemaPatchDataset,
-    HemaStandardDataset,
-    ImageNet,
-    ImageNet22k,
-    PatchDataset,
-    WSIDataset,
+    HemaStandardDataset
 )
 from .samplers import EpochSampler, InfiniteSampler, ShardedInfiniteSampler
 
@@ -30,23 +24,6 @@ class SamplerType(Enum):
     INFINITE = 2
     SHARDED_INFINITE = 3
     SHARDED_INFINITE_NEW = 4
-
-
-def _make_bool_str(b: bool) -> str:
-    return "yes" if b else "no"
-
-
-def _make_sample_transform(image_transform: Optional[Callable] = None, target_transform: Optional[Callable] = None):
-    def transform(sample):
-        image, target = sample
-        if image_transform is not None:
-            image = image_transform(image)
-        if target_transform is not None:
-            target = target_transform(target)
-        return image, target
-
-    return transform
-
 
 def _parse_dataset_str(dataset_str: str):
     tokens = dataset_str.split(":")
@@ -61,21 +38,7 @@ def _parse_dataset_str(dataset_str: str):
             value = bool(int(value))
         kwargs[key] = value
 
-    if name == "ImageNet":
-        class_ = ImageNet
-        if "split" in kwargs:
-            kwargs["split"] = ImageNet.Split[kwargs["split"]]
-    elif name == "ImageNet22k":
-        class_ = ImageNet22k
-    elif name == "WSIDataset":
-        class_ = WSIDataset
-    elif name == "PatchDataset":
-        class_ = PatchDataset
-    elif name == "BalancedPatchDataset":
-        class_ = BalancedPatchDataset
-    elif name == "HemaPatchDataset":
-        class_ = HemaPatchDataset
-    elif name == "HemaStandardDataset":
+    if name == "HemaStandardDataset":
         class_ = HemaStandardDataset
     else:
         raise ValueError(f'Unsupported dataset "{name}"')

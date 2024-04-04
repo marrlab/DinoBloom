@@ -5,10 +5,8 @@
 
 import logging
 import random
-from typing import Callable
 
 import numpy as np
-from PIL import Image
 from torchvision import transforms
 
 from .transforms import GaussianBlur, make_normalize_transform
