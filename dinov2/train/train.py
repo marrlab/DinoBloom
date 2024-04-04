@@ -8,8 +8,8 @@ import logging
 import math
 import os
 import sys
-from functools import partial
 import time
+from functools import partial
 
 sys.path.append(".")
 
@@ -184,7 +184,7 @@ def do_train(cfg, model, resume=False):
         input_size=(img_size // patch_size, img_size // patch_size),
         max_num_patches=0.5 * img_size // patch_size * img_size // patch_size,
     )
-    if cfg.data_transform=="default":
+    if cfg.data_transform == "default":
         data_transform = DataAugmentationDINO(
             cfg.crops.global_crops_scale,
             cfg.crops.local_crops_scale,
@@ -192,15 +192,14 @@ def do_train(cfg, model, resume=False):
             global_crops_size=cfg.crops.global_crops_size,
             local_crops_size=cfg.crops.local_crops_size,
         )
-    elif cfg.data_transform=="hema":
-            data_transform = DataAugmentationHEMA(
+    elif cfg.data_transform == "hema":
+        data_transform = DataAugmentationHEMA(
             cfg.crops.global_crops_scale,
             cfg.crops.local_crops_scale,
             cfg.crops.local_crops_number,
             global_crops_size=cfg.crops.global_crops_size,
             local_crops_size=cfg.crops.local_crops_size,
         )
-
 
     collate_fn = partial(
         collate_data_and_cast,
@@ -243,7 +242,7 @@ def do_train(cfg, model, resume=False):
     header = "Training"
 
     batch_collection = []
-    total_tokens_collected = 0 
+    total_tokens_collected = 0
 
     for data in metric_logger.log_every(
         data_loader,
@@ -320,11 +319,11 @@ def do_train(cfg, model, resume=False):
 
         # compute smooth rank measure
 
-        desired_tokens=2500
+        desired_tokens = 2500
         tokens_needed = desired_tokens - total_tokens_collected
         batch_size = class_tokens.shape[0]  # Current batch size from class_tokens shape
-        
-        if tokens_needed > 0 and iteration % 1000 < (int(desired_tokens/batch_size)+1):
+
+        if tokens_needed > 0 and iteration % 1000 < (int(desired_tokens / batch_size) + 1):
             # If the whole batch can be added without exceeding 1000 tokens
             if batch_size <= tokens_needed:
                 batch_collection.append(class_tokens.detach())
@@ -359,13 +358,6 @@ def main(args):
     cfg = setup(args)
 
     model = SSLMetaArch(cfg).to(torch.device("cuda"))
-    # load pretrained model weights
-    # model_weights = torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14_reg')
-    # interpolate the position embeddings from input size 518 to 224x224=256 tokens
-    # model_weights.pos_embed.data = model.interpolate_pos_encoding(model_weights.pos_embed, 16, 16)
-    # model.student.backbone.load_state_dict(model_weights.state_dict())
-    # model.teacher.backbone.load_state_dict(model_weights.state_dict())
-    # model = get_downloaded_dino_vit_s_interpolated()
     model.prepare_for_distributed_training()
 
     logger.info("Model:\n{}".format(model))
@@ -383,7 +375,7 @@ def main(args):
 
 if __name__ == "__main__":
     args = get_args_parser(add_help=True).parse_args()
-    name = args.name #+ str(time.time()).split(".")[0] if args.name != "debug" else args.name
+    name = args.name if args.name != "debug" else args.name
     args.output_dir = os.path.join(args.output_dir, name)
     wandb.init(entity="histo-collab", project="dinov2", name=name, mode="online", config=args)
     main(args)

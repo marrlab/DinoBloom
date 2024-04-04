@@ -10,9 +10,16 @@ from typing import Any, Callable, List, Optional, TypeVar
 import torch
 from torch.utils.data import Sampler
 
-from .datasets import ImageNet, ImageNet22k, WSIDataset, PatchDataset, BalancedPatchDataset, HemaPatchDataset,HemaStandardDataset
+from .datasets import (
+    BalancedPatchDataset,
+    HemaPatchDataset,
+    HemaStandardDataset,
+    ImageNet,
+    ImageNet22k,
+    PatchDataset,
+    WSIDataset,
+)
 from .samplers import EpochSampler, InfiniteSampler, ShardedInfiniteSampler
-
 
 logger = logging.getLogger("dinov2")
 
@@ -50,8 +57,8 @@ def _parse_dataset_str(dataset_str: str):
     for token in tokens[1:]:
         key, value = token.split("=")
         assert key in ("root", "extra", "split", "shuffle")
-        if key=="shuffle":
-            value=bool(int(value))
+        if key == "shuffle":
+            value = bool(int(value))
         kwargs[key] = value
 
     if name == "ImageNet":
@@ -66,10 +73,10 @@ def _parse_dataset_str(dataset_str: str):
         class_ = PatchDataset
     elif name == "BalancedPatchDataset":
         class_ = BalancedPatchDataset
-    elif name =="HemaPatchDataset":
-        class_=HemaPatchDataset
-    elif name== "HemaStandardDataset":
-        class_=HemaStandardDataset
+    elif name == "HemaPatchDataset":
+        class_ = HemaPatchDataset
+    elif name == "HemaStandardDataset":
+        class_ = HemaStandardDataset
     else:
         raise ValueError(f'Unsupported dataset "{name}"')
 

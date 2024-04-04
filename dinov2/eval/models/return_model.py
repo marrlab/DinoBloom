@@ -4,10 +4,9 @@ from models.ctran import ctranspath
 from models.imagebind import imagebind_huge
 from models.resnet_retccl import resnet50 as retccl_res50
 from models.sam import build_sam_vit_b, build_sam_vit_h, build_sam_vit_l
-
 from torchvision import transforms
 from torchvision.models import resnet
-from transformers import BeitFeatureExtractor, Data2VecVisionModel, ViTModel, AutoImageProcessor
+from transformers import AutoImageProcessor, BeitFeatureExtractor, Data2VecVisionModel, ViTModel
 
 # RETCCL_PATH = '/lustre/groups/shared/users/peng_marr/pretrained_models/retccl.pth'
 # CTRANSPATH_PATH = '/lustre/groups/shared/users/peng_marr/pretrained_models/ctranspath.pth'
@@ -30,14 +29,14 @@ def get_models(modelname, saved_model_path=None):
     # --- histology-pretrained models
     if modelname.lower() == "ctranspath":
         model = get_ctranspath(saved_model_path)
-    elif modelname.lower() == 'remedis':
-        model = hub.load('cxr-52x2-remedis-m')
+    elif modelname.lower() == "remedis":
+        model = hub.load("cxr-52x2-remedis-m")
     elif modelname.lower() == "retccl":
         model = get_retCCL(saved_model_path)
     elif modelname.lower() == "owkin":
         model = Phikon()
 
-    # --- vision foundation models 
+    # --- vision foundation models
     elif modelname.lower() == "resnet50":
         model = get_res50()
     elif modelname.lower() == "resnet50_full":
@@ -46,16 +45,16 @@ def get_models(modelname, saved_model_path=None):
     elif modelname.lower() == "imagebind":
         model = get_imagebind(saved_model_path)
     elif modelname.lower() == "beit_fb":
-        model = BeitModel(device)    
+        model = BeitModel(device)
 
     # --- our finetuned models
-    elif modelname.lower() in ["dinov2_vits14","dinov2_vitb14","dinov2_vitl14","dinov2_vitg14"]:
+    elif modelname.lower() in ["dinov2_vits14", "dinov2_vitb14", "dinov2_vitl14", "dinov2_vitg14"]:
         model = get_dino_finetuned_downloaded(saved_model_path, modelname)
 
     elif modelname.lower() == "vim_finetuned":
         model = get_vim_finetuned(saved_model_path)
-        
-    else: 
+
+    else:
         raise ValueError(f"Model {modelname} not found")
 
     model = model.to(device)
@@ -71,12 +70,6 @@ def get_retCCL(model_path):
     model.load_state_dict(pretext_model, strict=True)
     return model
 
-
-def get_vim_finetuned(checkpoint=None):
-    from models.vim import get_vision_mamba_model
-
-    model = get_vision_mamba_model(checkpoint=checkpoint)
-    return model
 
 # for 224
 def get_dino_finetuned_downloaded(model_path, modelname):
@@ -118,7 +111,6 @@ def get_sam_vit_l(model_path):
 
 def get_sam_vit_b(model_path):
     return build_sam_vit_b(model_path)
-
 
 
 def get_ctranspath(model_path):
@@ -167,7 +159,7 @@ def get_transforms(model_name):
     elif model_name.lower() == "owkin":
         image_processor = AutoImageProcessor.from_pretrained("owkin/phikon")
         mean, std = image_processor.image_mean, image_processor.image_std
-        size = image_processor.size['height']
+        size = image_processor.size["height"]
     # elif model_name.lower() in [
     #     "dinov2_vitg14_downloaded",
     #     "dinov2_vits14_downloaded",
@@ -204,9 +196,9 @@ def get_transforms(model_name):
         std = (58.395, 57.12, 57.375)
     else:
         raise ValueError("Model name not found")
-    
-    size=(size,size)
-    
+
+    size = (size, size)
+
     transforms_list = [transforms.Resize(size), transforms.ToTensor(), transforms.Normalize(mean=mean, std=std)]
 
     if "beit_fb" in model_name.lower():

@@ -6,11 +6,9 @@ PyTorch implementation and pretrained models for DINOv2. For details, see the pa
 
 DINOv2 models produce high-performance visual features that can be directly employed with classifiers as simple as linear layers on a variety of computer vision tasks; these visual features are robust and perform well across domains without any requirement for fine-tuning. The models were pretrained on a dataset of 142 M images without using any labels or annotations.
 
-
-
 ## Citing DINOv2
 
-If you find this repository useful, please consider giving a star :star: and citation :t-rex::
+If you find this repository useful, please consider giving a star ⭐️ and citation :t-rex::
 
 ```
 @misc{oquab2023dinov2,

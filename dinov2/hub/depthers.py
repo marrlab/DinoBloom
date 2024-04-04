@@ -11,7 +11,7 @@ import torch
 
 from .backbones import _make_dinov2_model
 from .depth import BNHead, DepthEncoderDecoder, DPTHead
-from .utils import _DINOV2_BASE_URL, _make_dinov2_model_name, CenterPadding
+from .utils import _DINOV2_BASE_URL, CenterPadding, _make_dinov2_model_name
 
 
 class Weights(Enum):

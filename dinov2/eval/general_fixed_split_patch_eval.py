@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import torch
 import umap
+import wandb
 from models.return_model import get_models, get_transforms
 from PIL import Image
 from sklearn.linear_model import LogisticRegression
@@ -17,8 +18,6 @@ from sklearn.neighbors import KNeighborsClassifier
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from utils import CustomImageDataset
-
-import wandb
 
 parser = argparse.ArgumentParser(description="Feature extraction")
 os.environ["WANDB__SERVICE_WAIT"] = "300"
@@ -91,7 +90,7 @@ parser.add_argument(
 parser.add_argument(
     "--evaluate_untrained_baseline",
     help="Set to true if original dino should be tested.",
-    action='store_true',
+    action="store_true",
 )
 
 parser.add_argument(
@@ -111,12 +110,12 @@ parser.add_argument(
 )
 
 
-def save_features_and_labels_individual(feature_extractor, dataloader, save_dir,dataset):
+def save_features_and_labels_individual(feature_extractor, dataloader, save_dir, dataset):
 
-    if len(dataset)==len(list(Path(save_dir).glob("*.h5"))):
+    if len(dataset) == len(list(Path(save_dir).glob("*.h5"))):
         print("features already extracted")
         return
-    
+
     print("extracting features..")
     os.makedirs(save_dir, exist_ok=True)
 
@@ -162,57 +161,54 @@ def main(args):
     test_dataset = CustomImageDataset(df_test, transform=transform)
 
     # Create data loaders for the  datasets
-    train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+    train_dataloader = DataLoader(
+        train_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers
+    )
     test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
     # If you want to log the results with Weights & Biases (wandb), you can initialize a wandb run:
-    wandb.init(
-        entity="histo-collab",
-        project= args.run_name ,
-        name=args.experiment_name ,
-        config=args
-    )
+    wandb.init(entity="histo-collab", project=args.run_name, name=args.experiment_name, config=args)
 
-    if model_name in ["owkin","resnet50","resnet50_full","remedis","imagebind"]:
-        sorted_paths=[None]
-    elif model_name in ["retccl","ctranspath"]:
-        sorted_paths=[Path(args.run_path)]
+    if model_name in ["owkin", "resnet50", "resnet50_full", "remedis", "imagebind"]:
+        sorted_paths = [None]
+    elif model_name in ["retccl", "ctranspath"]:
+        sorted_paths = [Path(args.run_path)]
     else:
         sorted_paths = list(Path(args.run_path).rglob("*teacher_checkpoint.pth"))
 
-    if len(sorted_paths)>1:
+    if len(sorted_paths) > 1:
         sorted_paths = sorted(sorted_paths, key=sort_key)
     if args.evaluate_untrained_baseline:
         sorted_paths.insert(0, None)
 
     for checkpoint in sorted_paths:
         if checkpoint is not None:
-            parent_dir=checkpoint.parent 
+            parent_dir = checkpoint.parent
         else:
-            parent_dir = Path(args.run_path) / (model_name+"_baseline")
-            
+            parent_dir = Path(args.run_path) / (model_name + "_baseline")
+
         print("loading checkpoint: ", checkpoint)
         feature_extractor = get_models(model_name, saved_model_path=checkpoint)
         feature_dir = parent_dir / args.run_name
 
         train_dir = os.path.join(feature_dir, "train_data")
         test_dir = os.path.join(feature_dir, "test_data")
-        
-        save_features_and_labels_individual(feature_extractor, train_dataloader, train_dir,train_dataset)
-        save_features_and_labels_individual(feature_extractor, test_dataloader, test_dir,test_dataset)
+
+        save_features_and_labels_individual(feature_extractor, train_dataloader, train_dir, train_dataset)
+        save_features_and_labels_individual(feature_extractor, test_dataloader, test_dir, test_dataset)
 
         train_data, train_labels, test_data, test_labels = get_data(train_dir, test_dir)
         print("data fully loaded")
 
         if args.logistic_regression:
-            logreg_dir = parent_dir/ "log_reg_eval"
+            logreg_dir = parent_dir / "log_reg_eval"
             log_reg = train_and_evaluate_logistic_regression(
                 train_data, train_labels, test_data, test_labels, logreg_dir, max_iter=1000
             )
             print("logistic_regression done")
 
         if args.umap:
-            umap_dir = parent_dir/ "umaps"
+            umap_dir = parent_dir / "umaps"
             umap_train = create_umap(train_data, train_labels, umap_dir)
             umap_test = create_umap(test_data, test_labels, umap_dir, "test")
             print("umap done")
@@ -222,10 +218,10 @@ def main(args):
             knn_metrics = perform_knn(train_data, train_labels, test_data, test_labels, knn_dir)
             print("knn done")
 
-        if checkpoint is not None and len(sorted_paths)>1:
+        if checkpoint is not None and len(sorted_paths) > 1:
             step = int(parent_dir.name.split("_")[1])
-        else: 
-            step=0
+        else:
+            step = 0
 
         wandb.log(knn_metrics, step=step)
         wandb.log(
@@ -235,13 +231,9 @@ def main(args):
 
 def process_file(file_name):
     with h5py.File(file_name, "r") as hf:
-        # hf.visititems(print)
         features = torch.tensor(hf["features"][:]).tolist()
         label = int(hf["labels"][()])
     return features, label
-
-
-# {"Accuracy": accuracy, "Balanced_Acc": balanced_acc, "Weighted_F1": weighted_f1}
 
 
 def get_data(train_dir, test_dir):
@@ -288,8 +280,7 @@ def get_data(train_dir, test_dir):
 def perform_knn(train_data, train_labels, test_data, test_labels, save_dir):
     # Define a range of values for n_neighbors to search
     n_neighbors_values = [1, 20]
-    # n_neighbors_values = [1, 2, 5, 10, 20, 50, 100, 500]
-    # n_neighbors_values = [1, 2, 3, 4, 5] # -> for testing
+
     metrics_dict = {}
     os.makedirs(save_dir, exist_ok=True)
 
@@ -309,7 +300,6 @@ def perform_knn(train_data, train_labels, test_data, test_labels, save_dir):
         weighted_f1 = f1_score(test_labels, test_predictions, average="weighted")
 
         print(f"n_neighbors = {n_neighbors}")
-
 
         ## Calculate the classification report
         report = classification_report(test_labels, test_predictions, output_dict=True)
@@ -383,14 +373,12 @@ def train_and_evaluate_logistic_regression(train_data, train_labels, test_data, 
     accuracy = accuracy_score(test_labels, test_predictions)
     balanced_acc = balanced_accuracy_score(test_labels, test_predictions)
     weighted_f1 = f1_score(test_labels, test_predictions, average="weighted")
-    # auroc = roc_auc_score(test_labels, test_predictions, multi_class='ovr', average='weighted')
     report = classification_report(test_labels, test_predictions, output_dict=True)
 
     df_labels_to_save = pd.DataFrame({"True Labels": test_labels, "Predicted Labels": test_predictions})
     filename = f"{Path(save_dir).name}_labels_and_predictions.csv"
     os.makedirs(save_dir, exist_ok=True)
     file_path = os.path.join(save_dir, filename)
-    # Speichern des DataFrames in der CSV-Datei
     df_labels_to_save.to_csv(file_path, index=False)
 
     predicted_probabilities_df = pd.DataFrame(

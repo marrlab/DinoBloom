@@ -3,16 +3,14 @@
 # This source code is licensed under the Apache License, Version 2.0
 # found in the LICENSE file in the root directory of this source tree.
 
-from collections import defaultdict, deque
 import datetime
 import json
 import logging
 import time
-
-import torch
+from collections import defaultdict, deque
 
 import dinov2.distributed as distributed
-
+import torch
 
 logger = logging.getLogger("dinov2")
 

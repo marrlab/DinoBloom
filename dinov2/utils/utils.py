@@ -13,7 +13,6 @@ import numpy as np
 import torch
 from torch import nn
 
-
 logger = logging.getLogger("dinov2")
 
 
@@ -28,7 +27,7 @@ def smooth_rank_measure(embedding_matrix, eps=1e-7):
     Returns:
         float: Smooth rank measure.
     """
-    embedding_matrix=embedding_matrix.float()
+    embedding_matrix = embedding_matrix.float()
     # Perform SVD on the embedding matrix
     _, S, _ = torch.svd(embedding_matrix)
 

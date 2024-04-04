@@ -4,9 +4,9 @@
 # found in the LICENSE file in the root directory of this source tree.
 
 import copy
-from functools import partial
 import math
 import warnings
+from functools import partial
 
 import torch
 import torch.nn as nn

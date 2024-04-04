@@ -4,11 +4,11 @@
 # found in the LICENSE file in the root directory of this source tree.
 
 import os
-from typing import Callable, Optional
 import warnings
+from typing import Callable, Optional
 
-from torch import Tensor, nn
 import torch.nn.functional as F
+from torch import Tensor, nn
 
 
 class SwiGLUFFN(nn.Module):

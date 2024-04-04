@@ -13,10 +13,6 @@ from dinov2.layers import DINOHead
 from dinov2.loss import DINOLoss, KoLeoLoss, iBOTPatchLoss
 from dinov2.models import build_model_from_cfg
 
-try:
-    from dinov2.models.vision_mamba import get_vision_mamba_model
-except ModuleNotFoundError:
-    pass
 from dinov2.models.vision_transformer import BlockChunk
 from dinov2.utils.param_groups import fuse_params_groups, get_params_groups_with_decay
 from dinov2.utils.utils import has_batchnorms
@@ -33,7 +29,7 @@ logger = logging.getLogger("dinov2")
 
 def smooth_rank_loss(embedding_matrix, eps=1e-7):
     """
-    Compute a loss based on the smooth rank measure of a matrix of embeddings. 
+    Compute a loss based on the smooth rank measure of a matrix of embeddings.
     This version is adapted for use as a loss function, where lower values are better.
 
     Args:
@@ -49,15 +45,16 @@ def smooth_rank_loss(embedding_matrix, eps=1e-7):
     _, S, _ = torch.svd(embedding_matrix)
 
     # Normalize the singular values to sum to 1, add eps to avoid division by zero in log
-    
+
     p = S / (torch.norm(S, p=1) + eps)
     p = p[: embedding_matrix.shape[1]]
     # Compute the negative entropy of the distribution
     # This encourages the concentration of information (lower entropy is better for loss minimization)
-    neg_entropy = -torch.exp(-torch.sum(p * torch.log(p))) # Add eps to avoid log(0)
+    neg_entropy = -torch.exp(-torch.sum(p * torch.log(p)))  # Add eps to avoid log(0)
 
     # Return the negative entropy as the loss
     return neg_entropy
+
 
 def interpolate_pos_encoding(x, w, h):
     N = x.shape[1] - 1
@@ -100,18 +97,11 @@ class SSLMetaArch(nn.Module):
         student_model_dict = dict()
         teacher_model_dict = dict()
 
-        if cfg.student.arch in ["dinov2_vits14","dinov2_vitb14","dinov2_vitl14","dinov2_vitg14"]:
+        if cfg.student.arch in ["dinov2_vits14", "dinov2_vitb14", "dinov2_vitl14", "dinov2_vitg14"]:
             student_backbone = get_downloaded_dino_vit_interpolated(cfg.student.arch)
             teacher_backbone = get_downloaded_dino_vit_interpolated(cfg.student.arch)
-            embed_dict={"dinov2_vits14":384,"dinov2_vitb14":768,"dinov2_vitl14":1024,"dinov2_vitg14":1536}
+            embed_dict = {"dinov2_vits14": 384, "dinov2_vitb14": 768, "dinov2_vitl14": 1024, "dinov2_vitg14": 1536}
             embed_dim = embed_dict[cfg.student.arch]
-            
-        elif cfg.student.arch == "vim_tiny":
-            from dinov2.models.vision_mamba import get_vision_mamba_model
-
-            student_backbone = get_vision_mamba_model(cfg.student.interpolate_antialias, cfg.student.interpolate_offset)
-            teacher_backbone = get_vision_mamba_model(cfg.student.interpolate_antialias, cfg.student.interpolate_offset)
-            embed_dim = 192
         else:
             student_backbone, teacher_backbone, embed_dim = build_model_from_cfg(cfg)
 
@@ -124,15 +114,6 @@ class SSLMetaArch(nn.Module):
             logger.info(f"OPTIONS -- pretrained weights: loading from {cfg.student.pretrained_weights}")
             student_backbone.load_state_dict(chkpt["model"], strict=False)
 
-        # load pretrained model weights
-        # pretrained_weights = torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14_reg')
-        # # interpolate the position embeddings from input size 518 to 224x224=256 tokens
-        # pretrained_weights.pos_embed.data = self.interpolate_pos_encoding(pretrained_weights.pos_embed, 16, 16)
-        # student_backbone.load_state_dict(pretrained_weights.state_dict(), strict=False)
-        # teacher_backbone.load_state_dict(pretrained_weights.state_dict(), strict=False)
-        # student_model_dict["backbone"] = student_backbone
-        # teacher_model_dict["backbone"] = teacher_backbone
-
         self.embed_dim = embed_dim
         self.dino_out_dim = cfg.dino.head_n_prototypes
 
@@ -140,11 +121,11 @@ class SSLMetaArch(nn.Module):
         self.do_koleo = cfg.dino.koleo_loss_weight > 0
         self.do_ibot = cfg.ibot.loss_weight > 0
 
-        self.do_smooth_rank_loss=cfg.dino.smooth_rank_loss_weight>0
+        self.do_smooth_rank_loss = cfg.dino.smooth_rank_loss_weight > 0
         self.ibot_separate_head = cfg.ibot.separate_head
 
         logger.info("OPTIONS -- DINO")
-        
+
         if self.do_dino:
             logger.info(f"OPTIONS -- DINO -- loss_weight: {cfg.dino.loss_weight}")
             logger.info(f"OPTIONS -- DINO -- head_n_prototypes: {cfg.dino.head_n_prototypes}")
@@ -409,11 +390,9 @@ class SSLMetaArch(nn.Module):
                 )  # this is to display the same losses as before but we can remove eventually
 
             if self.do_smooth_rank_loss:
-                smooth_rank_l=smooth_rank_loss(student_cls_tokens)*self.cfg.dino.smooth_rank_loss_weight
+                smooth_rank_l = smooth_rank_loss(student_cls_tokens) * self.cfg.dino.smooth_rank_loss_weight
                 loss_accumulator += smooth_rank_l
-                loss_dict["smooth_rank_loss"] = (
-                    smooth_rank_l / loss_scales
-                )
+                loss_dict["smooth_rank_loss"] = smooth_rank_l / loss_scales
 
         if do_ibot:
             # compute loss
@@ -437,8 +416,7 @@ class SSLMetaArch(nn.Module):
 
         self.backprop_loss(loss_accumulator)
 
-        # self.fsdp_synchronize_streams()  # changed for vision mamba
-
+        self.fsdp_synchronize_streams()
         return loss_dict, student_cls_tokens
 
     def fsdp_synchronize_streams(self):

@@ -3,13 +3,12 @@
 # This source code is licensed under the Apache License, Version 2.0
 # found in the LICENSE file in the root directory of this source tree.
 
-import torch
 import random
+
+import torch
 
 
 def collate_data_and_cast(samples_list, mask_ratio_tuple, mask_probability, dtype, n_tokens=None, mask_generator=None):
-    # dtype = torch.half  # TODO: Remove
-
     n_global_crops = len(samples_list[0][0]["global_crops"])
     n_local_crops = len(samples_list[0][0]["local_crops"])
 
@@ -19,8 +18,6 @@ def collate_data_and_cast(samples_list, mask_ratio_tuple, mask_probability, dtyp
         collated_local_crops.to(dtype)
     else:
         collated_local_crops = torch.tensor([])
-    # collated_names=[s[2] for s in samples_list]
-
 
     B = len(collated_global_crops)
     N = n_tokens
@@ -51,5 +48,4 @@ def collate_data_and_cast(samples_list, mask_ratio_tuple, mask_probability, dtyp
         "masks_weight": masks_weight,
         "upperbound": upperbound,
         "n_masked_patches": torch.full((1,), fill_value=mask_indices_list.shape[0], dtype=torch.long),
-        # "paths":collated_names
     }
