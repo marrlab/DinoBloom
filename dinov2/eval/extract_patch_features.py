@@ -34,13 +34,13 @@ parser.add_argument(
 parser.add_argument(
     "--train_image_path",
     help="path to folder with images",
-    default="/lustre/groups/labs/marr/qscd01/datasets/210526_mll_mil_pseudonymized/splitted_data/train",
+    default="/splitted_data/train",
     type=str,
 )
 parser.add_argument(
     "--test_image_path",
     help="path to folder with images",
-    default="/lustre/groups/labs/marr/qscd01/datasets/210526_mll_mil_pseudonymized/splitted_data/test",
+    default="/splitted_data/test",
     type=str,
 )
 
@@ -50,18 +50,6 @@ parser.add_argument(
     default=None,
     type=str,
 )
-# ctranspath:           “/lustre/groups/shared/users/peng_marr/HistoDINO/logs/baseline_models/ctranspath/ctranspath.pth”
-# resnet50:             None
-# resnet50_full:        None
-# owkin:                None
-# dinov2_vits14:        None
-# dinov2_vitb14:        None
-# dinov2_vitl14:        None
-# dinov2_vitg14:        None
-# dinov2_vits14 bloom:  "/lustre/groups/shared/users/peng_marr/HistoDINO/models/vits_9999.pth"
-# dinov2_vitb14 bloom:  "/lustre/groups/shared/users/peng_marr/HistoDINO/models/vitb_hema_16999.pth"
-# dinov2_vitl bloom:    "/lustre/groups/shared/users/peng_marr/HistoDINO/models/vitl_4999_final.pth"
-# dinov2_vitg bloom:    "/lustre/groups/shared/users/peng_marr/HistoDINO/models/vitg_4999_final.pth"
 
 parser.add_argument(
     "--save_dir",
@@ -70,18 +58,6 @@ parser.add_argument(
     help="path save directory",
     type=str,
 )
-# ctranspath:           ".../ctranspath"
-# resnet50:             ".../resnet50"
-# resnet50_full:        ".../resnet50_full"
-# owkin:                ".../owkin"
-# dinov2_vits14 orig:   ".../dinov2_vits"
-# dinov2_vitb14 orig:   ".../dinov2_vitb"
-# dinov2_vitl14 orig:   ".../dinov2_vitl"
-# dinov2_vitg14 orig:   ".../dinov2_vitg"
-# dinov2_vits14 bloom:  ".../dinov2_vits14_bloom"
-# dinov2_vitb14 bloom:  ".../dinov2_vitb14_bloom"
-# dinov2_vitl14 bloom:  ".../dinov2_vitl14_bloom"
-# dinov2_vitg14 bloom:  ".../dinov2_vitg14_bloom"
 
 parser.add_argument(
     "--model_path",

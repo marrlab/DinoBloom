@@ -44,7 +44,7 @@ parser.add_argument(
     "--path-folder",
     "-p",
     help="path to folder containing subfolders with training, val and test data",
-    default="/lustre/groups/shared/users/peng_marr/HistoDINO/features",
+    default="",
     type=str,
 )
 parser.add_argument(
@@ -52,13 +52,13 @@ parser.add_argument(
     "--save-dir",
     "-s",
     help="specify where to save the umap",
-    default="/lustre/groups/shared/users/peng_marr/HistoDINO/eval",
+    default="",
     type=str,
 )
 parser.add_argument(
     "--dataset",
     help="specify the dataset name",
-    default="NCT-CRC-100k-nonorm",
+    default="",
     type=str,
 )
 parser.add_argument(

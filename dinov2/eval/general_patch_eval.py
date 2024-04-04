@@ -63,14 +63,14 @@ parser.add_argument(
 parser.add_argument(
     "--dataset_path",
     help="path to datasetfolder",
-    default="/lustre/groups/labs/marr/qscd01/datasets/Acevedo_20/PBC_dataset_normal_DIB/",
+    default="",
     type=str,
 )
 
 parser.add_argument(
     "--model_path",
     help="path to run directory with models inside",
-    default="/home/icb/valentin.koch/dinov2/vits_hema_v2_rankloss_1708872068.641858/eval",
+    default="",
     type=str,
 )
 

@@ -33,7 +33,7 @@ parser.add_argument(
 parser.add_argument(
     "--experiment_name",
     help="name of experiment",
-    default="nct_crc",
+    default="",
     type=str,
 )
 
@@ -54,14 +54,14 @@ parser.add_argument(
 parser.add_argument(
     "--image_path_train",
     help="path to csv file",
-    default="./dinov2/eval/miccai/nct_crc_train.csv",
+    default="",
     type=str,
 )
 
 parser.add_argument(
     "--image_path_test",
     help="path to csv file",
-    default="./dinov2/eval/miccai/nct_crc_test.csv",
+    default="",
     type=str,
 )
 
@@ -69,7 +69,7 @@ parser.add_argument(
     "--run_path",
     "--model_path",
     help="path to run directory with models inside",
-    default="/home/icb/valentin.koch/dinov2/vits_fixed1708263536.3059368/eval",
+    default="",
     type=str,
 )
 
