@@ -1,31 +1,34 @@
-# DinoBloom: A Foundation Model for Generalizable Cell Embeddings in Hematology
-<img src="media/logo.png" title="Cutie" width="500" /> 
-Repository of [DinoBloom: A Foundation Model for Generalizable Cell Embeddings in Hematology](arxiv.org) that uses [DINOv2](https://arxiv.org/abs/2304.07193) and is adaptet from their [oringinal Github repository](https://github.com/facebookresearch/dinov2/tree/main/dinov2).
 
-<img src="media/overview.png" title="Overview"  /> 
+| <img src="media/logo.png" width="250" title="Cutie" /> | <h1>DinoBloom: A Foundation Model for Generalizable Cell Embeddings in Hematology</h1> 
+|-|-|
 
 
-DinoBloom is a model family (ViTs) trained on a large cohort of 13 diverse publicly available datasets of single cells in peripheral blood and bone marrow. The trained models in the can be downloaded on [zenodo](zenodolink.com) in the variants DinoBloom-S, DinoBloom-B, DinoBloom-L and DinoBloom-G.
 
-| Model         | Feature dim | #params |
-|---------------|-------------|---------|
-| DinoBloom-S   | 384         | 22M     |
-| DinoBloom-B   | 768         | 86M     |
-| DinoBloom-L   | 1024        | 304M    |
-| DinoBloom-G   | 1536        | 1136M   |
+Repository of [DinoBloom: A Foundation Model for Generalizable Cell Embeddings in Hematology](https://arxiv.org) that uses [DINOv2](https://arxiv.org/abs/2304.07193) and is adapted from their [original Github repository](https://github.com/facebookresearch/dinov2/tree/main/dinov2). DinoBloom is a model family (ViTs) trained on a large cohort of 13 diverse publicly available datasets of single cells in peripheral blood and bone marrow. The trained models in the can be downloaded on [zenodo](zenodolink.com) in the variants DinoBloom-S, DinoBloom-B, DinoBloom-L and DinoBloom-G. We show that our models outperforms existing medical and non-medical vision models in (i) linear probing and k-nearest neighbor evaluations for cell-type classification on peripheral blood and bone marrow smears and (ii) weakly supervised multiple instance learning for acute myeloid leukemia subtyping by a large margin.
+## Data and pipeline overview
+<img src="media/overview.png" width="2000" title="Overview" /> 
 
-To train the model: 
+## Model farm
+| Model         | Feature dim | #params | Weights
+|---------------|-------------|---------|---------|
+| DinoBloom-S   | 384         | 22M     |[Download](https://zenodo.org/records/10908163/files/DinoBloom-S.pth?download=1)|
+| DinoBloom-B   | 768         | 86M     |[Download](https://zenodo.org/records/10908163/files/DinoBloom-B.pth?download=1)|
+| DinoBloom-L   | 1024        | 304M    |[Download](https://zenodo.org/records/10908163/files/DinoBloom-L.pth?download=1)|
+| DinoBloom-G   | 1536        | 1136M   |[Download](https://zenodo.org/records/10908163/files/DinoBloom-G.pth?download=1)|
 
-
+To train the model you need to specify the folder with .txt files holding the paths of the images you want to use to train in dinov2/configs/train/custom.yaml
+for training on a single GPU run: 
+```
+python dinov2/train/train.py --config-file dinov2/configs/train/custom.yaml
+```
+for multiple GPUs on one node run
+```
+torchrun --nproc_per_node=#num_gpus dinov2/train/train.py --config-file dinov2/configs/train/custom.yaml
+```
 ## Citing DinoBloom
 
-If you find this repository useful, please consider giving a star ⭐️ and citation :t-rex::
+If you find this repository useful, please consider citing our work:
 
 ```
-@misc{oquab2023dinov2,
-  title={DINOv2: Learning Robust Visual Features without Supervision},
-  author={Oquab, Maxime and Darcet, Timothée and Moutakanni, Theo and Vo, Huy V. and Szafraniec, Marc and Khalidov, Vasil and Fernandez, Pierre and Haziza, Daniel and Massa, Francisco and El-Nouby, Alaaeldin and Howes, Russell and Huang, Po-Yao and Xu, Hu and Sharma, Vasu and Li, Shang-Wen and Galuba, Wojciech and Rabbat, Mike and Assran, Mido and Ballas, Nicolas and Synnaeve, Gabriel and Misra, Ishan and Jegou, Herve and Mairal, Julien and Labatut, Patrick and Joulin, Armand and Bojanowski, Piotr},
-  journal={arXiv:2304.07193},
-  year={2023}
-}
+tbd
 ```
