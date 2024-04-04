@@ -1,12 +1,23 @@
 # DinoBloom: A Foundation Model for Generalizable Cell Embeddings in Hematology
+<img src="media/logo.png" title="Cutie" width="500" /> 
+Repository of [DinoBloom: A Foundation Model for Generalizable Cell Embeddings in Hematology](arxiv.org) that uses [DINOv2](https://arxiv.org/abs/2304.07193) and is adaptet from their [oringinal Github repository](https://github.com/facebookresearch/dinov2/tree/main/dinov2).
 
-[Original](https://arxiv.org/abs/2304.07193)
+<img src="media/overview.png" title="Overview"  /> 
 
-PyTorch implementation and pretrained models for DINOv2. For details, see the papers: **[DINOv2: Learning Robust Visual Features without Supervision](https://arxiv.org/abs/2304.07193)** and **[Vision Transformers Need Registers](https://arxiv.org/abs/2309.16588)**.
 
-DINOv2 models produce high-performance visual features that can be directly employed with classifiers as simple as linear layers on a variety of computer vision tasks; these visual features are robust and perform well across domains without any requirement for fine-tuning. The models were pretrained on a dataset of 142 M images without using any labels or annotations.
+DinoBloom is a model family (ViTs) trained on a large cohort of 13 diverse publicly available datasets of single cells in peripheral blood and bone marrow. The trained models in the can be downloaded on [zenodo](zenodolink.com) in the variants DinoBloom-S, DinoBloom-B, DinoBloom-L and DinoBloom-G.
 
-## Citing DINOv2
+| Model         | Feature dim | #params |
+|---------------|-------------|---------|
+| DinoBloom-S   | 384         | 22M     |
+| DinoBloom-B   | 768         | 86M     |
+| DinoBloom-L   | 1024        | 304M    |
+| DinoBloom-G   | 1536        | 1136M   |
+
+To train the model: 
+
+
+## Citing DinoBloom
 
 If you find this repository useful, please consider giving a star ⭐️ and citation :t-rex::
 
