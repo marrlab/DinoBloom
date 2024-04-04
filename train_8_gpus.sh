@@ -17,4 +17,4 @@ conda activate dinov2
 
 export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH
 
-torchrun --nproc_per_node=8 dinov2/dinov2/train/train.py --name "vitb_f1" --output_dir "" --config-file dinov2/dinov2/configs/train/custom_8.yaml
+torchrun --nproc_per_node=8 dinov2/dinov2/train/train.py --name "vitb_f1" --output_dir "" --config-file dinov2/dinov2/configs/train/custom.yaml

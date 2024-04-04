@@ -43,54 +43,49 @@ compute_precision:
 
 ibot:
   separate_head: true
-  # head_n_prototypes: 131072
+  #head_n_prototypes: 131072
+data_transform: "default"
 train:
-  batch_size_per_gpu: 144  # 40 for vitl on 40GB A100, 256 for vits on 80GB A100, 144 for vits on 40GB A100
-  num_workers: 20
-  OFFICIAL_EPOCH_LENGTH: 8740  # 1250 # should be actual dataset size / batch_size_per_gpu / num_gpus
-  dataset_path: BalancedPatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/train_lists:shuffle=1  # length 10M, OFFICIAL_EPOCH_LENGTH: 8740, epochs: 10, warmup_epochs: 0.5
-  # dataset_path: PatchDataset
-  # finetune on NCT-CRC-100K dataset
-  # dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/NCT-CRC-100K.txt  # length 100K, OFFICIAL_EPOCH_LENGTH: 195, epochs: 10, warmup_epochs: 0.5
-  # finetune on TCGA-CRC dataset 
-  # dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/TCGA/CRC/patches/512px_crc_wonorm_complete_diag.txt  # length: 1652722, OFFICIAL_EPOCH_LENGTH: 3227, epochs: 10, warmup_epochs: 0.5
-  # finetune on TCGA-CRC 1024 patches (diag and frozen)
-  # dataset_path: PatchDataset:root=/lustre/groups/shared/histology_data/patch_lists/tcga_patches_coad_read.txt # length: 401477 (*4), OFFICIAL_EPOCH_LENGTH: 3136, epochs: 40, warmup_epochs: 2
-
+  batch_size_per_gpu: 120 #vitg 26+, vitl: 56, vits:152, vitb:120 for 8 node
+  num_workers: 124
+  OFFICIAL_EPOCH_LENGTH: 500  # 1250
+  dataset_path: HemaStandardDataset:root=/lustre/groups/shared/histology_data/patch_lists/hematology_patches:shuffle=1
   centering: sinkhorn_knopp
 
   drop_path_rate: 0.4
-  ffn_layer: swiglufused
+  ffn_layer: swiglufused 
   block_chunks: 0  # for distributed training
   num_register_tokens: 0  # 0 for no register tokens
 
 teacher:
   momentum_teacher: 0.994
 optim:
-  epochs: 10  # 500
+  epochs: 200  # 500
   weight_decay_end: 0.2
   base_lr: 2.0e-04  # learning rate for a batch size of 1024
-  warmup_epochs: 0.5 # original: 10  # 80
+  warmup_epochs: 20  # 80
   layerwise_decay: 1.0
 
-
 evaluation:
-  eval_period_iterations: 5000
-
+  eval_period_iterations: 1000
 
 # adapt to model architecture
 # ---------------------------
 # config for vit
 # "dinov2_vits14","dinov2_vitb14","dinov2_vitl14","dinov2_vitg14"
-# 384, 768, 1024, 1536
+
 student:
-  arch: dinov2_vits14
+  arch: dinov2_vitb14
   patch_size: 14
 crops:
+  global_crops_scale:
+  - 0.32 #0.32 default
+  - 1.0
   local_crops_size: 98
+  local_crops_number: 1 #!!! bit hacky, 1 indicates NO LOCAL CROPS !!!
 dino:
-  head_bottleneck_dim: 384 
-  smooth_rank_loss_weight: 0.0
+  head_bottleneck_dim: 256 #vits: 256, vitl: 384 
+  smooth_rank_loss_weight: 0.0 #doesnt help
 
 # ---------------------------
 # config for vim_tiny
