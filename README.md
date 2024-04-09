@@ -30,5 +30,12 @@ torchrun --nproc_per_node=#num_gpus dinov2/train/train.py --config-file dinov2/c
 If you find this repository useful, please consider citing our work:
 
 ```
-tbd
+@misc{koch2024dinobloom,
+      title={DinoBloom: A Foundation Model for Generalizable Cell Embeddings in Hematology}, 
+      author={Valentin Koch and Sophia J. Wagner and Salome Kazeminia and Ece Sancar and Matthias Hehr and Julia Schnabel and Tingying Peng and Carsten Marr},
+      year={2024},
+      eprint={2404.05022},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
 ```
