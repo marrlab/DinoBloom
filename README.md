@@ -25,6 +25,10 @@ for multiple GPUs on one node run
 ```
 torchrun --nproc_per_node=#num_gpus dinov2/train/train.py --config-file dinov2/configs/train/custom.yaml
 ```
+
+## Sample Notebook
+We provide a sample [google colab notebook](https://colab.research.google.com/drive/1fjArdu28G5_C9Hq2Qe08bSJGu2Bk2rni#scrollTo=AiRK-3cd9Uyh) that shows feature extraction and how to do PCA visualization.
+
 ## Citing DinoBloom
 
 If you find this repository useful, please consider citing our work:
