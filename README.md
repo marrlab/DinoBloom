@@ -34,19 +34,19 @@ We provide a sample [google colab notebook](https://colab.research.google.com/dr
 If you find this repository useful, please consider citing our work:
 
 ```
-@misc{koch2024dinobloom,
-      title={DinoBloom: A Foundation Model for Generalizable Cell Embeddings in Hematology}, 
-      author={Valentin Koch and Sophia J. Wagner and Salome Kazeminia and Ece Sancar and Matthias Hehr and Julia Schnabel and Tingying Peng and Carsten Marr},
-      year={2024},
-      eprint={2404.05022},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
+@inproceedings{koch2024dinobloom,
+  title={DinoBloom: a foundation model for generalizable cell embeddings in hematology},
+  author={Koch, Valentin and Wagner, Sophia J and Kazeminia, Salome and Sancar, Ece and Hehr, Matthias and Schnabel, Julia A and Peng, Tingying and Marr, Carsten},
+  booktitle={International Conference on Medical Image Computing and Computer-Assisted Intervention},
+  pages={520--530},
+  year={2024},
+  organization={Springer}
 }
 ```
 
 ## Overview of publicly available Blood Cell Datasets
 
-| Dataset                  | Modality    | #Patient Labels | Patient Labels                                                                                         | Cell/Image Labels                                                                                                          | Comment                                        | Source Link                                                                                               | Publication Link                                                                                         |
+| Dataset                  | Modality    | #images | Patient Labels                                                                                         | Cell/Image Labels                                                                                                          | Comment                                        | Source Link                                                                                               | Publication Link                                                                                         |
 |--------------------------|-------------|-----------------|--------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|-----------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
 | BMC                      | Bone marrow | 171,373         | -                                                                                                      | 21: ABE (Abnormal eosinophils), ART (Artefacts), BAS (Basophils), BLA (Blasts), EBO (Erythroblasts), EOS (Eosinophils), FGC (Faggot cells), HAC (Hairy cells), KSC (Smudge cells), LYI (Immature lymphocytes), LYT (Lymphocytes), MMZ (Metamyelocytes), MON (Monocytes), MYB (Myelocytes), NGB (Band neutrophils), NGS (Segmented neutrophils), NIF (Not identifiable), OTH (Other cells), PEB (Proerythoblasts), PLM (Plasma cells), PMO (Promyelocytes) | -                                              | [Link](https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=101941770)                      | [Link](https://ashpublications.org/blood/article/138/20/1917/477932/Highly-accurate-differentiation-of-bone-marrow) |
 | AML Hehr                 | Blood       | 101,949         | 4: PML::RARA, NPM1, CBFB::MYH11, RUNX1::RUNX1T1                                                        | -                                                                                                                          | -                                              | [Link](https://www.cancerimagingarchive.net/collection/aml-cytomorphology_mll_helmholtz/)                  | [Link](https://journals.plos.org/digitalhealth/article?id=10.1371/journal.pdig.0000187) |
